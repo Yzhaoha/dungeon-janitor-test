@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- Store covers. Serve the repo with tools/save_server.py (port 8794) and open
+     http://127.0.0.1:8794/tools/cover.html?w=1920&h=1080   (also 800x1200 and 800x800)
+     It stages a busy dungeon in the test build (?cover hides all in-world text), composites the frame with the
+     title (the only text allowed on covers) and saves covers/cover-WxH.png. Add &nosave to only preview. -->
+<html><head><meta charset="utf-8">
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#222}
+#wrap{position:fixed;left:0;top:0;transform-origin:0 0}
+iframe{border:0;display:block}
+#out{position:fixed;right:8px;bottom:8px;max-width:45vw;max-height:45vh;border:2px solid #fff;display:none}
+#msg{position:fixed;left:8px;bottom:8px;color:#fff;font:14px monospace;background:#000a;padding:4px 8px}
+</style></head><body>
+<div id="wrap"><iframe id="g"></iframe></div>
+<canvas id="out"></canvas><div id="msg">staging…</div>
+<script>
+var P=new URLSearchParams(location.search), W=+(P.get('w')||1920), H=+(P.get('h')||1080);
+var portrait=H>W*1.1, square=!portrait&&W<H*1.2;
+var f=document.getElementById('g'), wrap=document.getElementById('wrap');
+f.width=W; f.height=H; var k=Math.min(innerWidth/W, innerHeight/H); wrap.style.transform='scale('+k+')';
+var d=new Date(), today=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+localStorage.setItem('dj_save_v2',JSON.stringify({v:2,coins:0,earned:5000,rooms:3,rep:5,upg:{boots:2,mop:2,bag:2,gob:1},gob:{clean:1,trap:1,carry:1},tut:99,heroCount:40,st:[],padPaid:{},ipm:0}));
+localStorage.setItem('dj_lang','en'); localStorage.setItem('dj_daily',JSON.stringify({last:today,streak:1,tday:'x',tasks:[]})); localStorage.removeItem('dj_seen');
+function msg(t){ document.getElementById('msg').textContent=t; }
+function title(x){
+  var lines=['DUNGEON','JANITOR'], fs=portrait? W*0.19 : square? W*0.15 : H*0.17;
+  var cx=portrait||square? W/2 : W*0.74, cy=(portrait? H*0.05 : H*0.06)+fs*0.85;
+  x.save(); x.translate(cx,cy); x.rotate(-3*Math.PI/180);
+  x.font='900 '+fs+'px "Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif'; x.textAlign='center'; x.lineJoin='round';
+  lines.forEach(function(t,i){ var y=i*fs*0.92;
+    x.fillStyle='rgba(0,0,0,.45)'; x.fillText(t,0,y+fs*0.16);
+    x.lineWidth=fs*0.14; x.strokeStyle='#3a1d46'; x.strokeText(t,0,y+fs*0.07); x.strokeText(t,0,y);
+    x.fillStyle=i? '#ffe45c' : '#ffffff'; x.fillText(t,0,y); });
+  x.restore();
+}
+function capture(w){
+  var c=document.getElementById('out'); c.width=W; c.height=H; var x=c.getContext('2d');
+  w.__R.render(w.__scene, w.__cam); x.drawImage(w.__R.domElement, 0,0,W,H); // same task as render: no preserveDrawingBuffer needed
+  title(x); c.style.display='block';
+  if (P.has('nosave')){ msg('preview only'); return; }
+  c.toBlob(function(b){ fetch('/save?name=cover-'+W+'x'+H+'.png',{method:'POST',body:b}).then(function(r){ msg(r.ok?'saved covers/cover-'+W+'x'+H+'.png':'save failed'); window.__done=r.ok; }); }, 'image/png');
+}
+f.onload=function(){ var w=f.contentWindow;
+  var iv=setInterval(function(){ if(!w.__G) return; clearInterval(iv); var G=w.__G, DJ=w.__DJ;
+    var st=w.document.createElement('style'); st.textContent='#hud,#errbox,#joy,.modal{display:none!important} body>div[style*=monospace]{display:none!important}'; w.document.head.appendChild(st);
+    for(var i=0;i<4;i++){ DJ.spawnHero(G,{}); w.__step(1.6); }
+    DJ.spawnHero(G,{boss:true}); w.__step(2.5);
+    G.player.x=1.2; G.player.z=portrait?-6:-4.2; G.player.face=Math.PI*0.2;
+    G.st.forEach(function(s,i){ if(i%2) s.coins=12; });
+    msg('rendering…'); setTimeout(function(){ G.paused=true; capture(w); }, 2500); }, 100); };
+f.src='../index.html?debug&cover&q=2';
+</script></body></html>

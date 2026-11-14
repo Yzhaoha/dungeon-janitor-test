@@ -28,7 +28,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:36px;font-weight:900;white-space:nowrap}
 #banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
 #banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
+#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:max-content;background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
 #tut.show{display:block;animation:pop .3s}
 @keyframes pop{0%{transform:translateX(-50%) scale(.7)}100%{transform:translateX(-50%) scale(1)}}
 .float{position:absolute;font-weight:900;font-size:20px;color:#ffe45c;pointer-events:none;transition:transform 1s ease-out,opacity 1s;white-space:nowrap}
@@ -72,6 +72,20 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   #tut{bottom:8%;font-size:15px}
   #banner{top:28%}
 }
+#taskBtn{position:relative}
+#taskDot{display:none;position:absolute;right:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:#ff4a4a;border:2px solid #fff}
+#taskDot.on{display:block}
+#dlDays{display:flex;gap:5px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+#dlDays div{width:46px;border-radius:10px;background:#00000040;padding:4px 0;font-size:11px;font-weight:800;opacity:.6}
+#dlDays div b{display:block;font-size:20px}
+#dlDays div.got{opacity:.45;text-decoration:line-through}
+#dlDays div.now{opacity:1;background:linear-gradient(#ffcf4a,#f29a1a);color:#3a2440;transform:scale(1.08)}
+#dlDays div.big b{font-size:26px}
+#taskRows .row{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:8px 10px;margin:7px 0;text-align:left}
+#taskRows .tx{flex:1;font-size:15px}
+#taskRows .pb{height:7px;background:#ffffff22;border-radius:4px;margin-top:4px;overflow:hidden}
+#taskRows .pb i{display:block;height:100%;background:#7ee06a}
+#taskRows .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
 /* Poki pill sits at top centre on mobile: keep the goal bar clear of it */
 @media (pointer:coarse),(max-width:900px),(max-height:500px){ body.pf-poki #wave{top:62px} }
 @media (max-width:600px){ body.pf-poki #wave{top:92px} }
@@ -81,7 +95,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <canvas id="c"></canvas>
 <div id="hud">
   <div id="coinBox" class="out"><span class="ico"></span><span id="coins">0</span></div>
-  <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
+  <div id="pref"><button class="rb" id="sndBtn">🔊</button><button class="rb" id="taskBtn">📋<i id="taskDot"></i></button><select id="langSel"></select></div>
   <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
   <div id="rep" class="out"><small id="repTx"></small><span id="stars">★★★☆☆</span></div>
   <button id="boostBtn" class="out"></button>
@@ -90,7 +104,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 </div>
 <div id="joy"><i></i></div>
 <div class="modal" id="bench"><div class="card"><h2 class="out" data-t="benchTitle"></h2><div id="benchRows"></div><button class="btn gray" id="benchClose" data-t="close"></button></div></div>
-<div class="modal" id="dayEnd"><div class="card"><h2 class="out" id="deTitle"></h2><div id="deStars" style="font-size:30px;color:#ffd84a"></div><div class="big out" id="deEarn"></div><div id="deNext" style="font-size:15px;opacity:.9;margin-bottom:6px"></div><button class="btn ad" id="deDouble"></button><br><button class="btn" id="deGo"></button></div></div>
+<div class="modal" id="daily"><div class="card"><h2 class="out" data-t="daily"></h2><div id="dlDays"></div><div data-t="streakTip" style="font-size:14px;opacity:.85;margin:6px 0"></div><div class="big out" id="dlAmt"></div><button class="btn ad" id="dlDouble"></button><button class="btn" id="dlTake" data-t="claim"></button></div></div>
+<div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
 <div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Janitor</div><div class="bar"><i></i></div></div>
@@ -283,7 +298,7 @@ function doWork(G, w, who, dt, kinds){
   if (!best) return false;
   var sp=workSpeed(G,who)*dt;
   if (best.sl){ var sl=best.sl; sl.prog+=sp/WORK.slime;
-    if (sl.prog>=1){ G.slimes.splice(G.slimes.indexOf(sl),1); G.ev.push({t:'clean',id:sl.id,x:sl.x,z:sl.z}); pay(G, FEE.slime*Math.max(1,MULT(sl.r)*0.5), sl.x, sl.z, 'slime'); }
+    if (sl.prog>=1){ G.slimes.splice(G.slimes.indexOf(sl),1); G.ev.push({t:'clean',id:sl.id,x:sl.x,z:sl.z,who:who}); pay(G, FEE.slime*Math.max(1,MULT(sl.r)*0.5), sl.x, sl.z, 'slime'); }
     return true; }
   var s=best.s; s.prog+=sp/(s.k==='chest'?WORK.fill:WORK[s.k]);
   if (s.prog>=1){ s.prog=0; s.ok=true; if(s.k==='chest') w.carry--; G.ev.push({t:'fixed',id:s.id,k:s.k,who:who}); }
@@ -395,69 +410,71 @@ return {W:W,D:D,ROOMS:ROOMS,MULT:MULT,UPG:UPG,GOB:GOB,GOB_MAX:GOB_MAX,PORTAL:POR
 // ===== SIM END =====
 
 // ===== I18N =====
-var CODES=['en','zh'];
-var LANG_NAMES={en:'English',zh:'中文'};
+// order: en fr it de es tr zh ja ko pt ru
+var CODES=['en','fr','it','de','es','tr','zh','ja','ko','pt','ru'];
+var LANG_NAMES={en:'English',fr:'Français',it:'Italiano',de:'Deutsch',es:'Español',tr:'Türkçe',zh:'中文',ja:'日本語',ko:'한국어',pt:'Português',ru:'Русский'};
 var TL={
-  move_kb:['WASD / arrows to move','WASD / 方向键 移动'],
-  move_touch:['Drag anywhere to move','按住屏幕拖动来走路'],
-  t0:['A hero is waiting! Walk next to the trap to reset it','勇者在等你！走到陷阱旁边，站一下就能重置'],
-  t1:['He paid! Walk over the coins to grab them','勇者付钱了！走过去捡金币'],
-  t2:['The chest is empty — grab gold sacks from the pile','宝箱空了！去金袋堆拿金袋'],
-  t3:['Put the gold in the chest','把金袋放进宝箱'],
-  t4:['More heroes are coming! Keep traps and chests ready, grab the coins','勇者会一个接一个来！陷阱、宝箱随时准备好，记得捡钱'],
-  t5:['They made a mess! Tidy up before the next wave','他们把地牢弄乱了！下一波来之前收拾好'],
-  t6:['Stand on the sign to build a new room','站到格子上，扩建新房间'],
-  t7:['Hire a goblin to mop the slime for you','雇个哥布林帮你拖史莱姆'],
-  t8:['Workbench: upgrade your boots, mop and bag','工具台：升级靴子、拖把和背包'],
-  goal:['Next: {r}','下一个房间：{r}'],
-  allRooms:['Dungeon complete!','地牢已经全部扩建！'],
-  slimeHint:['Slime makes heroes slip! Stand on it to mop','史莱姆会让勇者滑倒！站上去拖干净'],
-  bossD2:['Pays ×5 — don\'t keep him waiting!','付 5 倍钱——别让他等！'],
-  angry:['Too slow! 😡','太慢了！😡'],
-  day:['Day {n}','第 {n} 天'],
-  wave:['Wave {a}/{b}','第 {a}/{b} 波'],
-  next:['next in {s}s','{s} 秒后到'],
-  heroesIn:['heroes inside','勇者正在闯关'],
-  dayOver:['Day complete!','今天结束！'],
-  waitTut:['Get ready…','准备…'],
-  rep:['Rating','口碑'],
-  boost:['⚡ Turbo','⚡ 加速'],
-  boostSub:['2 min · ad','2 分钟 · 看广告'],
-  boostOn:['⚡ {s}s','⚡ {s} 秒'],
-  benchTitle:['Workbench','工具台'],
-  close:['Close','关闭'],
-  boots:['Boots','靴子'], bootsD:['Walk faster','走得更快'],
-  mop:['Mop','拖把'], mopD:['Clean & fix faster','清理和修理更快'],
-  bag:['Bag','背包'], bagD:['Carry {n} gold sacks','一次背 {n} 个金袋'],
-  gob:['Goblin coffee','哥布林咖啡'], gobD:['Goblins work faster','哥布林干活更快'],
-  max:['MAX','满级'],
-  earned:['Earned today','今天收入'],
-  nextDay:['Next day','开始下一天'],
-  double:['📺 Double it!','📺 收入翻倍'],
-  bossNext:['Tomorrow: the Hero King comes!','明天：勇者王要来了！'],
-  evtNext:['Tomorrow: {e}','明天：{e}'],
-  offTitle:['Welcome back!','欢迎回来！'],
-  offDesc:['Your goblins kept working while you were away','你不在的时候，哥布林一直在干活'],
-  collect:['Collect','收下'],
-  ev_slime:['Slime outbreak','史莱姆爆发'], ev_slimeD:['Twice the slime, but mopping pays ×3','史莱姆翻倍，但拖地收入 ×3'],
-  ev_inspector:['Inspector visit','巡查员来访'], ev_inspectorD:['Wave 3 brings an inspector — a spotless dungeon earns a big bonus','第 3 波有巡查员，地牢一尘不染就有大奖'],
-  ev_thief:['Thief alert','小偷出没'], ev_thiefD:['A thief sneaks in to rob chests — bump into him for a bounty!','小偷会溜进来偷宝箱，撞到他就能拿赏金！'],
-  ev_tour:['Tour group','新手旅行团'], ev_tourD:['Huge hero parties all day: more cash, more mess','今天勇者人特别多：钱多，也特别乱'],
-  bossDay:['Boss day!','Boss 日！'], bossD:['The Hero King arrives in the last wave. Have every trap armed and every chest full!','勇者王会在最后一波出现。把所有陷阱就绪、宝箱装满！'],
-  bossWave:['👑 The Hero King!','👑 勇者王来了！'],
-  newRoom:['New room!','新房间！'],
-  hired:['Goblin hired!','雇到哥布林！'],
-  r_hall:['Entrance Hall','入口大厅'], r_vault:['Treasure Vault','宝箱库'], r_hall2:['Trap Corridor','陷阱走廊'], r_cave:['Slime Cave','史莱姆洞'],
-  r_crypt:['Bone Crypt','骷髅墓穴'], r_lava:['Lava Bridge','熔岩桥'], r_ice:['Ice Hall','冰晶厅'], r_lair:['Dragon Lair','龙穴'],
-  g_clean:['Mop goblin','清洁哥布林'], g_trap:['Trap goblin','机关哥布林'], g_carry:['Carry goblin','搬运哥布林'],
-  bored:['Too easy! 😒','太无聊了！😒'],
-  bounty:['Thief caught!','抓到小偷！'],
-  inspOk:['Inspector: spotless! ✨','巡查员：一尘不染！✨'],
-  inspBad:['Inspector: filthy…','巡查员：太脏了…'],
-  adTest:['(test build: ad placeholder)','（测试版：广告占位）'],
-  noAd:['No ad available right now','暂时没有广告'],
-  full:['Bag full','背包满了'],
-  needSack:['Need gold sacks','需要金袋']
+  move_kb:['WASD / arrows to move','ZQSD / flèches pour bouger','WASD / frecce per muoverti','WASD / Pfeiltasten zum Laufen','WASD / flechas para moverte','WASD / ok tuşları ile yürü','WASD / 方向键 移动','WASD / 矢印キーで移動','WASD / 방향키로 이동','WASD / setas para andar','WASD / стрелки — ходьба'],
+  move_touch:['Drag anywhere to move','Glisse n\'importe où pour bouger','Trascina ovunque per muoverti','Irgendwo ziehen zum Laufen','Arrastra en cualquier sitio para moverte','Yürümek için ekranı sürükle','按住屏幕拖动来走路','画面をドラッグして移動','화면을 드래그해서 이동','Arraste na tela para andar','Тяни по экрану, чтобы идти'],
+  t0:['A hero is waiting! Walk next to the trap to reset it','Un héros attend ! Va près du piège pour le réarmer','Un eroe aspetta! Vai vicino alla trappola per riarmarla','Ein Held wartet! Stell dich neben die Falle, um sie zu spannen','¡Un héroe espera! Acércate a la trampa para rearmarla','Bir kahraman bekliyor! Tuzağı kurmak için yanına git','勇者在等你！走到陷阱旁边，站一下就能重置','勇者が待ってる！罠のそばに立ってリセットしよう','용사가 기다려요! 함정 옆에 서서 다시 설치하세요','Um herói está esperando! Fique perto da armadilha para rearmá-la','Герой ждёт! Подойди к ловушке, чтобы взвести её'],
+  t1:['He paid! Walk over the coins to grab them','Il a payé ! Marche sur les pièces pour les prendre','Ha pagato! Passa sulle monete per raccoglierle','Er hat bezahlt! Lauf über die Münzen, um sie einzusammeln','¡Ha pagado! Pasa por encima de las monedas para cogerlas','Ödedi! Paraları almak için üstlerinden geç','勇者付钱了！走过去捡金币','お金を払った！コインの上を歩いて拾おう','돈을 냈어요! 동전 위를 지나가서 주우세요','Ele pagou! Passe por cima das moedas para pegá-las','Он заплатил! Пройди по монетам, чтобы собрать их'],
+  t2:['The chest is empty — grab gold sacks from the pile','Le coffre est vide : prends des sacs d\'or sur le tas','Il forziere è vuoto: prendi i sacchi d\'oro dal mucchio','Die Truhe ist leer – hol Goldsäcke vom Haufen','El cofre está vacío: coge sacos de oro del montón','Sandık boş — yığından altın çuvalı al','宝箱空了！去金袋堆拿金袋','宝箱が空っぽ！山から金袋を取ろう','상자가 비었어요! 더미에서 금 자루를 가져오세요','O baú está vazio — pegue sacos de ouro na pilha','Сундук пуст — возьми мешки золота из кучи'],
+  t3:['Put the gold in the chest','Mets l\'or dans le coffre','Metti l\'oro nel forziere','Leg das Gold in die Truhe','Mete el oro en el cofre','Altını sandığa koy','把金袋放进宝箱','金袋を宝箱に入れよう','금 자루를 상자에 넣으세요','Coloque o ouro no baú','Положи золото в сундук'],
+  t4:['More heroes are coming! Keep traps and chests ready, grab the coins','D\'autres héros arrivent ! Garde pièges et coffres prêts, ramasse les pièces','Arrivano altri eroi! Tieni pronte trappole e forzieri, raccogli le monete','Mehr Helden kommen! Halte Fallen und Truhen bereit, sammle die Münzen','¡Vienen más héroes! Ten listas trampas y cofres, recoge las monedas','Daha çok kahraman geliyor! Tuzakları ve sandıkları hazır tut, paraları topla','勇者会一个接一个来！陷阱、宝箱随时准备好，记得捡钱','勇者が次々来るよ！罠と宝箱を準備して、コインを拾おう','용사가 계속 와요! 함정과 상자를 준비하고 동전을 주우세요','Mais heróis vêm aí! Deixe armadilhas e baús prontos e pegue as moedas','Идут новые герои! Держи ловушки и сундуки готовыми, собирай монеты'],
+  t6:['Stand on the sign to build a new room','Place-toi sur le panneau pour construire une salle','Mettiti sul cartello per costruire una stanza','Stell dich auf das Schild, um einen Raum zu bauen','Ponte sobre el cartel para construir una sala','Yeni oda kurmak için tabelanın üstünde dur','站到格子上，扩建新房间','看板の上に立って新しい部屋を作ろう','표지판 위에 서서 새 방을 지으세요','Fique na placa para construir uma sala nova','Встань на табличку, чтобы построить комнату'],
+  t7:['Hire a goblin to mop the slime for you','Embauche un gobelin pour nettoyer la bave','Assumi un goblin che pulisca la melma','Stell einen Goblin ein, der den Schleim wischt','Contrata a un goblin para fregar el slime','Balçığı silmesi için bir goblin tut','雇个哥布林帮你拖史莱姆','ゴブリンを雇ってスライムを掃除させよう','고블린을 고용해서 슬라임을 닦게 하세요','Contrate um goblin para limpar a gosma','Найми гоблина, чтобы он мыл слизь'],
+  t8:['Workbench: upgrade your boots, mop and bag','Établi : améliore bottes, serpillière et sac','Banco da lavoro: migliora stivali, mocio e borsa','Werkbank: verbessere Stiefel, Mopp und Tasche','Banco de trabajo: mejora botas, fregona y bolsa','Tezgâh: botlarını, paspasını ve çantanı geliştir','工具台：升级靴子、拖把和背包','作業台：ブーツ・モップ・バッグを強化','작업대: 장화, 대걸레, 가방을 강화하세요','Bancada: melhore botas, esfregão e bolsa','Верстак: улучшай сапоги, швабру и сумку'],
+  goal:['Next: {r}','Suivant : {r}','Prossima: {r}','Als Nächstes: {r}','Siguiente: {r}','Sıradaki: {r}','下一个房间：{r}','次：{r}','다음: {r}','Próxima: {r}','Далее: {r}'],
+  allRooms:['Dungeon complete!','Donjon terminé !','Dungeon completato!','Dungeon fertig!','¡Mazmorra completa!','Zindan tamamlandı!','地牢已经全部扩建！','ダンジョン完成！','던전 완성!','Masmorra completa!','Подземелье готово!'],
+  slimeHint:['Slime makes heroes slip! Stand on it to mop','La bave fait glisser les héros ! Reste dessus pour nettoyer','La melma fa scivolare gli eroi! Fermati sopra per pulire','Schleim lässt Helden ausrutschen! Stell dich drauf zum Wischen','¡El slime hace resbalar a los héroes! Ponte encima para fregar','Balçık kahramanları kaydırır! Silmek için üstünde dur','史莱姆会让勇者滑倒！站上去拖干净','スライムで勇者が滑る！上に立って掃除しよう','슬라임 때문에 용사가 미끄러져요! 위에 서서 닦으세요','A gosma faz os heróis escorregarem! Fique em cima para limpar','На слизи герои скользят! Встань на неё, чтобы вымыть'],
+  bossD2:['Pays ×5 — don\'t keep him waiting!','Paie ×5 : ne le fais pas attendre !','Paga ×5: non farlo aspettare!','Zahlt ×5 – lass ihn nicht warten!','Paga ×5: ¡no le hagas esperar!','×5 öder — onu bekletme!','付 5 倍钱——别让他等！','5倍払う！待たせないで！','5배로 내요. 기다리게 하지 마세요!','Paga ×5 — não o deixe esperando!','Платит ×5 — не заставляй его ждать!'],
+  bossWave:['👑 The Hero King!','👑 Le Roi des héros !','👑 Il Re degli eroi!','👑 Der Heldenkönig!','👑 ¡El Rey de los héroes!','👑 Kahramanlar Kralı!','👑 勇者王来了！','👑 勇者王が来た！','👑 용사왕 등장!','👑 O Rei dos heróis!','👑 Король героев!'],
+  angry:['Too slow! 😡','Trop lent ! 😡','Troppo lento! 😡','Zu langsam! 😡','¡Muy lento! 😡','Çok yavaş! 😡','太慢了！😡','遅すぎ！😡','너무 느려요! 😡','Muito lento! 😡','Слишком долго! 😡'],
+  rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
+  boost:['⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ 加速','⚡ ターボ','⚡ 터보','⚡ Turbo','⚡ Турбо'],
+  boostSub:['2 min · ad','2 min · pub','2 min · video','2 Min · Werbung','2 min · anuncio','2 dk · reklam','2 分钟 · 看广告','2分 · 広告','2분 · 광고','2 min · anúncio','2 мин · реклама'],
+  boostOn:['⚡ {s}s','⚡ {s} s','⚡ {s}s','⚡ {s} s','⚡ {s} s','⚡ {s} sn','⚡ {s} 秒','⚡ {s}秒','⚡ {s}초','⚡ {s} s','⚡ {s} с'],
+  benchTitle:['Workbench','Établi','Banco da lavoro','Werkbank','Banco de trabajo','Tezgâh','工具台','作業台','작업대','Bancada','Верстак'],
+  close:['Close','Fermer','Chiudi','Schließen','Cerrar','Kapat','关闭','閉じる','닫기','Fechar','Закрыть'],
+  boots:['Boots','Bottes','Stivali','Stiefel','Botas','Bot','靴子','ブーツ','장화','Botas','Сапоги'],
+  bootsD:['Walk faster','Marcher plus vite','Cammina più veloce','Schneller laufen','Camina más rápido','Daha hızlı yürü','走得更快','歩くのが速くなる','더 빨리 걷기','Ande mais rápido','Ходить быстрее'],
+  mop:['Mop','Serpillière','Mocio','Mopp','Fregona','Paspas','拖把','モップ','대걸레','Esfregão','Швабра'],
+  mopD:['Clean & fix faster','Nettoyer et réparer plus vite','Pulisci e ripara più in fretta','Schneller putzen & reparieren','Limpia y repara más rápido','Daha hızlı temizle ve onar','清理和修理更快','掃除と修理が速くなる','청소와 수리가 빨라져요','Limpe e conserte mais rápido','Быстрее мыть и чинить'],
+  bag:['Bag','Sac','Borsa','Tasche','Bolsa','Çanta','背包','バッグ','가방','Bolsa','Сумка'],
+  bagD:['Carry {n} gold sacks','Porter {n} sacs d\'or','Porta {n} sacchi d\'oro','{n} Goldsäcke tragen','Lleva {n} sacos de oro','{n} altın çuvalı taşı','一次背 {n} 个金袋','金袋を{n}個運べる','금 자루 {n}개 운반','Carregue {n} sacos de ouro','Нести {n} мешков золота'],
+  gob:['Goblin coffee','Café gobelin','Caffè goblin','Goblin-Kaffee','Café goblin','Goblin kahvesi','哥布林咖啡','ゴブリンコーヒー','고블린 커피','Café goblin','Кофе для гоблинов'],
+  gobD:['Goblins work faster','Les gobelins travaillent plus vite','I goblin lavorano più veloci','Goblins arbeiten schneller','Los goblins trabajan más rápido','Goblinler daha hızlı çalışır','哥布林干活更快','ゴブリンの仕事が速くなる','고블린이 더 빨리 일해요','Os goblins trabalham mais rápido','Гоблины работают быстрее'],
+  max:['MAX','MAX','MAX','MAX','MÁX','MAKS','满级','MAX','MAX','MÁX','МАКС'],
+  double:['📺 Double it!','📺 Doubler !','📺 Raddoppia!','📺 Verdoppeln!','📺 ¡Duplícalo!','📺 İkiye katla!','📺 翻倍','📺 2倍にする','📺 2배 받기','📺 Dobrar!','📺 Удвоить!'],
+  offTitle:['Welcome back!','Bon retour !','Bentornato!','Willkommen zurück!','¡Bienvenido de nuevo!','Tekrar hoş geldin!','欢迎回来！','おかえり！','다시 오신 걸 환영해요!','Bem-vindo de volta!','С возвращением!'],
+  offDesc:['Your goblins kept working while you were away','Tes gobelins ont travaillé pendant ton absence','I tuoi goblin hanno lavorato mentre non c\'eri','Deine Goblins haben weitergearbeitet, während du weg warst','Tus goblins siguieron trabajando mientras no estabas','Sen yokken goblinlerin çalışmaya devam etti','你不在的时候，哥布林一直在干活','いない間もゴブリンが働いていたよ','없는 동안 고블린들이 계속 일했어요','Seus goblins continuaram trabalhando enquanto você estava fora','Пока тебя не было, гоблины работали'],
+  collect:['Collect','Récupérer','Raccogli','Einsammeln','Recoger','Topla','收下','受け取る','받기','Coletar','Забрать'],
+  newRoom:['New room!','Nouvelle salle !','Nuova stanza!','Neuer Raum!','¡Nueva sala!','Yeni oda!','新房间！','新しい部屋！','새 방!','Sala nova!','Новая комната!'],
+  hired:['Goblin hired!','Gobelin embauché !','Goblin assunto!','Goblin eingestellt!','¡Goblin contratado!','Goblin işe alındı!','雇到哥布林！','ゴブリンを雇った！','고블린 고용!','Goblin contratado!','Гоблин нанят!'],
+  r_hall:['Entrance Hall','Hall d\'entrée','Atrio','Eingangshalle','Vestíbulo','Giriş Salonu','入口大厅','エントランス','입구 홀','Saguão','Входной зал'],
+  r_vault:['Treasure Vault','Salle du trésor','Camera del tesoro','Schatzkammer','Cámara del tesoro','Hazine Odası','宝箱库','宝物庫','보물 창고','Câmara do tesouro','Сокровищница'],
+  r_hall2:['Trap Corridor','Couloir piégé','Corridoio trappola','Fallengang','Pasillo trampa','Tuzaklı Koridor','陷阱走廊','罠の回廊','함정 복도','Corredor de armadilhas','Коридор ловушек'],
+  r_cave:['Slime Cave','Grotte à bave','Grotta melmosa','Schleimhöhle','Cueva de slime','Balçık Mağarası','史莱姆洞','スライム洞窟','슬라임 동굴','Caverna de gosma','Пещера слизи'],
+  r_crypt:['Bone Crypt','Crypte d\'os','Cripta d\'ossa','Knochengruft','Cripta de huesos','Kemik Mahzeni','骷髅墓穴','骨の地下墓所','해골 묘지','Cripta de ossos','Склеп костей'],
+  r_lava:['Lava Bridge','Pont de lave','Ponte di lava','Lavabrücke','Puente de lava','Lav Köprüsü','熔岩桥','溶岩の橋','용암 다리','Ponte de lava','Лавовый мост'],
+  r_ice:['Ice Hall','Salle de glace','Sala di ghiaccio','Eishalle','Sala de hielo','Buz Salonu','冰晶厅','氷の広間','얼음 홀','Salão de gelo','Ледяной зал'],
+  r_lair:['Dragon Lair','Antre du dragon','Tana del drago','Drachenhort','Guarida del dragón','Ejderha İni','龙穴','竜の巣','용의 둥지','Covil do dragão','Логово дракона'],
+  g_clean:['Mop goblin','Gobelin nettoyeur','Goblin pulitore','Wisch-Goblin','Goblin fregón','Paspas goblini','清洁哥布林','掃除ゴブリン','청소 고블린','Goblin faxineiro','Гоблин-уборщик'],
+  g_trap:['Trap goblin','Gobelin des pièges','Goblin trappole','Fallen-Goblin','Goblin trampero','Tuzak goblini','机关哥布林','罠ゴブリン','함정 고블린','Goblin das armadilhas','Гоблин-механик'],
+  g_carry:['Carry goblin','Gobelin porteur','Goblin facchino','Träger-Goblin','Goblin cargador','Taşıyıcı goblin','搬运哥布林','運搬ゴブリン','운반 고블린','Goblin carregador','Гоблин-носильщик'],
+  adTest:['(test build: ad placeholder)','(version test : pub factice)','(versione di prova: pubblicità finta)','(Testversion: Werbe-Platzhalter)','(versión de prueba: anuncio simulado)','(test sürümü: sahte reklam)','（测试版：广告占位）','（テスト版：広告のダミー）','(테스트 버전: 광고 자리)','(versão de teste: anúncio fictício)','(тестовая версия: заглушка рекламы)'],
+  noAd:['No ad available right now','Aucune pub disponible','Nessuna pubblicità disponibile','Gerade keine Werbung verfügbar','No hay anuncios ahora mismo','Şu an reklam yok','暂时没有广告','今は広告がありません','지금은 광고가 없어요','Nenhum anúncio agora','Сейчас нет рекламы'],
+  // daily reward + daily tasks
+  daily:['Daily reward','Récompense du jour','Premio giornaliero','Tagesbelohnung','Recompensa diaria','Günlük ödül','每日签到','デイリーボーナス','출석 보상','Recompensa diária','Ежедневная награда'],
+  dayN:['Day {n}','Jour {n}','Giorno {n}','Tag {n}','Día {n}','{n}. gün','第 {n} 天','{n}日目','{n}일차','Dia {n}','День {n}'],
+  claim:['Claim','Récupérer','Riscuoti','Abholen','Reclamar','Al','领取','受け取る','받기','Resgatar','Забрать'],
+  streakTip:['Come back every day — day 7 is huge!','Reviens chaque jour : le jour 7 est énorme !','Torna ogni giorno: il giorno 7 è enorme!','Komm jeden Tag – Tag 7 ist riesig!','Vuelve cada día: ¡el día 7 es enorme!','Her gün gel — 7. gün çok büyük!','每天来领，第 7 天大奖！','毎日来てね。7日目は大当たり！','매일 오세요. 7일차는 대박!','Volte todo dia — o dia 7 é enorme!','Заходи каждый день — на 7-й день огромный приз!'],
+  tasks:['Daily tasks','Tâches du jour','Compiti del giorno','Tagesaufgaben','Tareas diarias','Günlük görevler','每日任务','デイリータスク','일일 임무','Tarefas diárias','Задания дня'],
+  task_serve:['Serve {n} heroes','Servir {n} héros','Servi {n} eroi','{n} Helden bedienen','Atiende a {n} héroes','{n} kahramana hizmet et','接待 {n} 个勇者','勇者を{n}人もてなす','용사 {n}명 접대','Atenda {n} heróis','Обслужи {n} героев'],
+  task_mop:['Mop {n} slimes','Nettoyer {n} baves','Pulisci {n} melme','{n} Schleime wischen','Friega {n} slimes','{n} balçık sil','拖掉 {n} 滩史莱姆','スライムを{n}個掃除','슬라임 {n}개 닦기','Limpe {n} gosmas','Вымой {n} луж слизи'],
+  task_fix:['Reset {n} traps or chests','Réarmer {n} pièges ou coffres','Riarma {n} trappole o forzieri','{n} Fallen oder Truhen bereitmachen','Prepara {n} trampas o cofres','{n} tuzak ya da sandık hazırla','重置 {n} 个陷阱或宝箱','罠か宝箱を{n}回リセット','함정이나 상자 {n}번 준비','Prepare {n} armadilhas ou baús','Подготовь {n} ловушек или сундуков'],
+  allDone:['All done — new tasks tomorrow!','Tout est fait : nouvelles tâches demain !','Tutto fatto: nuovi compiti domani!','Alles erledigt – morgen gibt es neue!','¡Todo hecho! Nuevas tareas mañana','Hepsi tamam — yarın yeni görevler!','全部完成，明天有新任务！','全部完了！明日また新しいタスク','모두 완료! 내일 새 임무가 와요','Tudo feito — novas tarefas amanhã!','Всё готово — завтра новые задания!'],
+  taskDone:['Task complete!','Tâche terminée !','Compito completato!','Aufgabe erledigt!','¡Tarea completada!','Görev tamam!','任务完成！','タスク完了！','임무 완료!','Tarefa concluída!','Задание выполнено!']
 };
 var LANG='en';
 function tl(k,v){ var a=TL[k]; if(!a) return k; var s=a[CODES.indexOf(LANG)]||a[0]; if(v) for(var x in v) s=s.split('{'+x+'}').join(v[x]); return s; }
@@ -477,7 +494,7 @@ window.addEventListener('error',function(e){ if(window.PokiSDK||window.CrazyGame
 var T = window.THREE, W=DJ.W, D=DJ.D;
 var $=function(id){return document.getElementById(id);};
 var TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
-var QS = new URLSearchParams(location.search), DEBUG = QS.has('debug'); try{ if(localStorage.getItem('dj_debug')==='1') DEBUG=true; }catch(e){}
+var QS = new URLSearchParams(location.search), DEBUG = QS.has('debug'); var COVER = QS.has('cover'); try{ if(localStorage.getItem('dj_debug')==='1') DEBUG=true; }catch(e){}
 
 // ---------------- platform wrapper ----------------
 // Poki: init > gameLoadingFinished > gameplayStart/Stop (deduped) > commercialBreak between rooms.
@@ -542,6 +559,36 @@ var Snd = (function(){
     var s=a.createBufferSource(); s.buffer=b; var fl=a.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=f||1200;
     var g=a.createGain(); g.gain.value=vol||0.2; s.connect(fl); fl.connect(g); g.connect(master); s.start(t);
   }
+  // background music: a quiet, bouncy minor-key loop scheduled ahead with WebAudio (no audio files)
+  var mus=null, musOn=false, nextT=0, stepI=0, BPM=104, SPB=60/BPM/2;
+  var PROG=[[57,60,64],[53,57,60],[55,59,62],[52,56,59]]; // Am F G E
+  var MEL=[69,-1,72,71,69,-1,64,-1, 65,-1,69,67,65,-1,60,-1, 67,-1,71,69,67,-1,62,64, 68,-1,71,-1,64,-1,-1,-1];
+  function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+  function note(m,t,d,type,vol){ var a=ac, o=a.createOscillator(), g=a.createGain(); o.type=type; o.frequency.value=mtof(m);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(mus); o.start(t); o.stop(t+d+0.05); }
+  function sched(){
+    if (!ac||!musOn) return;
+    if (nextT<ac.currentTime) nextT=ac.currentTime+0.05;
+    while (nextT<ac.currentTime+0.4){
+      var bar=Math.floor(stepI/8)%4, i=stepI%8, ch=PROG[bar], m=MEL[stepI%32];
+      if (i===0||i===4) note(ch[0]-24, nextT, SPB*3.5, 'triangle', 0.22);
+      if (i%2===1) note(ch[(i>>1)%3], nextT, SPB*0.9, 'square', 0.025);
+      if (m>0) note(m, nextT, SPB*1.6, 'triangle', 0.07);
+      if (i===2||i===6) { var b=ac.createBuffer(1,Math.floor(ac.sampleRate*0.05),ac.sampleRate),c=b.getChannelData(0); for(var k=0;k<c.length;k++) c[k]=(Math.random()*2-1)*(1-k/c.length);
+        var src=ac.createBufferSource(), hg=ac.createGain(), hf=ac.createBiquadFilter(); hf.type='highpass'; hf.frequency.value=6000; hg.gain.value=0.05; src.buffer=b; src.connect(hf); hf.connect(hg); hg.connect(mus); src.start(nextT); }
+      nextT+=SPB; stepI++;
+    }
+  }
+  setInterval(sched, 150);
+  function bgm(){
+    var want=!(muted||pmuted||off||document.hidden);
+    if (!ac) return; // created on the first key/touch/click (autoplay rules)
+    if (!mus){ mus=ac.createGain(); mus.gain.value=0; mus.connect(master); }
+    musOn = want && ac.state==='running';
+    mus.gain.cancelScheduledValues(ac.currentTime); mus.gain.setTargetAtTime(musOn?0.55:0, ac.currentTime, 0.15);
+  }
+  document.addEventListener('visibilitychange', function(){ bgm(); });
   var lastCoin=0;
   var S = {
     coin:function(){ var n=performance.now(); if(n-lastCoin<70) return; lastCoin=n; tone(1320,0.08,'square',0.06); tone(1760,0.12,'square',0.06,0,0.06); },
@@ -560,8 +607,9 @@ var Snd = (function(){
     door:function(){ noise(0.3,0.25,900); tone(140,0.2,'square',0.06,0.6); },
     mute:function(m){ muted=m; S.bgm&&S.bgm(); },
     pmute:function(m){ pmuted=m; plog('platformMute',m); S.bgm&&S.bgm(); },
-    toggle:function(){ off=!off; try{localStorage.setItem('dj_snd',off?'0':'1');}catch(e){} return !off; },
-    isOn:function(){ return !off; }, unlock:function(){ ctx(); }
+    toggle:function(){ off=!off; try{localStorage.setItem('dj_snd',off?'0':'1');}catch(e){} bgm(); return !off; },
+    bgm:bgm,
+    isOn:function(){ return !off; }, unlock:function(){ ctx(); if(ac&&ac.state!=='running') ac.resume().then(bgm); else bgm(); }
   };
   return S;
 })();
@@ -703,6 +751,7 @@ function makeSack(){ var g=new T.Group(); var b=mesh(sackGeo, M.sack, 0,0.3,0); 
 
 // ---------------- labels / sprites ----------------
 function makeLabel(text, w, h, color, bg, font){
+  if (COVER) text=''; // store covers: no in-world text
   var tex=canvasTex(w,h,function(x){ drawLabel(x,w,h,text,color,bg,font); });
   var m=new T.Mesh(new T.PlaneGeometry(1,1), new T.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false}));
   m.userData.redraw=function(t){ var cv=tex.image, x=cv.getContext('2d'); x.clearRect(0,0,w,h); drawLabel(x,w,h,t,color,bg,font); tex.needsUpdate=true; };
@@ -885,7 +934,7 @@ function padView(pd){
   v.update(); return v;
 }
 function fmt(n){ n=Math.floor(n); if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1)+'M'; if(n>=1e4) return (n/1e3).toFixed(n>=1e5?0:1)+'K'; return ''+n; }
-function syncPads(){ padViews.forEach(function(v){ world.remove(v.g); }); padViews=G.pads.map(padView);
+function syncPads(){ padViews.forEach(function(v){ world.remove(v.g); }); padViews=COVER?[]:G.pads.map(padView);
   var hasBench=G.pads.some(function(p){return p.kind==='bench';}); if (hasBench && !benchMesh) benchMesh=buildBench(); }
 function syncPortal(){
   var p=DJ.W2(G.rooms-1, DJ.PORTAL[0], DJ.PORTAL[1]);
@@ -987,6 +1036,7 @@ $('benchClose').onclick=function(){ $('bench').classList.remove('show'); benchOp
 
 // ---------------- input ----------------
 var keys={}, joy={on:false, id:null, sx:0, sy:0, x:0, y:0};
+addEventListener('pointerdown', function(){ Snd.unlock(); });
 addEventListener('keydown', function(e){ keys[e.code]=true; Snd.unlock(); if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].indexOf(e.code)>=0) e.preventDefault(); });
 addEventListener('keyup', function(e){ keys[e.code]=false; });
 addEventListener('blur', function(){ keys={}; joy.on=false; $('joy').style.display='none'; });
@@ -1062,8 +1112,8 @@ function handleEvents(){
         break;
       case 'padpay': if(Math.random()<0.3) Snd.pay(); break;
       case 'slime': var sl=G.slimes.filter(function(s){return s.id===e.id;})[0]; if(sl){ views.sl[sl.id]=slimeView(sl); if(!slimeHinted && G.tut>=4){ slimeHinted=true; banner(tl('slimeHint'),'',2600); } } break;
-      case 'clean': var v=views.sl[e.id]; if(v){ world.remove(v.g); delete views.sl[e.id]; } Snd.squish(); puff(e.x,e.z,0x9fffd0); break;
-      case 'fixed': var sv=views.st[e.id]; if(sv) sv.shake=0.3; if(e.k==='chest') Snd.fill(); else Snd.clank(); if(e.who==='p') puff(sv.s.x, sv.s.z, 0xfff3a0); break;
+      case 'clean': if(e.who==='p') Daily.count('mop'); var v=views.sl[e.id]; if(v){ world.remove(v.g); delete views.sl[e.id]; } Snd.squish(); puff(e.x,e.z,0x9fffd0); break;
+      case 'fixed': if(e.who==='p') Daily.count('fix'); var sv=views.st[e.id]; if(sv) sv.shake=0.3; if(e.k==='chest') Snd.fill(); else Snd.clank(); if(e.who==='p') puff(sv.s.x, sv.s.z, 0xfff3a0); break;
       case 'spring': var s2=views.st[e.id]; if(s2) s2.shake=0.4; Snd.spring(); var hv=views.hr[e.hid]; if(hv) hv.bonk=0.5; break;
       case 'loot': var s3=views.st[e.id]; if(s3) s3.shake=0.3; break;
       case 'take': Snd.take(); break;
@@ -1071,7 +1121,7 @@ function handleEvents(){
       case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😄',ouch:'😵',slip:'😵‍💫',meh:'😒',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
       case 'slip': var sv2=views.hr[e.id]; if(sv2){ sv2.slip=0.9; } Snd.squish(); break;
       case 'angry': var av=views.hr[e.id]; if(av) floatText(tl('angry'), av.c.position.x, 2.6, av.c.position.z, '#ff8a7a'); Snd.bad(); break;
-      case 'exit': var xv=views.hr[e.id]; if(xv){ floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); puff(xv.c.position.x, xv.c.position.z, 0xb27cff);
+      case 'exit': Daily.count('serve'); var xv=views.hr[e.id]; if(xv){ floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); puff(xv.c.position.x, xv.c.position.z, 0xb27cff);
           world.remove(xv.c); world.remove(xv.need); world.remove(xv.em); scene.remove(xv.ring); delete views.hr[e.id]; } break;
       case 'wake': Snd.pop(); break;
     }
@@ -1088,7 +1138,7 @@ function coinBurst(x0,z0,x1,z1){
 }
 
 // ---------------- frame ----------------
-var last=performance.now(), acc=0, saveT=0, lightT=0, ipmT=0, ipmEarn=0;
+var dailyT=0, last=performance.now(), acc=0, saveT=0, lightT=0, ipmT=0, ipmEarn=0;
 function frame(now){
   requestAnimationFrame(frame); var __js0=performance.now();
   var dt=Math.min(0.1,(now-last)/1000); last=now;
@@ -1109,6 +1159,7 @@ function frame(now){
   if (onB && !benchOpen && !benchDismissed) openBench();
   if (!onB){ benchDismissed=false; if (benchOpen){ $('bench').classList.remove('show'); benchOpen=false; } }
   if (benchOpen && Math.random()<0.1) renderBench();
+  dailyT+=dt; if (dailyT>2){ dailyT=0; Daily.tick(); }
 }
 function render(dt){
   var p=G.player, t=performance.now()/1000;
@@ -1188,7 +1239,7 @@ function perfTick(dt){
   if (perfT>=2){
     var fps=perfN/perfT; perfT=0; perfN=0;
     if (SHOWFPS){ if(!fpsEl){ fpsEl=document.createElement('div'); fpsEl.style.cssText='position:fixed;left:4px;bottom:4px;font:11px monospace;color:#fff8;z-index:50;pointer-events:none'; document.body.appendChild(fpsEl);} fpsEl.textContent=fps.toFixed(0)+'fps q'+QUAL; }
-    if (fps<40 && QUAL>-1 && !document.hidden){ setQual(QUAL-1); perfWarm=1.5; }
+    if (fps<40 && QUAL>-1 && !document.hidden && !QS.has('q')){ setQual(QUAL-1); perfWarm=1.5; }
   }
 }
 function setQual(q){
@@ -1206,16 +1257,69 @@ function saveNow(){ if(!G) return; PF.saveData('dj_save_v2', DJ.save(G)); PF.sav
 document.addEventListener('visibilitychange', function(){ if(document.hidden) saveNow(); });
 addEventListener('pagehide', saveNow);
 function checkOffline(){
-  var seen=+(PF.loadData('dj_seen')||0); if (!seen || G.goblins.length===0) return;
-  var mins=Math.min(120, (Date.now()-seen)/60000); if (mins<2) return;
-  var amt=Math.round(mins*(G.ipm||0)*0.25); if (amt<10) return;
+  var seen=+(PF.loadData('dj_seen')||0); if (!seen || G.goblins.length===0) return false;
+  var mins=Math.min(120, (Date.now()-seen)/60000); if (mins<2) return false;
+  var amt=Math.round(mins*(G.ipm||0)*0.25); if (amt<10) return false;
   $('offAmt').textContent='● '+fmt(amt);
   var dbl=$('offDouble'); dbl.textContent=tl('double'); dbl.disabled=false;
   var close=function(n){ $('offline').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, 'offline'); saveNow(); };
-  $('offTake').onclick=function(){ close(amt); };
-  dbl.onclick=function(){ dbl.disabled=true; PF.rewarded(function(ok){ if(ok) close(amt*2); else dbl.disabled=false; }); };
-  $('offline').classList.add('show');
+  $('offTake').onclick=function(){ close(amt); Daily.reward(); };
+  dbl.onclick=function(){ dbl.disabled=true; PF.rewarded(function(ok){ if(ok){ close(amt*2); Daily.reward(); } else dbl.disabled=false; }); };
+  $('offline').classList.add('show'); return true;
 }
+
+// ---------------- daily reward + daily tasks ----------------
+// Rewards scale with the next room's price so they stay meaningful at every stage.
+var Daily = (function(){
+  var D=null, DAYS=[0.10,0.12,0.15,0.18,0.22,0.27,0.6], DEF={serve:[20,8],mop:[8,3],fix:[18,6]};
+  function today(o){ var d=new Date(Date.now()+(o||0)*864e5); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function nextCost(){ var R=DJ.ROOMS[Math.min(G.rooms, DJ.ROOMS.length-1)]; return Math.max(60, R.cost); }
+  function amt(f){ return Math.max(20, Math.round(nextCost()*f/5)*5); }
+  function load(){ try{ D=JSON.parse(PF.loadData('dj_daily')||'null'); }catch(e){ D=null; } if(!D||typeof D!=='object') D={last:'',streak:0,tday:'',tasks:[]}; }
+  function save(){ PF.saveData('dj_daily', JSON.stringify(D)); }
+  function rollTasks(){
+    if (D.tday===today()) return;
+    D.tday=today(); var r=Math.max(1,G.rooms);
+    D.tasks=['serve','mop','fix'].map(function(k){ return {k:k, n:DEF[k][0]+DEF[k][1]*r, c:0, claimed:false, f:0.25}; });
+    save();
+  }
+  function count(k){ if(!D||G.tut<99) return; D.tasks.forEach(function(t){ if(t.k!==k||t.c>=t.n) return; t.c++; if(t.c===t.n){ banner(tl('taskDone'), tl('task_'+t.k,{n:t.n}), 2000); Snd.buy(); save(); } }); dot(); }
+  function dot(){ var on = D && D.tasks.some(function(t){ return t.c>=t.n && !t.claimed; }); $('taskDot').classList.toggle('on', !!on); }
+  function renderTasks(){
+    var rows=$('taskRows'); rows.innerHTML='';
+    D.tasks.forEach(function(t){
+      var r=document.createElement('div'); r.className='row';
+      r.innerHTML='<div class="tx"><b></b><div class="pb"><i style="width:'+Math.min(100,t.c/t.n*100)+'%"></i></div></div>';
+      r.querySelector('b').textContent=tl('task_'+t.k,{n:t.n})+'  '+Math.min(t.c,t.n)+'/'+t.n;
+      var b=document.createElement('button'); b.className='btn';
+      if (t.claimed){ b.textContent='✔'; b.disabled=true; }
+      else { b.textContent='● '+fmt(amt(t.f)); b.disabled=t.c<t.n; b.onclick=function(){ t.claimed=true; DJ.pay(G, amt(t.f), G.player.x, G.player.z, 'task'); Snd.buy(); save(); renderTasks(); dot(); }; }
+      r.appendChild(b); rows.appendChild(r);
+    });
+    if (D.tasks.every(function(t){return t.claimed;})){ var d=document.createElement('div'); d.style.cssText='font-size:15px;margin:6px 0'; d.textContent=tl('allDone'); rows.appendChild(d); }
+  }
+  $('taskBtn').onclick=function(){ if(!D||G.tut<99||PF.adBusy) return; rollTasks(); renderTasks(); $('taskM').classList.add('show'); };
+  $('taskClose').onclick=function(){ $('taskM').classList.remove('show'); };
+  function showReward(){
+    if (D.last===today()) return false;
+    var streak = D.last===today(-1) ? (D.streak%7)+1 : 1, a=amt(DAYS[streak-1]);
+    var row=$('dlDays'); row.innerHTML='';
+    for (var i=1;i<=7;i++){ var c=document.createElement('div'); c.className=(i<streak?'got':(i===streak?'now':''))+(i===7?' big':''); c.innerHTML='<b>'+(i===7?'💰':'🪙')+'</b>'; c.appendChild(document.createTextNode(tl('dayN',{n:i}))); row.appendChild(c); }
+    $('dlAmt').textContent='● '+fmt(a);
+    var dbl=$('dlDouble'); dbl.textContent=tl('double'); dbl.disabled=false;
+    var close=function(n){ D.last=today(); D.streak=streak; save(); $('daily').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, 'daily'); Snd.buy(); saveNow(); };
+    $('dlTake').onclick=function(){ close(a); };
+    dbl.onclick=function(){ dbl.disabled=true; PF.rewarded(function(ok){ if(ok) close(a*2); else dbl.disabled=false; }); };
+    $('daily').classList.add('show'); return true;
+  }
+  return {
+    start:function(){ load(); $('taskBtn').style.display = G.tut>=99 ? '' : 'none'; if (G.tut<99) return; rollTasks(); dot(); },
+    tick:function(){ if(!D) return; if (G.tut>=99 && $('taskBtn').style.display==='none'){ $('taskBtn').style.display=''; rollTasks(); dot(); }
+      if (G.tut>=99 && D.tday!==today()){ rollTasks(); dot(); } },
+    reward:function(){ if(!D||G.tut<99) return false; return showReward(); },
+    count:count, refresh:function(){ if($('taskM').classList.contains('show')) renderTasks(); }
+  };
+})();
 
 // ---------------- boot ----------------
 function boot(){
@@ -1232,7 +1336,8 @@ function boot(){
   camera.position.set(G.player.x*0.6, 11, G.player.z+8.2);
   $('loading').style.display='none';
   PF.loaded();
-  checkOffline();
+  Daily.start();
+  if (!checkOffline()) Daily.reward();
   if (DEBUG){ window.__PF=PF; window.__Snd=Snd; window.__G=G; window.__DJ=DJ; window.__step=function(sec,ix,iz){ for(var i=0;i<sec*60;i++){ DJ.step(G,1/60,ix||0,iz||0); stepTut(1/60);} }; window.__cam=camera; window.__ri=renderer.info; window.__scene=scene; window.__R=renderer; window.__sun=sun; window.__tl=torchLights; window.__T=T; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }

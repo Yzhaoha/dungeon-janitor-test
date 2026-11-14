@@ -29,7 +29,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:36px;font-weight:900;white-space:nowrap}
 #banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
 #banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
+#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:max-content;background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
 #tut.show{display:block;animation:pop .3s}
 @keyframes pop{0%{transform:translateX(-50%) scale(.7)}100%{transform:translateX(-50%) scale(1)}}
 .float{position:absolute;font-weight:900;font-size:20px;color:#ffe45c;pointer-events:none;transition:transform 1s ease-out,opacity 1s;white-space:nowrap}
@@ -73,6 +73,20 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   #tut{bottom:8%;font-size:15px}
   #banner{top:28%}
 }
+#taskBtn{position:relative}
+#taskDot{display:none;position:absolute;right:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:#ff4a4a;border:2px solid #fff}
+#taskDot.on{display:block}
+#dlDays{display:flex;gap:5px;justify-content:center;margin:6px 0;flex-wrap:wrap}
+#dlDays div{width:46px;border-radius:10px;background:#00000040;padding:4px 0;font-size:11px;font-weight:800;opacity:.6}
+#dlDays div b{display:block;font-size:20px}
+#dlDays div.got{opacity:.45;text-decoration:line-through}
+#dlDays div.now{opacity:1;background:linear-gradient(#ffcf4a,#f29a1a);color:#3a2440;transform:scale(1.08)}
+#dlDays div.big b{font-size:26px}
+#taskRows .row{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:8px 10px;margin:7px 0;text-align:left}
+#taskRows .tx{flex:1;font-size:15px}
+#taskRows .pb{height:7px;background:#ffffff22;border-radius:4px;margin-top:4px;overflow:hidden}
+#taskRows .pb i{display:block;height:100%;background:#7ee06a}
+#taskRows .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
 /* Poki pill sits at top centre on mobile: keep the goal bar clear of it */
 @media (pointer:coarse),(max-width:900px),(max-height:500px){ body.pf-poki #wave{top:62px} }
 @media (max-width:600px){ body.pf-poki #wave{top:92px} }
@@ -82,7 +96,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <canvas id="c"></canvas>
 <div id="hud">
   <div id="coinBox" class="out"><span class="ico"></span><span id="coins">0</span></div>
-  <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
+  <div id="pref"><button class="rb" id="sndBtn">🔊</button><button class="rb" id="taskBtn">📋<i id="taskDot"></i></button><select id="langSel"></select></div>
   <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
   <div id="rep" class="out"><small id="repTx"></small><span id="stars">★★★☆☆</span></div>
   <button id="boostBtn" class="out"></button>
@@ -91,7 +105,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 </div>
 <div id="joy"><i></i></div>
 <div class="modal" id="bench"><div class="card"><h2 class="out" data-t="benchTitle"></h2><div id="benchRows"></div><button class="btn gray" id="benchClose" data-t="close"></button></div></div>
-<div class="modal" id="dayEnd"><div class="card"><h2 class="out" id="deTitle"></h2><div id="deStars" style="font-size:30px;color:#ffd84a"></div><div class="big out" id="deEarn"></div><div id="deNext" style="font-size:15px;opacity:.9;margin-bottom:6px"></div><button class="btn ad" id="deDouble"></button><br><button class="btn" id="deGo"></button></div></div>
+<div class="modal" id="daily"><div class="card"><h2 class="out" data-t="daily"></h2><div id="dlDays"></div><div data-t="streakTip" style="font-size:14px;opacity:.85;margin:6px 0"></div><div class="big out" id="dlAmt"></div><button class="btn ad" id="dlDouble"></button><button class="btn" id="dlTake" data-t="claim"></button></div></div>
+<div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
 <div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Janitor</div><div class="bar"><i></i></div></div>

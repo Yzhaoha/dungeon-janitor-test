@@ -186,7 +186,7 @@ function doWork(G, w, who, dt, kinds){
   if (!best) return false;
   var sp=workSpeed(G,who)*dt;
   if (best.sl){ var sl=best.sl; sl.prog+=sp/WORK.slime;
-    if (sl.prog>=1){ G.slimes.splice(G.slimes.indexOf(sl),1); G.ev.push({t:'clean',id:sl.id,x:sl.x,z:sl.z}); pay(G, FEE.slime*Math.max(1,MULT(sl.r)*0.5), sl.x, sl.z, 'slime'); }
+    if (sl.prog>=1){ G.slimes.splice(G.slimes.indexOf(sl),1); G.ev.push({t:'clean',id:sl.id,x:sl.x,z:sl.z,who:who}); pay(G, FEE.slime*Math.max(1,MULT(sl.r)*0.5), sl.x, sl.z, 'slime'); }
     return true; }
   var s=best.s; s.prog+=sp/(s.k==='chest'?WORK.fill:WORK[s.k]);
   if (s.prog>=1){ s.prog=0; s.ok=true; if(s.k==='chest') w.carry--; G.ev.push({t:'fixed',id:s.id,k:s.k,who:who}); }
