@@ -73,6 +73,9 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   #tut{bottom:8%;font-size:15px}
   #banner{top:28%}
 }
+/* Poki pill sits at top centre on mobile: keep the goal bar clear of it */
+@media (pointer:coarse),(max-width:900px),(max-height:500px){ body.pf-poki #wave{top:62px} }
+@media (max-width:600px){ body.pf-poki #wave{top:92px} }
 </style>
 </head>
 <body>

@@ -65,9 +65,11 @@ var TL={
 };
 var LANG='en';
 function tl(k,v){ var a=TL[k]; if(!a) return k; var s=a[CODES.indexOf(LANG)]||a[0]; if(v) for(var x in v) s=s.split('{'+x+'}').join(v[x]); return s; }
-function detectLang(){
+function detectLang(pfLocale){
   try{ var q=new URLSearchParams(location.search).get('lang'); if(q&&CODES.indexOf(q)>=0) return q; }catch(e){}
   try{ var s=localStorage.getItem('dj_lang'); if(s&&CODES.indexOf(s)>=0) return s; }catch(e){}
-  var n=(navigator.language||'en').slice(0,2).toLowerCase(); return CODES.indexOf(n)>=0?n:'en';
+  var c=[pfLocale, navigator.language].concat(navigator.languages||[]);
+  for (var i=0;i<c.length;i++){ var n=(c[i]||'').slice(0,2).toLowerCase(); if(CODES.indexOf(n)>=0) return n; }
+  return 'en';
 }
 // ===== I18N END =====

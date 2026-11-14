@@ -1,4 +1,4 @@
-const DJ=require('./sim.js');
+const DJ=require('../src/sim.js');
 function nearest(a,p){let b=null,bd=1e9;for(const s of a){const d=Math.hypot(s.x-p.x,s.z-p.z);if(d<bd){bd=d;b=s;}}return b;}
 function run(seed, skill, mins){
   const G=DJ.newGame(seed); G.tut=99; DJ.makePads(G); G.flow=true;

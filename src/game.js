@@ -1,37 +1,45 @@
 // ===== GAME (render + UI) =====
 (function(){
 'use strict';
-window.addEventListener('error',function(e){ var d=document.getElementById('errbox')||document.body.appendChild(Object.assign(document.createElement('pre'),{id:'errbox'})); d.style.cssText='position:fixed;left:0;bottom:0;z-index:99;background:#a00;color:#fff;font-size:11px;max-width:100%;white-space:pre-wrap;margin:0'; d.textContent+=e.message+' @'+e.lineno+'\n'; });
+window.addEventListener('error',function(e){ if(window.PokiSDK||window.CrazyGames) return; var d=document.getElementById('errbox')||document.body.appendChild(Object.assign(document.createElement('pre'),{id:'errbox'})); d.style.cssText='position:fixed;left:0;bottom:0;z-index:99;background:#a00;color:#fff;font-size:11px;max-width:100%;white-space:pre-wrap;margin:0'; d.textContent+=e.message+' @'+e.lineno+'\n'; });
 var T = window.THREE, W=DJ.W, D=DJ.D;
 var $=function(id){return document.getElementById(id);};
 var TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints>0;
 var QS = new URLSearchParams(location.search), DEBUG = QS.has('debug'); try{ if(localStorage.getItem('dj_debug')==='1') DEBUG=true; }catch(e){}
 
 // ---------------- platform wrapper ----------------
+// Poki: init > gameLoadingFinished > gameplayStart/Stop (deduped) > commercialBreak between rooms.
+// CrazyGames v3: init (body exists here) > loadingStart > loadingStop > gameplayStart/Stop > midgame between rooms.
 var PF = {
   kind: window.PokiSDK?'poki':(window.CrazyGames&&window.CrazyGames.SDK?'cg':'none'),
-  playing:false, adBusy:false,
+  playing:false, adBusy:false, locale:null,
   init: function(){ var self=this;
     if (self.kind==='poki') return window.PokiSDK.init().catch(function(){});
-    if (self.kind==='cg') return window.CrazyGames.SDK.init().catch(function(){ self.kind='none'; });
+    if (self.kind==='cg') return window.CrazyGames.SDK.init().then(function(){
+      var S=window.CrazyGames.SDK;
+      try{ S.game.loadingStart(); }catch(e){}
+      try{ self.locale=(S.user&&S.user.systemInfo&&S.user.systemInfo.locale)||null; }catch(e){}
+      try{ Snd.pmute(!!(S.game.settings&&S.game.settings.muteAudio)); }catch(e){}
+      try{ S.game.addSettingsChangeListener(function(st){ Snd.pmute(!!(st&&st.muteAudio)); }); }catch(e){}
+    }).catch(function(){ self.kind='none'; });
     return Promise.resolve(); },
   loaded: function(){ try{ if(this.kind==='poki') PokiSDK.gameLoadingFinished(); if(this.kind==='cg') CrazyGames.SDK.game.loadingStop(); }catch(e){} },
   setPlaying: function(on){ if(on===this.playing) return; this.playing=on; try{
     if(this.kind==='poki') on?PokiSDK.gameplayStart():PokiSDK.gameplayStop();
     if(this.kind==='cg') on?CrazyGames.SDK.game.gameplayStart():CrazyGames.SDK.game.gameplayStop(); }catch(e){} },
   happy: function(){ try{ if(this.kind==='cg') CrazyGames.SDK.game.happytime(); }catch(e){} },
-  midgame: function(cb){ var self=this; self.adBusy=true; self.setPlaying(false); Snd.mute(true);
-    var done=function(){ self.adBusy=false; Snd.mute(false); cb&&cb(); };
+  midgame: function(cb){ var self=this; if(self.adBusy) return; self.adBusy=true; self.setPlaying(false);
+    var fin=false, done=function(){ if(fin) return; fin=true; self.adBusy=false; Snd.mute(false); cb&&cb(); };
     try{
-      if (self.kind==='poki') return PokiSDK.commercialBreak().then(done,done);
-      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('midgame',{adFinished:done,adError:done});
+      if (self.kind==='poki'){ Snd.mute(true); return PokiSDK.commercialBreak(function(){ Snd.mute(true); }).then(done,done); }
+      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('midgame',{adStarted:function(){ Snd.mute(true); },adFinished:done,adError:done});
     }catch(e){}
     done(); },
-  rewarded: function(cb){ var self=this; self.adBusy=true; self.setPlaying(false); Snd.mute(true);
-    var done=function(ok){ self.adBusy=false; Snd.mute(false); cb(!!ok); };
+  rewarded: function(cb){ var self=this; if(self.adBusy) return; self.adBusy=true; self.setPlaying(false);
+    var fin=false, done=function(ok){ if(fin) return; fin=true; self.adBusy=false; Snd.mute(false); cb(!!ok); };
     try{
-      if (self.kind==='poki') return PokiSDK.rewardedBreak().then(function(w){done(w);},function(){done(false);});
-      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('rewarded',{adFinished:function(){done(true);},adError:function(){toast(tl('noAd'));done(false);}});
+      if (self.kind==='poki'){ Snd.mute(true); return PokiSDK.rewardedBreak(function(){ Snd.mute(true); }).then(function(w){done(w);},function(){done(false);}); }
+      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('rewarded',{adStarted:function(){ Snd.mute(true); },adFinished:function(){done(true);},adError:function(){toast(tl('noAd'));done(false);}});
     }catch(e){}
     // test build: placeholder
     var f=$('adfake'); f.textContent=tl('adTest'); f.style.display='flex';
@@ -39,21 +47,22 @@ var PF = {
   saveData: function(k,v){ try{ if(this.kind==='cg') CrazyGames.SDK.data.setItem(k,v); else localStorage.setItem(k,v); }catch(e){} },
   loadData: function(k){ try{ if(this.kind==='cg') return CrazyGames.SDK.data.getItem(k); return localStorage.getItem(k); }catch(e){ return null; } }
 };
+document.body.classList.add('pf-'+PF.kind);
 
 // ---------------- sound ----------------
 var Snd = (function(){
-  var ac=null, master=null, muted=false, off=false;
+  var ac=null, master=null, muted=false, pmuted=false, off=false;
   try{ off = localStorage.getItem('dj_snd')==='0'; }catch(e){}
   function ctx(){ if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); master=ac.createGain(); master.gain.value=0.5; master.connect(ac.destination);}catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); return ac; }
   function tone(f, d, type, vol, slide, delay){
-    if (muted||off) return; var a=ctx(); if(!a) return; var t=a.currentTime+(delay||0);
+    if (muted||pmuted||off) return; var a=ctx(); if(!a) return; var t=a.currentTime+(delay||0);
     var o=a.createOscillator(), g=a.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
     if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide), t+d);
     g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.2,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
     o.connect(g); g.connect(master); o.start(t); o.stop(t+d+0.02);
   }
   function noise(d, vol, f, delay){
-    if (muted||off) return; var a=ctx(); if(!a) return; var t=a.currentTime+(delay||0);
+    if (muted||pmuted||off) return; var a=ctx(); if(!a) return; var t=a.currentTime+(delay||0);
     var b=a.createBuffer(1, Math.floor(a.sampleRate*d), a.sampleRate), ch=b.getChannelData(0);
     for (var i=0;i<ch.length;i++) ch[i]=(Math.random()*2-1)*(1-i/ch.length);
     var s=a.createBufferSource(); s.buffer=b; var fl=a.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=f||1200;
@@ -75,7 +84,8 @@ var Snd = (function(){
     pay:function(){ tone(880,0.03,'square',0.04); },
     pop:function(){ tone(700,0.08,'sine',0.15,1.8); },
     door:function(){ noise(0.3,0.25,900); tone(140,0.2,'square',0.06,0.6); },
-    mute:function(m){ muted=m; },
+    mute:function(m){ muted=m; S.bgm&&S.bgm(); },
+    pmute:function(m){ pmuted=m; S.bgm&&S.bgm(); },
     toggle:function(){ off=!off; try{localStorage.setItem('dj_snd',off?'0':'1');}catch(e){} return !off; },
     isOn:function(){ return !off; }, unlock:function(){ ctx(); }
   };
@@ -711,7 +721,7 @@ function setQual(q){
   if (q<2){ torchLights.forEach(function(L){ scene.remove(L); }); torchLights=[]; hemi.intensity=1.45; }
   if (q<1){ renderer.shadowMap.enabled=false; sun.castShadow=false; scene.traverse(function(o){ if(o.material) o.material.needsUpdate=true; }); }
 }
-var SHOWFPS=true;
+var SHOWFPS=PF.kind==='none'||QS.has('fps');
 function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspect=innerWidth/innerHeight; camera.fov = camera.aspect<0.8? 52 : 40; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize);
 
@@ -733,7 +743,7 @@ function checkOffline(){
 
 // ---------------- boot ----------------
 function boot(){
-  LANG=detectLang(); applyLang();
+  LANG=detectLang(PF.locale); applyLang();
   var s=PF.loadData('dj_save_v2');
   if (QS.has('reset')) s=null;
   try{ G = s? DJ.load(s) : null; }catch(e){ G=null; }
