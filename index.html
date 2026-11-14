@@ -482,32 +482,34 @@ var QS = new URLSearchParams(location.search), DEBUG = QS.has('debug'); try{ if(
 // ---------------- platform wrapper ----------------
 // Poki: init > gameLoadingFinished > gameplayStart/Stop (deduped) > commercialBreak between rooms.
 // CrazyGames v3: init (body exists here) > loadingStart > loadingStop > gameplayStart/Stop > midgame between rooms.
+function plog(){ if(!DEBUG) return; var m=[].slice.call(arguments).join(' '); (window.__pflog=window.__pflog||[]).push(((performance.now()/1000).toFixed(1))+' '+m); console.log('[PF] '+m); }
 var PF = {
   kind: window.PokiSDK?'poki':(window.CrazyGames&&window.CrazyGames.SDK?'cg':'none'),
   playing:false, adBusy:false, locale:null,
   init: function(){ var self=this;
+    plog('init',self.kind);
     if (self.kind==='poki') return window.PokiSDK.init().catch(function(){});
     if (self.kind==='cg') return window.CrazyGames.SDK.init().then(function(){
       var S=window.CrazyGames.SDK;
-      try{ S.game.loadingStart(); }catch(e){}
+      try{ S.game.loadingStart(); plog('loadingStart'); }catch(e){}
       try{ self.locale=(S.user&&S.user.systemInfo&&S.user.systemInfo.locale)||null; }catch(e){}
       try{ Snd.pmute(!!(S.game.settings&&S.game.settings.muteAudio)); }catch(e){}
       try{ S.game.addSettingsChangeListener(function(st){ Snd.pmute(!!(st&&st.muteAudio)); }); }catch(e){}
     }).catch(function(){ self.kind='none'; });
     return Promise.resolve(); },
-  loaded: function(){ try{ if(this.kind==='poki') PokiSDK.gameLoadingFinished(); if(this.kind==='cg') CrazyGames.SDK.game.loadingStop(); }catch(e){} },
-  setPlaying: function(on){ if(on===this.playing) return; this.playing=on; try{
+  loaded: function(){ plog('loadingStop'); try{ if(this.kind==='poki') PokiSDK.gameLoadingFinished(); if(this.kind==='cg') CrazyGames.SDK.game.loadingStop(); }catch(e){} },
+  setPlaying: function(on){ if(on===this.playing) return; this.playing=on; plog(on?'gameplayStart':'gameplayStop'); try{
     if(this.kind==='poki') on?PokiSDK.gameplayStart():PokiSDK.gameplayStop();
     if(this.kind==='cg') on?CrazyGames.SDK.game.gameplayStart():CrazyGames.SDK.game.gameplayStop(); }catch(e){} },
   happy: function(){ try{ if(this.kind==='cg') CrazyGames.SDK.game.happytime(); }catch(e){} },
-  midgame: function(cb){ var self=this; if(self.adBusy) return; self.adBusy=true; self.setPlaying(false);
-    var fin=false, done=function(){ if(fin) return; fin=true; self.adBusy=false; Snd.mute(false); cb&&cb(); };
+  midgame: function(cb){ var self=this; if(self.adBusy) return; plog('midgame'); self.adBusy=true; self.setPlaying(false);
+    var fin=false, done=function(){ if(fin) return; fin=true; plog('adDone'); self.adBusy=false; Snd.mute(false); cb&&cb(); };
     try{
       if (self.kind==='poki'){ Snd.mute(true); return PokiSDK.commercialBreak(function(){ Snd.mute(true); }).then(done,done); }
-      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('midgame',{adStarted:function(){ Snd.mute(true); },adFinished:done,adError:done});
+      if (self.kind==='cg') return CrazyGames.SDK.ad.requestAd('midgame',{adStarted:function(){ Snd.mute(true); plog('adStarted'); },adFinished:done,adError:done});
     }catch(e){}
     done(); },
-  rewarded: function(cb){ var self=this; if(self.adBusy) return; self.adBusy=true; self.setPlaying(false);
+  rewarded: function(cb){ var self=this; if(self.adBusy) return; plog('rewarded'); self.adBusy=true; self.setPlaying(false);
     var fin=false, done=function(ok){ if(fin) return; fin=true; self.adBusy=false; Snd.mute(false); cb(!!ok); };
     try{
       if (self.kind==='poki'){ Snd.mute(true); return PokiSDK.rewardedBreak(function(){ Snd.mute(true); }).then(function(w){done(w);},function(){done(false);}); }
@@ -557,7 +559,7 @@ var Snd = (function(){
     pop:function(){ tone(700,0.08,'sine',0.15,1.8); },
     door:function(){ noise(0.3,0.25,900); tone(140,0.2,'square',0.06,0.6); },
     mute:function(m){ muted=m; S.bgm&&S.bgm(); },
-    pmute:function(m){ pmuted=m; S.bgm&&S.bgm(); },
+    pmute:function(m){ pmuted=m; plog('platformMute',m); S.bgm&&S.bgm(); },
     toggle:function(){ off=!off; try{localStorage.setItem('dj_snd',off?'0':'1');}catch(e){} return !off; },
     isOn:function(){ return !off; }, unlock:function(){ ctx(); }
   };
@@ -566,10 +568,12 @@ var Snd = (function(){
 
 // ---------------- renderer ----------------
 var canvas=$('c');
-var renderer=new T.WebGLRenderer({canvas:canvas, antialias:true, powerPreference:'high-performance'});
-var QUAL=2; try{ var qs=localStorage.getItem('dj_q'); if(qs!==null) QUAL=+qs; }catch(e){}
+// quality: 2 full, 1 no torch lights, 0 no shadows, -1 render at 0.75x resolution (weak integrated GPUs)
+var QUAL=2; try{ var qs=localStorage.getItem('dj_q'); if(qs!==null && !isNaN(+qs)) QUAL=Math.max(-1,Math.min(2,+qs)); }catch(e){}
 if (QS.has('q')) QUAL=+QS.get('q');
-function dprFor(q){ return Math.min(window.devicePixelRatio||1, q>=2?1.5:(q===1?1.25:1)); }
+// MSAA can only be chosen at context creation: skip it once a previous session had to drop to q0 or lower
+var renderer=new T.WebGLRenderer({canvas:canvas, antialias:QUAL>=1, powerPreference:'high-performance'});
+function dprFor(q){ return q<0 ? 0.75 : Math.min(window.devicePixelRatio||1, q>=2?1.5:(q===1?1.25:1)); }
 renderer.setPixelRatio(dprFor(QUAL));
 renderer.shadowMap.enabled=QUAL>=1; renderer.shadowMap.type=T.PCFShadowMap;
 renderer.toneMapping=T.ACESFilmicToneMapping; renderer.toneMappingExposure=1.15;
@@ -1184,7 +1188,7 @@ function perfTick(dt){
   if (perfT>=2){
     var fps=perfN/perfT; perfT=0; perfN=0;
     if (SHOWFPS){ if(!fpsEl){ fpsEl=document.createElement('div'); fpsEl.style.cssText='position:fixed;left:4px;bottom:4px;font:11px monospace;color:#fff8;z-index:50;pointer-events:none'; document.body.appendChild(fpsEl);} fpsEl.textContent=fps.toFixed(0)+'fps q'+QUAL; }
-    if (fps<40 && QUAL>0 && !document.hidden){ setQual(QUAL-1); perfWarm=1.5; }
+    if (fps<40 && QUAL>-1 && !document.hidden){ setQual(QUAL-1); perfWarm=1.5; }
   }
 }
 function setQual(q){
@@ -1229,7 +1233,7 @@ function boot(){
   $('loading').style.display='none';
   PF.loaded();
   checkOffline();
-  if (DEBUG){ window.__G=G; window.__DJ=DJ; window.__step=function(sec,ix,iz){ for(var i=0;i<sec*60;i++){ DJ.step(G,1/60,ix||0,iz||0); stepTut(1/60);} }; window.__cam=camera; window.__ri=renderer.info; window.__scene=scene; window.__R=renderer; window.__sun=sun; window.__tl=torchLights; window.__T=T; }
+  if (DEBUG){ window.__PF=PF; window.__Snd=Snd; window.__G=G; window.__DJ=DJ; window.__step=function(sec,ix,iz){ for(var i=0;i<sec*60;i++){ DJ.step(G,1/60,ix||0,iz||0); stepTut(1/60);} }; window.__cam=camera; window.__ri=renderer.info; window.__scene=scene; window.__R=renderer; window.__sun=sun; window.__tl=torchLights; window.__T=T; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 PF.init().then(boot, boot);
