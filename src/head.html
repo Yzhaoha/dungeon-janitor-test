@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Dungeon Janitor</title>
+<!--PLATFORM_HEAD-->
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#1a1220;font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif;color:#fff;touch-action:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.out{text-shadow:0 2px 0 #2a1a2e,0 0 4px #2a1a2e,1px 1px 0 #2a1a2e,-1px -1px 0 #2a1a2e,1px -1px 0 #2a1a2e,-1px 1px 0 #2a1a2e}
+#hud{position:fixed;inset:0;pointer-events:none}
+#coinBox{position:absolute;left:12px;top:10px;display:flex;align-items:center;gap:6px;background:rgba(40,24,48,.72);border:2px solid #f5c542;border-radius:22px;padding:4px 14px 4px 6px;font-size:24px;font-weight:900}
+#coinBox .ico,.coinfly{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6b0,#f8c630 45%,#c98a10);box-shadow:inset 0 -2px 0 #9a6608,0 1px 2px #0006;display:inline-block}
+#coinBox.bump{animation:bump .25s}
+@keyframes bump{50%{transform:scale(1.15)}}
+#wave{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(40,24,48,.72);border-radius:16px;padding:5px 14px;font-size:17px;font-weight:800;white-space:nowrap;text-align:center}
+#wave .bar{height:5px;background:#ffffff22;border-radius:3px;margin-top:4px;overflow:hidden}
+#wave .bar i{display:block;height:100%;background:#7ee06a;width:0}
+#wave.soon .bar i{background:#ff7a59}
+#rep{position:absolute;right:12px;top:10px;background:rgba(40,24,48,.72);border-radius:16px;padding:5px 12px;font-size:20px;letter-spacing:1px;color:#ffd84a;display:flex;align-items:center;gap:8px}
+#rep small{color:#fff;font-size:13px;letter-spacing:0}
+#topBtns{position:absolute;right:12px;top:52px;display:flex;gap:6px;pointer-events:auto}
+.rb{pointer-events:auto;border:none;border-radius:12px;background:rgba(40,24,48,.8);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:6px 10px;cursor:pointer}
+#boostBtn{position:absolute;right:12px;bottom:18px;pointer-events:auto;border:3px solid #fff;border-radius:18px;background:linear-gradient(#9b6bff,#6a3fd6);color:#fff;font:inherit;font-weight:900;font-size:16px;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #3d2380;text-align:center;line-height:1.1}
+#boostBtn small{display:block;font-size:11px;opacity:.9}
+#boostBtn.on{background:linear-gradient(#ffcf4a,#f29a1a);box-shadow:0 4px 0 #9a5a08}
+#banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:36px;font-weight:900;white-space:nowrap}
+#banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
+#banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
+#tut.show{display:block;animation:pop .3s}
+@keyframes pop{0%{transform:translateX(-50%) scale(.7)}100%{transform:translateX(-50%) scale(1)}}
+.float{position:absolute;font-weight:900;font-size:20px;color:#ffe45c;pointer-events:none;transition:transform 1s ease-out,opacity 1s;white-space:nowrap}
+.coinfly{position:absolute;width:20px;height:20px;transition:left .55s cubic-bezier(.5,-0.3,.7,1),top .55s cubic-bezier(.3,0,.2,1),transform .55s;pointer-events:none}
+.modal{position:fixed;inset:0;background:#120a18aa;display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:10}
+.modal.show{display:flex}
+.card{background:linear-gradient(#4a3256,#33213d);border:3px solid #f5c542;border-radius:22px;padding:18px 20px;min-width:280px;max-width:92vw;text-align:center;box-shadow:0 8px 0 #0006}
+.card h2{margin:0 0 8px;font-size:26px}
+.card .big{font-size:34px;font-weight:900;color:#ffe45c;margin:6px 0}
+.btn{border:none;border-radius:16px;font:inherit;font-weight:900;font-size:19px;padding:11px 18px;margin:6px 4px 0;cursor:pointer;color:#fff;background:linear-gradient(#5fd068,#33a144);box-shadow:0 4px 0 #1f6b2b}
+.btn.ad{background:linear-gradient(#9b6bff,#6a3fd6);box-shadow:0 4px 0 #3d2380}
+.btn.gray{background:#6b5a75;box-shadow:0 4px 0 #3a2f40}
+.btn:disabled{filter:grayscale(1);opacity:.6}
+#bench .row{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:7px 10px;margin:7px 0;text-align:left}
+#bench .row .em{font-size:28px;width:36px;text-align:center}
+#bench .row .tx{flex:1;font-size:15px}
+#bench .row .tx b{font-size:17px}
+#bench .row .lv{color:#ffd84a;letter-spacing:2px;font-size:13px}
+#bench .row .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
+#joy{position:fixed;width:120px;height:120px;border-radius:50%;border:3px solid #ffffff55;background:#ffffff14;display:none;pointer-events:none;transform:translate(-50%,-50%)}
+#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:#ffffffaa}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
+#loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
+#loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
+@keyframes ld{to{width:100%}}
+#adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
+#langSel{pointer-events:auto;background:rgba(40,24,48,.8);color:#fff;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;padding:6px 4px}
+#pref{position:absolute;left:12px;top:54px;display:flex;gap:6px;pointer-events:auto}
+@media (max-width:600px){
+  #coinBox{font-size:20px;top:8px;left:8px}
+  #wave{font-size:13px;top:52px;padding:4px 10px}
+  #rep{font-size:16px;right:8px;top:8px}
+  #rep small{display:none}
+  #topBtns{top:46px;right:8px}
+  #pref{top:48px;left:8px}
+  #banner{font-size:28px}
+  #tut{font-size:16px;bottom:20%}
+  #boostBtn{font-size:14px;padding:6px 10px}
+}
+@media (max-height:480px){
+  #tut{bottom:8%;font-size:15px}
+  #banner{top:28%}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div id="coinBox" class="out"><span class="ico"></span><span id="coins">0</span></div>
+  <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
+  <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
+  <div id="rep" class="out"><small id="repTx"></small><span id="stars">★★★☆☆</span></div>
+  <button id="boostBtn" class="out"></button>
+  <div id="banner" class="out"></div>
+  <div id="tut"></div>
+</div>
+<div id="joy"><i></i></div>
+<div class="modal" id="bench"><div class="card"><h2 class="out" data-t="benchTitle"></h2><div id="benchRows"></div><button class="btn gray" id="benchClose" data-t="close"></button></div></div>
+<div class="modal" id="dayEnd"><div class="card"><h2 class="out" id="deTitle"></h2><div id="deStars" style="font-size:30px;color:#ffd84a"></div><div class="big out" id="deEarn"></div><div id="deNext" style="font-size:15px;opacity:.9;margin-bottom:6px"></div><button class="btn ad" id="deDouble"></button><br><button class="btn" id="deGo"></button></div></div>
+<div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
+<div id="adfake"></div>
+<div id="loading"><div>Dungeon Janitor</div><div class="bar"><i></i></div></div>
