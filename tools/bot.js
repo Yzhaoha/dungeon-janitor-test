@@ -18,6 +18,8 @@ function run(seed, skill, mins){
       if(serv) goal=DJ.frontOf(G.tables[serv.tbl]);
       else if(waiting.some(h=>h.want==='beer')&&!P.items.includes('beer')) goal={x:DJ.KEG.fx,z:-7.6};
       else if(waiting.some(h=>h.want==='meat')&&!P.items.includes('meat')&&G.grill.ready>0) goal={x:DJ.GRILL.fx,z:-7.6};
+      else if(G.pot.on&&waiting.some(h=>h.want==='potion')&&!P.items.includes('potion')) goal={x:DJ.POT.fx,z:-7.6};
+      else if(P.items.length>=DJ.trayCap(G)&&waiting.length) goal={x:DJ.TRASH.x,z:DJ.TRASH.z};
       else { const dirty=G.tables.find(t=>t.on&&(t.dirty||t.coins>0)); if(dirty) goal=DJ.frontOf(dirty); else if(P.items.length<DJ.trayCap(G)) goal={x:DJ.KEG.fx,z:-7.6}; }
     }
     let [ix,iz]=goal?dir(P,goal):[0,0];

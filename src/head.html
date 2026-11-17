@@ -21,6 +21,12 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #wave.soon .bar i{background:#ff7a59}
 #wave.soon{animation:bump .5s infinite}
 #wave.done .bar i{background:#ffd84a}
+#comboWrap{position:absolute;left:50%;top:58px;transform:translateX(-50%);text-align:center}
+#combo{display:inline-block;font-size:26px;font-weight:900;color:#ffb347}
+#combo.hit{animation:bump .3s}
+#comboWrap .bar{width:110px;height:5px;background:#ffffff22;border-radius:3px;margin:2px auto 0;overflow:hidden}
+#comboWrap .bar i{display:block;height:100%;background:#ff9a3c}
+#combo[style*="none"]+.bar{display:none}
 #nmStars{font-size:44px;color:#ffd84a;letter-spacing:4px;line-height:1.1}
 #nmSum{font-size:20px;font-weight:900;margin:2px 0 8px}
 #nmPick{font-size:16px;font-weight:800;opacity:.9;margin-bottom:6px}
@@ -73,6 +79,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 @media (max-width:600px){
   #coinBox{font-size:20px;top:8px;left:8px}
   #wave{font-size:14px;top:88px;padding:4px 10px}
+  #comboWrap{top:124px}
+  #combo{font-size:22px}
   #rep{font-size:16px;right:8px;top:8px}
   #rep small{display:none}
   #topBtns{top:46px;right:8px}
@@ -112,6 +120,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
   <div id="rep" class="out"><small id="repTx"></small><span id="stars">★★★☆☆</span></div>
   <button id="boostBtn" class="out"></button>
+  <div id="comboWrap"><div id="combo" class="out" style="display:none"></div><div class="bar"><i id="comboBar"></i></div></div>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
 </div>

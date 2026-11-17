@@ -185,7 +185,7 @@ function addWall(grp, x0,z0,x1,z1, h, m){
 function mulberry(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
 // ---------------- static tavern ----------------
-var kegV=null, grillV=null, trashV=null;
+var kegV=null, grillV=null, trashV=null, potV=null;
 function buildTavern(){
   var g=new T.Group(), hw=W/2;
   // outside ground + path
@@ -246,8 +246,10 @@ function buildPot(){
   var K=DJ.POT, g=new T.Group(); g.position.set(K.x,0,K.z);
   g.add(mesh(new T.SphereGeometry(0.6,10,8,0,Math.PI*2,Math.PI/2.6,Math.PI/1.6), M.black, 0,1.45,0));
   var liq=mesh(new T.CircleGeometry(0.5,12), M.potion, 0,1.72,0,false); liq.rotation.x=-Math.PI/2; g.add(liq);
-  var lab=makeLabel('🔒 '+tl('soon'), 384, 96, '#ffffff', 'rgba(40,24,48,0.8)'); lab.position.set(0,2.75,0.2); lab.scale.set(2.2,0.55,1); g.add(lab);
-  world.add(g);
+  var lab=makeLabel('🔒', 128, 128, '#fff', null); lab.position.set(0,2.6,0.2); lab.scale.set(0.8,0.8,1); g.add(lab);
+  var ready=[]; for (var i=0;i<DJ.POT_MAX;i++){ var m=makePotion(); m.position.set(-1.25+(i%2)*0.3,1.1,0.25+Math.floor(i/2)*0.3); g.add(m); ready.push(m); }
+  var ic=iconSprite('🧪','#d9ffe0'); ic.position.set(0,3.0,0); g.add(ic);
+  world.add(g); potV={g:g, lab:lab, ready:ready, ic:ic, liq:liq};
 }
 function buildTrash(){
   var K=DJ.TRASH, g=new T.Group(); g.position.set(K.x,0,K.z);
@@ -259,6 +261,7 @@ function buildTrash(){
 // props
 function makeMug(){ var g=new T.Group(); g.add(mesh(new T.CylinderGeometry(0.14,0.13,0.3,8), M.beer, 0,0.15,0,false)); g.add(mesh(new T.CylinderGeometry(0.15,0.15,0.08,8), M.foam, 0,0.32,0,false));
   var hd=mesh(new T.TorusGeometry(0.08,0.025,4,8,Math.PI), M.glass, 0.15,0.16,0,false); hd.rotation.z=-Math.PI/2; g.add(hd); return g; }
+function makePotion(){ var g=new T.Group(); g.add(mesh(new T.SphereGeometry(0.14,8,6), M.potion, 0,0.14,0,false)); g.add(mesh(new T.CylinderGeometry(0.05,0.06,0.16,6), M.glass, 0,0.32,0,false)); g.add(mesh(new T.CylinderGeometry(0.06,0.06,0.05,6), M.woodDark, 0,0.42,0,false)); return g; }
 function makeMeat(){ var g=new T.Group(); var m=mesh(new T.SphereGeometry(0.15,7,6), M.meat, 0,0.12,0,false); m.scale.set(1.3,0.9,1); g.add(m);
   var b=mesh(new T.CylinderGeometry(0.03,0.03,0.22,5), M.bone, 0.2,0.12,0,false); b.rotation.z=Math.PI/2; g.add(b); g.add(mesh(new T.SphereGeometry(0.045,5,4), M.bone, 0.31,0.12,0,false)); return g; }
 var sackGeo=new T.SphereGeometry(0.3,7,6);
@@ -344,7 +347,7 @@ var HERO_LOOK={
 // ---------------- game state & views ----------------
 var G=null, views={tb:{}, hr:{}, gb:{}}, player=null, carryStack=[], padViews=[], arrow3d=null, floorArrow=null, benchMesh=null;
 var coinGeo=new T.CylinderGeometry(0.17,0.17,0.06,10);
-var FOOD_ICON={beer:'🍺', meat:'🍖'};
+var FOOD_ICON={beer:'🍺', meat:'🍖', potion:'🧪'};
 
 function tableView(t){
   var g=new T.Group(); g.position.set(t.x,0,t.z); world.add(g);
@@ -358,7 +361,7 @@ function tableView(t){
   var bones=makeMeat(); bones.children[0].visible=false; bones.position.set(-0.1,0.83,-0.15); dirt.add(bones);
   var emptyMug=makeMug(); emptyMug.children[0].visible=false; emptyMug.position.set(0.3,0.83,0); dirt.add(emptyMug);
   body.add(dirt);
-  var food={beer:makeMug(), meat:makeMeat()}; food.beer.position.set(0,0.83,-0.3); food.meat.position.set(0,0.83,-0.3); food.meat.scale.setScalar(1.3); body.add(food.beer); body.add(food.meat);
+  var food={beer:makeMug(), meat:makeMeat(), potion:makePotion()}; food.potion.position.set(0,0.83,-0.3); food.potion.scale.setScalar(1.2); body.add(food.potion); food.beer.position.set(0,0.83,-0.3); food.meat.position.set(0,0.83,-0.3); food.meat.scale.setScalar(1.3); body.add(food.beer); body.add(food.meat);
   var heap=new T.Group(); heap.position.set(-0.45,0.84,0.22); body.add(heap);
   var icon=iconSprite('🧽','#d8f4ff'); icon.position.set(0,1.9,0.2); icon.scale.set(0.7,0.7,1); g.add(icon);
   var ghost=mesh(gBox(1.6,0.06,1.15), M.ghost, 0,0.03,0,false); g.add(ghost);
@@ -388,9 +391,9 @@ function goblinView(g){
 }
 function fillStack(stack, items, sc){
   while(stack.children.length) stack.remove(stack.children[0]);
-  items.forEach(function(it,i){ var m= it==='beer'?makeMug():makeMeat(); m.scale.setScalar(sc); m.position.set((i%2?0.12:-0.12), 0.95+Math.floor(i/2)*0.32*sc+ (i%2?0.04:0), 0.42); stack.add(m); });
+  items.forEach(function(it,i){ var m= it==='beer'?makeMug(): it==='potion'?makePotion():makeMeat(); m.scale.setScalar(sc); m.position.set((i%2?0.12:-0.12), 0.95+Math.floor(i/2)*0.32*sc+ (i%2?0.04:0), 0.42); stack.add(m); });
 }
-var PAD_EMOJI={table:'🪑', grill:'🍖', wiper:'🧽', waiter:'🍺', bench:'⬆️'};
+var PAD_EMOJI={table:'🪑', grill:'🍖', pot:'🧪', wiper:'🧽', waiter:'🍺', bench:'⬆️'};
 function padName(pd){ return pd.kind==='bench'? tl('benchTitle') : tl('u_'+pd.kind); }
 function padView(pd){
   var g=new T.Group(); g.position.set(pd.x,0.02,pd.z);
@@ -489,6 +492,7 @@ function updHud(){
     wv.classList.toggle('done', stN>0);
   }
   var st=Math.round(G.rep*2)/2, s=''; for (var i=1;i<=5;i++) s+= st>=i?'★':'☆'; $('stars').textContent=s; $('repTx').textContent=tl('rep');
+  var cb=$('combo'), con=G.combo>=2 && G.comboT>0; cb.style.display=con?'':'none'; if (con) $('comboBar').style.width=(G.comboT/DJ.COMBO_T*100)+'%';
   var bb=$('boostBtn');
   if (G.boost>0){ bb.classList.add('on'); bb.innerHTML=tl('boostOn',{s:Math.ceil(G.boost)}); }
   else { bb.classList.remove('on'); bb.innerHTML=tl('boost')+'<small>'+tl('boostSub')+'</small>'; }
@@ -594,6 +598,7 @@ function handleEvents(){
         if (e.kind==='upg') break;
         if (e.kind==='table'){ var tv=views.tb[e.i]; if(tv) tv.pop=0.5; puff(G.tables[e.i].x, G.tables[e.i].z, 0xffe45c); }
         if (e.kind==='grill'){ puff(DJ.GRILL.x, DJ.GRILL.z+0.6, 0xff9a40); }
+        if (e.kind==='pot'){ puff(DJ.POT.x, DJ.POT.z+0.6, 0x8dffb0); banner(tl('unlocked'), tl('potHint'), 4500); syncPads(); Snd.buy(); PF.happy(); saveNow(); break; }
         if (e.kind==='wiper'||e.kind==='waiter'){ G.goblins.forEach(function(g){ if(!views.gb[g.id]) views.gb[g.id]=goblinView(g); }); banner(tl('hired'), tl('u_'+e.kind)); }
         else banner(tl('unlocked'), tl('u_'+e.kind));
         syncPads(); Snd.buy(); PF.happy(); saveNow();
@@ -601,12 +606,15 @@ function handleEvents(){
       case 'padpay': if(Math.random()<0.3) Snd.pay(); break;
       case 'pour': if(e.who==='p'){ Daily.count('pour'); Snd.pour(); } break;
       case 'grab': if(e.who==='p') Snd.take(); break;
+      case 'brewed': Snd.pop(); puff(DJ.POT.x, DJ.POT.z+0.5, 0x8dffb0); break;
+      case 'combo': showCombo(e); break;
+      case 'rush': banner(tl('rush'), tl('rushD'), 2400); Snd.boss(); break;
       case 'cooked': if (Math.hypot(G.player.x-DJ.GRILL.x, G.player.z-DJ.GRILL.z)<5) Snd.sizzle(); break;
       case 'trash': Snd.squish(); puff(DJ.TRASH.x, DJ.TRASH.z, 0xaaaaaa); break;
       case 'serve': var sv=views.tb[e.tbl]; if(sv) sv.shake=0.3; Snd.fill(); break;
       case 'wiped': if(e.who==='p') Daily.count('wipe'); var wv=views.tb[e.tbl]; if(wv){ wv.shake=0.3; puff(wv.t.x, wv.t.z, 0x9fffd0); } Snd.clank(); break;
       case 'order': break;
-      case 'hero': if (e.boss){ Snd.boss(); banner(tl('bossWave'), tl('bossD2'), 3000); } break;
+      case 'hero': if (e.boss){ Snd.boss(); banner(tl('bossWave'), tl('bossD2'), 3000); } else if (e.first){ banner(tl('k_'+e.kind), tl('kd_'+e.kind), 3600); Snd.pop(); } break;
       case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😋',more:'🤤',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
       case 'angry': var av=views.hr[e.id]; if(av) floatText(tl('angry'), av.c.position.x, 2.6, av.c.position.z, '#ff8a7a'); Snd.bad(); break;
       case 'nightStart': banner(tl('night',{n:e.n}), tl('nightGoal',{g:'● '+fmt(e.goal)}), 2600); Snd.pop(); break;
@@ -630,6 +638,12 @@ function coinBurst(x0,z0,x1,z1){
 }
 
 
+// ---------------- combo ----------------
+function showCombo(e){
+  floatText(tl('combo',{n:e.n})+'  +'+e.bonus, e.x, 2.6, e.z, '#ff9a3c', true);
+  var c=$('combo'); c.textContent='🔥 '+tl('combo',{n:e.n}); c.classList.remove('hit'); void c.offsetWidth; c.classList.add('hit');
+  Snd.pop(); if (e.n>=3) PF.happy();
+}
 // ---------------- night result + perk cards ----------------
 var CARD_EM={beer:'🍺',meat:'🍖',pat:'🛋️',tip:'💰',hands:'⚡',vip:'👑',clean:'✨',again:'🤤',crowd:'📣',gold:'🎁'};
 function cardDesc(k){
@@ -700,6 +714,10 @@ function render(dt){
   gv.ready.forEach(function(m,i){ m.visible=gr.on && i<gr.ready; });
   if (gr.on){ gv.roast.rotation.x=t*2; gv.fire.children.forEach(function(f,i){ f.scale.y=1+Math.sin(t*11+i*2)*0.2; }); if (gr.ready<DJ.GRILL_MAX) ring(DJ.GRILL.x, 3.0, DJ.GRILL.z+0.4, gr.t/4, '#ff8a3a'); }
   kegV.ic.position.y=2.9+Math.sin(t*3)*0.08; gv.ic.position.y=3.0+Math.sin(t*3+1)*0.08;
+  var po=G.pot, pv2=potV; pv2.lab.visible=!po.on; pv2.ic.visible=po.on; pv2.ic.position.y=3.0+Math.sin(t*3+2)*0.08;
+  pv2.ready.forEach(function(m,i){ m.visible=po.on && i<po.ready; });
+  if (po.on && po.t>0 && po.ready<=0) ring(DJ.POT.x, 3.0, DJ.POT.z+0.4, po.t/DJ.BREW, '#8dffb0');
+  if (po.on && DJ.nearPot(p) && po.ready<=0) pv2.liq.position.y=1.72+Math.sin(t*14)*0.04;
   trashV.ic.visible = p.items.length>0;
   // tables
   Object.keys(views.tb).forEach(function(id){ var v=views.tb[id], tb=v.t;
@@ -707,7 +725,7 @@ function render(dt){
     if (!tb.on){ v.icon.visible=false; return; }
     if (v.pop>0){ v.pop-=dt; v.body.scale.setScalar(1+Math.sin(v.pop*12)*v.pop*0.5); } else if (v.shake>0){ v.shake-=dt; v.body.scale.setScalar(1+Math.sin(v.shake*40)*v.shake*0.3); } else v.body.scale.setScalar(1);
     v.dirt.visible=tb.dirty; v.icon.visible=tb.dirty; v.icon.position.y=1.9+Math.sin(t*4+tb.i)*0.1;
-    v.food.beer.visible=tb.food==='beer'; v.food.meat.visible=tb.food==='meat';
+    v.food.beer.visible=tb.food==='beer'; v.food.meat.visible=tb.food==='meat'; v.food.potion.visible=tb.food==='potion';
     setHeap(v, tb.coins);
     if (v.heapPop>0){ v.heapPop-=dt; v.heap.scale.setScalar(1+v.heapPop); } else v.heap.scale.setScalar(1);
     if (tb.prog>0) ring(tb.x, 2.3, tb.z+0.2, tb.prog, '#7ee06a');
