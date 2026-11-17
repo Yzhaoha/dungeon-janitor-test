@@ -19,6 +19,18 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #wave .bar{height:5px;background:#ffffff22;border-radius:3px;margin-top:4px;overflow:hidden}
 #wave .bar i{display:block;height:100%;background:#7ee06a;width:0}
 #wave.soon .bar i{background:#ff7a59}
+#wave.soon{animation:bump .5s infinite}
+#wave.done .bar i{background:#ffd84a}
+#nmStars{font-size:44px;color:#ffd84a;letter-spacing:4px;line-height:1.1}
+#nmSum{font-size:20px;font-weight:900;margin:2px 0 8px}
+#nmPick{font-size:16px;font-weight:800;opacity:.9;margin-bottom:6px}
+#nmCards{display:flex;gap:8px;justify-content:center}
+.pcard{flex:1;min-width:0;max-width:150px;border:3px solid #ffd84a;border-radius:16px;background:linear-gradient(#fff7e0,#f3dca6);color:#3a2440;font:inherit;padding:10px 6px;cursor:pointer;box-shadow:0 5px 0 #0006;display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .12s}
+.pcard:hover{transform:translateY(-4px) scale(1.04)}
+.pcard .em{font-size:38px;line-height:1.1}
+.pcard b{font-size:15px;line-height:1.15}
+.pcard .ds{font-size:15px;font-weight:900;color:#a0461a;white-space:nowrap}
+.pcard .lv{font-size:11px;letter-spacing:2px;color:#8a6a3a;min-height:13px}
 #rep{position:absolute;right:12px;top:10px;background:rgba(40,24,48,.72);border-radius:16px;padding:5px 12px;font-size:20px;letter-spacing:1px;color:#ffd84a;display:flex;align-items:center;gap:8px}
 #rep small{color:#fff;font-size:13px;letter-spacing:0}
 #topBtns{position:absolute;right:12px;top:52px;display:flex;gap:6px;pointer-events:auto}
@@ -60,7 +72,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #pref{position:absolute;left:12px;top:54px;display:flex;gap:6px;pointer-events:auto}
 @media (max-width:600px){
   #coinBox{font-size:20px;top:8px;left:8px}
-  #wave{font-size:13px;top:52px;padding:4px 10px}
+  #wave{font-size:14px;top:88px;padding:4px 10px}
   #rep{font-size:16px;right:8px;top:8px}
   #rep small{display:none}
   #topBtns{top:46px;right:8px}
@@ -108,5 +120,6 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div class="modal" id="daily"><div class="card"><h2 class="out" data-t="daily"></h2><div id="dlDays"></div><div data-t="streakTip" style="font-size:14px;opacity:.85;margin:6px 0"></div><div class="big out" id="dlAmt"></div><button class="btn ad" id="dlDouble"></button><button class="btn" id="dlTake" data-t="claim"></button></div></div>
 <div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
 <div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
+<div class="modal" id="nightM"><div class="card"><h2 class="out" id="nmTitle"></h2><div id="nmStars" class="out"></div><div id="nmSum" class="out"></div><div id="nmPick"></div><div id="nmCards"></div><button class="btn ad" id="nmReroll"></button><button class="btn" id="nmRetry"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>

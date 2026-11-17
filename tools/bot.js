@@ -7,6 +7,7 @@ function run(seed, skill, mins){
   const dt=1/20, P=G.player; let tl=[];
   for(let i=0;i<mins*60/dt;i++){
     G.ev.length=0;
+    if(G.night.phase==='result'){ const c=DJ.offerCards(G); DJ.nextNight(G, G.night.stars? c[0] : null); }
     for(const k of ['tray','boots','grill','gob']){ const u=DJ.UPG[k]; if(G.upg[k]<u.max && G.coins>u.cost[G.upg[k]]*3 && (k!=='gob'||G.goblins.length)&&(k!=='grill'||G.grill.on)) DJ.buyUpgrade(G,k); }
     let goal=null;
     const pad=G.pads.find(p=>p.kind!=='bench');
@@ -24,7 +25,7 @@ function run(seed, skill, mins){
     DJ.step(G,dt,ix,iz);
     while(G.stats.unlAt.length>tl.length) tl.push(DJ.UNL[tl.length].k[0]+Math.round(G.stats.unlAt[tl.length]/6)/10);
   }
-  return {unl:G.unl, at:tl.join(' '), served:G.stats.served, angry:G.stats.angry, heroes:G.heroCount, rep:G.rep.toFixed(2), coins:Math.round(G.coins), upg:Object.values(G.upg).join(''), gob:G.goblins.length};
+  return {unl:G.unl, at:tl.join(' '), served:G.stats.served, angry:G.stats.angry, heroes:G.heroCount, rep:G.rep.toFixed(2), coins:Math.round(G.coins), upg:Object.values(G.upg).join(''), gob:G.goblins.length, nights:G.stats.nights.map(n=>n[0]+':'+n[1]+'/'+n[2]+'*'+n[3]).join(' ')};
 }
 const skill=+process.argv[2]||0.9, mins=+process.argv[3]||20;
 for(let s=1;s<=3;s++) console.log(JSON.stringify(run(s,skill,mins)));

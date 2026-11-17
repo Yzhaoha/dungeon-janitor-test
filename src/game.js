@@ -481,9 +481,12 @@ function updHud(){
   if (G.tut<4){ wv.style.display='none'; }
   else {
     wv.style.display='';
-    var rp=G.pads.filter(function(p){return p.kind!=='bench';})[0];
-    if (rp){ var have=Math.min(rp.cost, G.coins+rp.paid); $('waveTx').textContent=tl('goal',{r:padName(rp)})+'  ● '+fmt(have)+' / '+fmt(rp.cost); $('waveBar').style.width=(have/rp.cost*100)+'%'; }
-    else { $('waveTx').textContent=tl('allUnl'); $('waveBar').style.width='100%'; }
+    var N=G.night, left=Math.max(0, Math.ceil(DJ.NIGHT_LEN-N.t)), stN=DJ.starsFor(N.earned,N.goal);
+    var tx=tl('night',{n:N.n})+'  '+'★'.repeat(stN)+'☆'.repeat(3-stN)+'  ● '+fmt(N.earned)+' / '+fmt(N.goal)+'  ⏱ '+Math.floor(left/60)+':'+('0'+left%60).slice(-2);
+    if (wv.dataset.tx!==tx){ wv.dataset.tx=tx; $('waveTx').textContent=tx; }
+    $('waveBar').style.width=Math.min(100, N.earned/Math.max(1,N.goal)*100)+'%';
+    wv.classList.toggle('soon', N.phase==='open' && left<=12 && stN===0);
+    wv.classList.toggle('done', stN>0);
   }
   var st=Math.round(G.rep*2)/2, s=''; for (var i=1;i<=5;i++) s+= st>=i?'★':'☆'; $('stars').textContent=s; $('repTx').textContent=tl('rep');
   var bb=$('boostBtn');
@@ -594,7 +597,6 @@ function handleEvents(){
         if (e.kind==='wiper'||e.kind==='waiter'){ G.goblins.forEach(function(g){ if(!views.gb[g.id]) views.gb[g.id]=goblinView(g); }); banner(tl('hired'), tl('u_'+e.kind)); }
         else banner(tl('unlocked'), tl('u_'+e.kind));
         syncPads(); Snd.buy(); PF.happy(); saveNow();
-        if (G.tut>=99 && G.t-lastAdT>150){ lastAdT=G.t; setTimeout(function(){ PF.midgame(); }, 1600); }
         break;
       case 'padpay': if(Math.random()<0.3) Snd.pay(); break;
       case 'pour': if(e.who==='p'){ Daily.count('pour'); Snd.pour(); } break;
@@ -607,7 +609,11 @@ function handleEvents(){
       case 'hero': if (e.boss){ Snd.boss(); banner(tl('bossWave'), tl('bossD2'), 3000); } break;
       case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😋',more:'🤤',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
       case 'angry': var av=views.hr[e.id]; if(av) floatText(tl('angry'), av.c.position.x, 2.6, av.c.position.z, '#ff8a7a'); Snd.bad(); break;
-      case 'exit': if(!e.angry) Daily.count('serve'); var xv=views.hr[e.id]; if(xv) floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); break;
+      case 'nightStart': banner(tl('night',{n:e.n}), tl('nightGoal',{g:'● '+fmt(e.goal)}), 2600); Snd.pop(); break;
+      case 'lastCall': banner(tl('lastCall'),'',1600); Snd.boss(); break;
+      case 'nightClose': banner(tl('closing'),'',2200); Snd.clank(); break;
+      case 'nightResult': showNight(e); break;
+      case 'exit': if(!e.angry) Daily.count('serve'); var xv=views.hr[e.id]; if(xv && !e.quiet) floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); break;
       case 'gone': var gv=views.hr[e.id]; if(gv){ world.remove(gv.c); world.remove(gv.need); world.remove(gv.em); scene.remove(gv.ring); delete views.hr[e.id]; } break;
       case 'wake': Snd.pop(); break;
     }
@@ -623,6 +629,36 @@ function coinBurst(x0,z0,x1,z1){
   for (var i=0;i<4;i++){ var m=mesh(coinGeo, M.gold, x0,1.2,z0,false); m.userData={x0:x0,z0:z0,x1:x1+(Math.random()-0.5)*0.3,z1:z1+(Math.random()-0.5)*0.3,t:-i*0.06}; world.add(m); arcs.push(m); }
 }
 
+
+// ---------------- night result + perk cards ----------------
+var CARD_EM={beer:'🍺',meat:'🍖',pat:'🛋️',tip:'💰',hands:'⚡',vip:'👑',clean:'✨',again:'🤤',crowd:'📣',gold:'🎁'};
+function cardDesc(k){
+  switch(k){ case 'beer': return '🍺 +2 ●'; case 'meat': return '🍖 +4 ●'; case 'pat': return '⏳ +20%'; case 'tip': return '💰 +100%';
+    case 'hands': return '🍺🧽 +30%'; case 'vip': return '👑 +25%'; case 'clean': return '🧽 −25%'; case 'again': return '🍺🍖 +15%'; case 'crowd': return '🚪 +12%';
+    case 'gold': return '+ ● '+fmt(DJ.goldAmt(G)); }
+}
+function showNight(e){
+  var m=$('nightM'), box=$('nmCards'), rr=$('nmReroll'), rt=$('nmRetry'), win=e.stars>0;
+  $('nmTitle').textContent=tl('night',{n:e.n});
+  $('nmStars').textContent='★'.repeat(e.stars)+'☆'.repeat(3-e.stars);
+  $('nmSum').textContent='● '+fmt(e.earned)+' / '+fmt(e.goal)+(e.bonus?'   🎁 +'+fmt(e.bonus):'');
+  $('nmPick').textContent=win? tl('pickOne') : tl('missed');
+  var go=function(card){ m.classList.remove('show'); var next=function(){ DJ.nextNight(G, card); saveNow(); };
+    if (card) Snd.buy();
+    if (G.t-lastAdT>100){ lastAdT=G.t; PF.midgame(next); } else next(); };
+  var deal=function(){ box.innerHTML='';
+    DJ.offerCards(G).forEach(function(k){
+      var lv=G.cards[k]||0, mx=DJ.CARDS[k].max, b=document.createElement('button'); b.className='pcard';
+      var dots=''; if (mx<10) for (var i=0;i<mx;i++) dots+= i<lv?'●':'○';
+      b.innerHTML='<span class="em">'+CARD_EM[k]+'</span><b>'+tl('c_'+k)+'</b><span class="ds">'+cardDesc(k)+'</span><span class="lv">'+dots+'</span>';
+      b.onclick=function(){ go(k); }; box.appendChild(b); }); };
+  box.innerHTML=''; rr.style.display=rt.style.display='none';
+  if (win){ deal(); rr.style.display=''; rr.textContent=tl('reroll'); rr.disabled=false;
+    rr.onclick=function(){ rr.disabled=true; PF.rewarded(function(ok){ if(ok){ deal(); rr.style.display='none'; } else rr.disabled=false; }); };
+    Snd.buy(); PF.happy(); }
+  else { rt.style.display=''; rt.textContent=tl('retry'); rt.onclick=function(){ go(null); }; Snd.bad(); }
+  m.classList.add('show'); saveNow();
+}
 
 // ---------------- frame ----------------
 var dailyT=0, last=performance.now(), acc=0, saveT=0, lightT=0, ipmT=0, ipmEarn=0;
@@ -689,7 +725,7 @@ function render(dt){
     if (h.state==='wait' && h.want){
       if (v.lastNeed!==h.want){ v.lastNeed=h.want; v.need.material=iconMat(FOOD_ICON[h.want], '#ffffff'); v.lastP=-1; }
       v.need.visible=true; v.need.position.set(h.x, top+0.55+Math.abs(Math.sin(t*5))*0.18, h.z);
-      var pr=Math.max(0,h.pat/(DJ.PATIENCE*(h.boss?0.8:1))); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
+      var pr=Math.max(0,h.pat/((h.pat0||DJ.PATIENCE)*(h.boss?0.8:1))); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
       var k=Math.round(pr*40); if (k!==v.lastP){ v.lastP=k; v.ring.userData.draw(pr, pr>0.5?'#7ee06a':(pr>0.25?'#ffc23a':'#ff5a4a')); }
       v.em.visible=false;
     } else if (h.state==='queue' && G.tut>=3 && h.pat<DJ.QPAT*0.6){
@@ -755,7 +791,7 @@ function checkOffline(){
   var amt=Math.round(mins*(G.ipm||0)*0.25); if (amt<10) return false;
   $('offAmt').textContent='● '+fmt(amt);
   var dbl=$('offDouble'); dbl.textContent=tl('double'); dbl.disabled=false;
-  var close=function(n){ $('offline').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, 'offline'); saveNow(); };
+  var close=function(n){ $('offline').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, null); saveNow(); };
   $('offTake').onclick=function(){ close(amt); Daily.reward(); };
   dbl.onclick=function(){ dbl.disabled=true; PF.rewarded(function(ok){ if(ok){ close(amt*2); Daily.reward(); } else dbl.disabled=false; }); };
   $('offline').classList.add('show'); return true;

@@ -19,6 +19,18 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #wave .bar{height:5px;background:#ffffff22;border-radius:3px;margin-top:4px;overflow:hidden}
 #wave .bar i{display:block;height:100%;background:#7ee06a;width:0}
 #wave.soon .bar i{background:#ff7a59}
+#wave.soon{animation:bump .5s infinite}
+#wave.done .bar i{background:#ffd84a}
+#nmStars{font-size:44px;color:#ffd84a;letter-spacing:4px;line-height:1.1}
+#nmSum{font-size:20px;font-weight:900;margin:2px 0 8px}
+#nmPick{font-size:16px;font-weight:800;opacity:.9;margin-bottom:6px}
+#nmCards{display:flex;gap:8px;justify-content:center}
+.pcard{flex:1;min-width:0;max-width:150px;border:3px solid #ffd84a;border-radius:16px;background:linear-gradient(#fff7e0,#f3dca6);color:#3a2440;font:inherit;padding:10px 6px;cursor:pointer;box-shadow:0 5px 0 #0006;display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .12s}
+.pcard:hover{transform:translateY(-4px) scale(1.04)}
+.pcard .em{font-size:38px;line-height:1.1}
+.pcard b{font-size:15px;line-height:1.15}
+.pcard .ds{font-size:15px;font-weight:900;color:#a0461a;white-space:nowrap}
+.pcard .lv{font-size:11px;letter-spacing:2px;color:#8a6a3a;min-height:13px}
 #rep{position:absolute;right:12px;top:10px;background:rgba(40,24,48,.72);border-radius:16px;padding:5px 12px;font-size:20px;letter-spacing:1px;color:#ffd84a;display:flex;align-items:center;gap:8px}
 #rep small{color:#fff;font-size:13px;letter-spacing:0}
 #topBtns{position:absolute;right:12px;top:52px;display:flex;gap:6px;pointer-events:auto}
@@ -60,7 +72,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #pref{position:absolute;left:12px;top:54px;display:flex;gap:6px;pointer-events:auto}
 @media (max-width:600px){
   #coinBox{font-size:20px;top:8px;left:8px}
-  #wave{font-size:13px;top:52px;padding:4px 10px}
+  #wave{font-size:14px;top:88px;padding:4px 10px}
   #rep{font-size:16px;right:8px;top:8px}
   #rep small{display:none}
   #topBtns{top:46px;right:8px}
@@ -108,6 +120,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div class="modal" id="daily"><div class="card"><h2 class="out" data-t="daily"></h2><div id="dlDays"></div><div data-t="streakTip" style="font-size:14px;opacity:.85;margin:6px 0"></div><div class="big out" id="dlAmt"></div><button class="btn ad" id="dlDouble"></button><button class="btn" id="dlTake" data-t="claim"></button></div></div>
 <div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
 <div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
+<div class="modal" id="nightM"><div class="card"><h2 class="out" id="nmTitle"></h2><div id="nmStars" class="out"></div><div id="nmSum" class="out"></div><div id="nmPick"></div><div id="nmCards"></div><button class="btn ad" id="nmReroll"></button><button class="btn" id="nmRetry"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
 <script id="gamesrc" type="text/plain">
@@ -140,6 +153,50 @@ var UPG = {
 };
 var HERO_SPEED = 2.6, BOSS_EVERY = 20;
 var KINDS = ['knight','archer','mage','rogue'];
+// ---------- nights + perk cards ----------
+var NIGHT_LEN = 90, CLOSE_T = 2.5;
+var CARDS = { beer:{max:5}, meat:{max:5}, pat:{max:3}, tip:{max:3}, hands:{max:3}, vip:{max:3}, clean:{max:3}, again:{max:3}, crowd:{max:3}, gold:{max:99} };
+function cl(G,k){ return G.cards[k]||0; }
+// goals sit at ~35% of what the bot earns that night; 3 stars (x1.8) needs ~65%
+function nightGoal(n){ return Math.round((30+28*(Math.min(n,14)-1))*Math.pow(1.06, Math.max(0,n-14))/5)*5; }
+function price(G,f){ return PRICE[f] + (f==='beer'?2:4)*cl(G,f); }
+function patience(G){ return PATIENCE*(1+0.2*cl(G,'pat')); }
+function starsFor(e,g){ return e>=g*1.8?3 : e>=g*1.4?2 : e>=g?1 : 0; }
+function startNight(G){ var N=G.night; N.t=0; N.earned=0; N.goal=nightGoal(N.n); N.phase='open'; N.warned=false; G.flow=true; G.spawnT=1.0; G.ev.push({t:'nightStart', n:N.n, goal:N.goal}); }
+function closeNight(G){
+  var N=G.night; N.phase='closing'; N.ct=CLOSE_T; G.flow=false;
+  G.heroes.slice().forEach(function(h){ if (h.state==='leave') return;
+    if (h.state==='eat'){ var t=G.tables[h.tbl]; pay(G, price(G,t.food)*(h.boss?5:1), t.x, t.z, t); }
+    h.sat=Math.max(h.sat,60); leave(G,h,true,true); });
+  G.tables.forEach(function(t){ t.dirty=false; t.prog=0; t.food=null; if (t.coins>0) collect(G,t); });
+  G.player.items=[]; G.goblins.forEach(function(g){ g.items=[]; g.task=null; });
+  G.ev.push({t:'nightClose'});
+}
+function offerCards(G){
+  var pool=Object.keys(CARDS).filter(function(k){ if (k==='meat'&&!G.grill.on) return false; return cl(G,k)<CARDS[k].max; });
+  var out=[]; while(out.length<3 && pool.length){ out.push(pool.splice(Math.floor(G.rand()*pool.length),1)[0]); }
+  return out;
+}
+function goldAmt(G){ return Math.round(G.night.goal*0.5/5)*5; }
+// after the result screen: card = perk key or null (failed night -> same night again)
+function nextNight(G, card){
+  var N=G.night; if (N.phase!=='result') return;
+  if (card){ if (card==='gold'){ var a=goldAmt(G); G.coins+=a; G.earned+=a; } G.cards[card]=cl(G,card)+1; }
+  if (N.stars>0){ N.n++; if (N.n-1>G.bestNight) G.bestNight=N.n-1; }
+  startNight(G);
+}
+function stepNight(G,dt){
+  var N=G.night;
+  if (N.phase==='idle'){ startNight(G); return; }
+  if (N.phase==='open'){ N.t+=dt;
+    if (!N.warned && N.t>=NIGHT_LEN-12){ N.warned=true; G.ev.push({t:'lastCall'}); }
+    if (N.t>=NIGHT_LEN) closeNight(G); return; }
+  if (N.phase==='closing'){ N.ct-=dt; if (N.ct<=0){ N.phase='result'; N.stars=starsFor(N.earned,N.goal);
+    N.bonus = N.stars? Math.round(N.goal*0.1*N.stars) : 0; G.coins+=N.bonus; G.earned+=N.bonus;
+    G.stats.nights.push([N.n, Math.round(N.earned), N.goal, N.stars]);
+    G.ev.push({t:'nightResult', n:N.n, stars:N.stars, earned:Math.round(N.earned), goal:N.goal, bonus:N.bonus}); } }
+}
+
 
 function rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 function dist(a,b){ var dx=a.x-b.x, dz=a.z-b.z; return Math.sqrt(dx*dx+dz*dz); }
@@ -149,8 +206,9 @@ function newGame(seed){
     upg:{boots:0,tray:0,grill:0,gob:0}, tables:[], heroes:[], goblins:[], pads:[], nid:1,
     grill:{on:false, ready:0, t:0},
     player:{x:0, z:-1.2, items:[], face:Math.PI, moving:false},
-    spawnT:2, heroCount:0, flow:false, boost:0, tut:0, paused:false,
-    stats:{unlAt:[], served:0, angry:0} };
+    spawnT:2, heroCount:0, flow:false, boost:0, tut:0, paused:false, cards:{}, bestNight:0,
+    night:{n:1, t:0, earned:0, goal:0, phase:'idle', stars:0, bonus:0},
+    stats:{unlAt:[], served:0, angry:0, nights:[]} };
   TABLES.forEach(function(p,i){ G.tables.push({i:i, x:p[0], z:p[1], on:i===0, dirty:false, prog:0, coins:0, hero:null, food:null}); });
   makePads(G);
   return G;
@@ -193,16 +251,16 @@ function seatPath(h, t){
   pts.push({x:a, z:Math.min(-0.8, h.z>-0.2?-0.8:h.z)}, {x:a, z:s.z}, {x:s.x, z:s.z});
   return pts;
 }
-function maxHeroes(G){ return G.tables.filter(function(t){return t.on;}).length + 2; }
+function maxHeroes(G){ return G.tables.filter(function(t){return t.on;}).length + 2 + cl(G,'crowd'); }
 function spawnGap(G){
   var n=G.tables.filter(function(t){return t.on;}).length;
-  return Math.max(2.2, 7.5 - n*0.8 - (G.rep-3)*0.7);
+  return Math.max(1.6, (7.5 - n*0.8 - (G.rep-3)*0.7) * (1-0.12*cl(G,'crowd')) * Math.max(0.6, 1-0.03*(G.night.n-1)));
 }
 function pickWant(G){ return (G.grill.on && G.rand()<0.5) ? 'meat' : 'beer'; }
 function spawnHero(G, opt){
   opt=opt||{};
   G.heroCount++;
-  var boss = opt.boss || (G.heroCount>4 && G.heroCount%BOSS_EVERY===0);
+  var boss = opt.boss || (G.heroCount>4 && G.heroCount%(BOSS_EVERY-4*cl(G,'vip'))===0);
   var h={id:G.nid++, kind:boss?'king':(opt.kind||KINDS[Math.floor(G.rand()*4)]), boss:boss, x:(G.rand()-0.5)*1.2, z:3.6,
     path:[], pi:0, state:'walk', tbl:null, want:null, pat:QPAT, sat:70, eatT:0, face:Math.PI, orders:boss?2:1};
   G.heroes.push(h); G.ev.push({t:'hero', id:h.id, boss:boss});
@@ -221,21 +279,21 @@ function walk(h, dt){
 }
 function order(G,h){
   h.want = h.boss ? (h.orders===2?'beer':(G.grill.on?'meat':'beer')) : pickWant(G);
-  h.state='wait'; h.pat=PATIENCE*(h.boss?0.8:1); h.face=0;
+  h.state='wait'; h.pat0=patience(G); h.pat=h.pat0*(h.boss?0.8:1); h.face=0;
   G.ev.push({t:'order', id:h.id, want:h.want});
 }
-function leave(G,h,angry){
+function leave(G,h,angry,quiet){
   var t=h.tbl!==null? G.tables[h.tbl] : null;
   var pts=[];
   if (t){ var a=aisle(t), s=seatOf(t); pts.push({x:a, z:s.z}, {x:a, z:-0.8}); }
   pts.push({x:0, z:0.3}, {x:(G.rand()-0.5)*2, z:4.2});
   h.path=pts; h.pi=0; h.state='leave'; h.want=null;
-  if (t){ t.hero=null; t.food=null; if (!angry) t.dirty=true; }
+  if (t){ t.hero=null; t.food=null; if (!angry && !(G.rand()<0.25*cl(G,'clean'))) t.dirty=true; }
   h.tbl=null;
   h.sat=Math.max(0,Math.min(100,h.sat));
   var stars=Math.max(1,Math.min(5,Math.round(h.sat/20)));
-  G.rep=G.rep*0.85+stars*0.15;
-  G.ev.push({t:'exit', id:h.id, stars:stars, angry:!!angry});
+  if (!quiet) G.rep=G.rep*0.85+stars*0.15;
+  G.ev.push({t:'exit', id:h.id, stars:stars, angry:!!angry, quiet:!!quiet});
 }
 function stepHero(G,h,dt){
   var tutWait = G.tut<3;
@@ -259,24 +317,25 @@ function stepHero(G,h,dt){
     h.eatT-=dt;
     if (h.eatT<=0){
       var t2=G.tables[h.tbl];
-      var tip = h.patAt>0.6 ? 2 : (h.patAt>0.3 ? 1 : 0);
-      var amt = (PRICE[t2.food]+tip) * (h.boss?5:1);
+      var tip = (h.patAt>0.6 ? 2 : (h.patAt>0.3 ? 1 : 0)) * (1+cl(G,'tip'));
+      var amt = (price(G,t2.food)+tip) * (h.boss?5:1);
       pay(G, amt, t2.x, t2.z, t2);
       t2.food=null; h.orders--;
-      if (h.orders>0 || (!h.boss && G.tut>=4 && G.rand()<0.25)){ if(h.orders<=0) h.orders=1; order(G,h); emo(G,h,'more'); }
+      if (h.orders>0 || (!h.boss && G.tut>=4 && G.night.phase==='open' && G.rand()<0.25+0.15*cl(G,'again'))){ if(h.orders<=0) h.orders=1; order(G,h); emo(G,h,'more'); }
       else leave(G,h,false);
     }
   }
 }
 function serve(G,h,who){
   var t=G.tables[h.tbl];
-  h.patAt=h.pat/PATIENCE; h.sat+= h.patAt>0.5?15:5;
+  h.patAt=h.pat/(h.pat0||PATIENCE); h.sat+= h.patAt>0.5?15:5;
   t.food=h.want; h.state='eat'; h.eatT=EAT; h.want=null;
   G.stats.served++;
   G.ev.push({t:'serve', id:h.id, tbl:t.i, food:t.food, who:who}); emo(G,h,'happy');
 }
 function pay(G, amt, x, z, tbl){
   amt=Math.max(1, Math.round(amt*(G.boostMoney>0?2:1)));
+  if (tbl && G.night.phase!=='result') G.night.earned+=amt;
   if (tbl){ tbl.coins+=amt; G.ev.push({t:'drop', tbl:tbl.i, n:amt, x:x, z:z}); }
   else { G.coins+=amt; G.earned+=amt; G.ev.push({t:'coin', n:amt, x:x, z:z}); }
   return amt;
@@ -286,7 +345,7 @@ function collect(G,t){ if (t.coins<=0) return; var n=Math.round(t.coins); t.coin
 // ---------- player ----------
 function trayCap(G){ return 2+G.upg.tray; }
 function playerSpeed(G){ return 5.0*(1+0.1*G.upg.boots)*(G.boost>0?1.35:1); }
-function workSpeed(G, who){ var b=G.boost>0?1.5:1; return who==='p' ? b : 0.6*(1+0.25*G.upg.gob)*b; }
+function workSpeed(G, who){ var b=G.boost>0?1.5:1; return who==='p' ? b*(1+0.3*cl(G,'hands')) : 0.6*(1+0.25*G.upg.gob)*b; }
 function clampPos(G,p){
   p.x=Math.max(-W/2+0.5, Math.min(W/2-0.5, p.x));
   p.z=Math.min(-0.4, Math.max(-7.8, p.z));
@@ -406,8 +465,9 @@ function stepGoblin(G,g,dt){
 
 // ---------- main ----------
 function step(G, dt, ix, iz){
-  if (G.paused) return;
+  if (G.paused || G.night.phase==='result') return;
   G.t+=dt;
+  if (G.tut>=4) stepNight(G,dt);
   if (G.boost>0) G.boost=Math.max(0,G.boost-dt);
   if (G.boostMoney>0) G.boostMoney=Math.max(0,G.boostMoney-dt);
   if (G.grill.on && G.grill.ready<GRILL_MAX){ G.grill.t+=dt*(1+0.35*G.upg.grill)*(G.boost>0?1.5:1); if (G.grill.t>=COOK){ G.grill.t=0; G.grill.ready++; G.ev.push({t:'cooked'}); } }
@@ -419,20 +479,20 @@ function step(G, dt, ix, iz){
 // ---------- save ----------
 function save(G){
   return JSON.stringify({v:3, coins:Math.floor(G.coins), earned:Math.floor(G.earned), rep:G.rep, unl:G.unl, upg:G.upg, tut:G.tut, heroCount:G.heroCount,
-    tb:G.tables.map(function(t){ return [t.dirty?1:0, Math.round(t.coins)]; }), next:Math.floor(G.padPaid.next||0), ipm:G.ipm||0, ready:G.grill.ready});
+    tb:G.tables.map(function(t){ return [t.dirty?1:0, Math.round(t.coins)]; }), next:Math.floor(G.padPaid.next||0), ipm:G.ipm||0, ready:G.grill.ready, night:G.night.n, cards:G.cards, best:G.bestNight});
 }
 function load(str){
   var o=JSON.parse(str); if(!o||o.v!==3) return null;
   var G=newGame(Date.now()%100000);
   G.coins=o.coins; G.earned=o.earned||0; G.rep=o.rep||3; G.upg=o.upg; G.tut=o.tut; G.heroCount=o.heroCount||0; G.ipm=o.ipm||0; G.padPaid={next:o.next||0};
   for (var i=0;i<o.unl&&i<UNL.length;i++) applyUnlock(G, UNL[i], true);
-  G.unl=Math.min(o.unl, UNL.length); G.grill.ready=o.ready||0;
+  G.unl=Math.min(o.unl, UNL.length); G.grill.ready=o.ready||0; G.night.n=o.night||1; G.cards=o.cards||{}; G.bestNight=o.best||0;
   (o.tb||[]).forEach(function(a,i){ var t=G.tables[i]; if(t&&t.on){ t.dirty=!!a[0]; t.coins=a[1]||0; } });
   G.ev=[]; makePads(G);
   return G;
 }
 function buyUpgrade(G,k){ var u=UPG[k]; if(G.upg[k]>=u.max) return false; var c=u.cost[G.upg[k]]; if(G.coins<c) return false; G.coins-=c; G.upg[k]++; G.ev.push({t:'buy',kind:'upg',k:k}); return true; }
-return {W:W, D:D, TABLES:TABLES, KEG:KEG, GRILL:GRILL, POT:POT, TRASH:TRASH, PADS:PADS, UNL:UNL, UPG:UPG, PATIENCE:PATIENCE, QPAT:QPAT, GRILL_MAX:GRILL_MAX, PRICE:PRICE,
+return {W:W, D:D, TABLES:TABLES, KEG:KEG, GRILL:GRILL, POT:POT, TRASH:TRASH, PADS:PADS, UNL:UNL, UPG:UPG, PATIENCE:PATIENCE, QPAT:QPAT, NIGHT_LEN:NIGHT_LEN, CARDS:CARDS, nightGoal:nightGoal, offerCards:offerCards, nextNight:nextNight, goldAmt:goldAmt, starsFor:starsFor, price:price, GRILL_MAX:GRILL_MAX, PRICE:PRICE,
   newGame:newGame, step:step, makePads:makePads, spawnHero:spawnHero, trayCap:trayCap, playerSpeed:playerSpeed, save:save, load:load,
   buyUpgrade:buyUpgrade, nextStep:nextStep, pay:pay, collect:collect, seatOf:seatOf, frontOf:frontOf, nearKeg:nearKeg, nearGrill:nearGrill};
 })();
@@ -473,6 +533,24 @@ var TL={
   move_touch:['Drag anywhere to move','Glisse n\'importe où pour bouger','Trascina ovunque per muoverti','Irgendwo ziehen zum Laufen','Arrastra en cualquier sitio para moverte','Yürümek için ekranı sürükle','按住屏幕拖动来走路','画面をドラッグして移動','화면을 드래그해서 이동','Arraste na tela para andar','Тяни по экрану, чтобы идти'],
   bossWave:['👑 The Hero King!','👑 Le Roi des héros !','👑 Il Re degli eroi!','👑 Der Heldenkönig!','👑 ¡El Rey de los héroes!','👑 Kahramanlar Kralı!','👑 勇者王来了！','👑 勇者王が来た！','👑 용사왕 등장!','👑 O Rei dos heróis!','👑 Король героев!'],
   angry:['Too slow! 😡','Trop lent ! 😡','Troppo lento! 😡','Zu langsam! 😡','¡Muy lento! 😡','Çok yavaş! 😡','太慢了！😡','遅すぎ！😡','너무 느려요! 😡','Muito lento! 😡','Слишком долго! 😡'],
+  night:['🌙 Night {n}','🌙 Nuit {n}','🌙 Notte {n}','🌙 Nacht {n}','🌙 Noche {n}','🌙 {n}. Gece','🌙 第 {n} 晚','🌙 {n}日目の夜','🌙 {n}번째 밤','🌙 Noite {n}','🌙 Ночь {n}'],
+  nightGoal:['Earn {g} before closing time!','Gagne {g} avant la fermeture !','Guadagna {g} prima della chiusura!','Verdiene {g} bis zum Feierabend!','¡Gana {g} antes de cerrar!','Kapanıştan önce {g} kazan!','打烊前赚到 {g}！','閉店までに {g} かせごう！','문 닫기 전에 {g} 벌기!','Ganhe {g} antes de fechar!','Заработай {g} до закрытия!'],
+  lastCall:['⏰ Last call!','⏰ Dernière tournée !','⏰ Ultimo giro!','⏰ Letzte Runde!','⏰ ¡Última ronda!','⏰ Son siparişler!','⏰ 快打烊了！','⏰ ラストオーダー！','⏰ 마지막 주문!','⏰ Última rodada!','⏰ Последний заказ!'],
+  closing:['Closing time!','On ferme !','Si chiude!','Feierabend!','¡Hora de cerrar!','Kapanış!','打烊啦！','閉店！','영업 종료!','Hora de fechar!','Закрываемся!'],
+  missed:['Goal missed… the heroes will be back tomorrow!','Objectif manqué… les héros reviendront demain !','Obiettivo mancato… gli eroi torneranno domani!','Ziel verfehlt… die Helden kommen morgen wieder!','Meta fallida… ¡los héroes volverán mañana!','Hedef tutmadı… kahramanlar yarın yine gelir!','没达标……勇者们明晚还会来！','目標に届かず…勇者は明日も来るよ！','목표 실패… 용사들은 내일 또 와요!','Meta perdida… os heróis voltam amanhã!','Цель не взята… герои вернутся завтра!'],
+  pickOne:['Pick a reward','Choisis une récompense','Scegli un premio','Wähle eine Belohnung','Elige un premio','Bir ödül seç','选一张奖励卡','ごほうびを1枚えらぼう','보상 카드를 고르세요','Escolha um prêmio','Выбери награду'],
+  reroll:['📺 New cards','📺 Autres cartes','📺 Nuove carte','📺 Neue Karten','📺 Otras cartas','📺 Yeni kartlar','📺 换一批','📺 引きなおす','📺 다시 뽑기','📺 Novas cartas','📺 Другие карты'],
+  retry:['Try again','Réessayer','Riprova','Nochmal','Reintentar','Tekrar dene','再来一晚','もう一度','다시 도전','Tentar de novo','Ещё раз'],
+  c_beer:['Finer ale','Meilleure bière','Birra migliore','Besseres Bier','Mejor cerveza','Daha iyi bira','更好的啤酒','上等なビール','더 좋은 맥주','Cerveja melhor','Пиво получше'],
+  c_meat:['Secret sauce','Sauce secrète','Salsa segreta','Geheimsoße','Salsa secreta','Gizli sos','秘制酱料','秘伝のタレ','비법 소스','Molho secreto','Секретный соус'],
+  c_pat:['Comfy chairs','Chaises confortables','Sedie comode','Bequeme Stühle','Sillas cómodas','Rahat sandalyeler','舒服的椅子','ふかふかのイス','편안한 의자','Cadeiras confortáveis','Удобные стулья'],
+  c_tip:['Bigger tips','Plus de pourboires','Mance più alte','Mehr Trinkgeld','Más propinas','Daha çok bahşiş','小费更多','チップ増量','팁 더 많이','Mais gorjetas','Больше чаевых'],
+  c_hands:['Fast hands','Mains rapides','Mani veloci','Flinke Hände','Manos rápidas','Hızlı eller','快手','早わざ','빠른 손','Mãos rápidas','Ловкие руки'],
+  c_vip:['More kings','Plus de rois','Più re','Mehr Könige','Más reyes','Daha çok kral','国王常来','王様がよく来る','왕이 더 자주','Mais reis','Больше королей'],
+  c_clean:['Tidy heroes','Héros soigneux','Eroi ordinati','Saubere Helden','Héroes limpios','Tertipli kahramanlar','爱干净的勇者','きれい好きな勇者','깔끔한 용사','Heróis asseados','Аккуратные герои'],
+  c_again:['One more round','Encore une tournée','Un altro giro','Noch eine Runde','Otra ronda','Bir tur daha','再来一份','おかわり','한 번 더','Mais uma rodada','Ещё по одной'],
+  c_crowd:['Famous tavern','Taverne célèbre','Taverna famosa','Berühmte Taverne','Taberna famosa','Ünlü meyhane','名气大了','大人気の酒場','유명한 주점','Taverna famosa','Знаменитая таверна'],
+  c_gold:['Gold chest','Coffre d\'or','Forziere d\'oro','Goldtruhe','Cofre de oro','Altın sandığı','一箱金币','金貨の箱','금화 상자','Baú de ouro','Сундук золота'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
   boost:['⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ Turbo','⚡ 加速','⚡ ターボ','⚡ 터보','⚡ Turbo','⚡ Турбо'],
   boostSub:['2 min · ad','2 min · pub','2 min · video','2 Min · Werbung','2 min · anuncio','2 dk · reklam','2 分钟 · 看广告','2分 · 広告','2분 · 광고','2 min · anúncio','2 мин · реклама'],
@@ -995,9 +1073,12 @@ function updHud(){
   if (G.tut<4){ wv.style.display='none'; }
   else {
     wv.style.display='';
-    var rp=G.pads.filter(function(p){return p.kind!=='bench';})[0];
-    if (rp){ var have=Math.min(rp.cost, G.coins+rp.paid); $('waveTx').textContent=tl('goal',{r:padName(rp)})+'  ● '+fmt(have)+' / '+fmt(rp.cost); $('waveBar').style.width=(have/rp.cost*100)+'%'; }
-    else { $('waveTx').textContent=tl('allUnl'); $('waveBar').style.width='100%'; }
+    var N=G.night, left=Math.max(0, Math.ceil(DJ.NIGHT_LEN-N.t)), stN=DJ.starsFor(N.earned,N.goal);
+    var tx=tl('night',{n:N.n})+'  '+'★'.repeat(stN)+'☆'.repeat(3-stN)+'  ● '+fmt(N.earned)+' / '+fmt(N.goal)+'  ⏱ '+Math.floor(left/60)+':'+('0'+left%60).slice(-2);
+    if (wv.dataset.tx!==tx){ wv.dataset.tx=tx; $('waveTx').textContent=tx; }
+    $('waveBar').style.width=Math.min(100, N.earned/Math.max(1,N.goal)*100)+'%';
+    wv.classList.toggle('soon', N.phase==='open' && left<=12 && stN===0);
+    wv.classList.toggle('done', stN>0);
   }
   var st=Math.round(G.rep*2)/2, s=''; for (var i=1;i<=5;i++) s+= st>=i?'★':'☆'; $('stars').textContent=s; $('repTx').textContent=tl('rep');
   var bb=$('boostBtn');
@@ -1108,7 +1189,6 @@ function handleEvents(){
         if (e.kind==='wiper'||e.kind==='waiter'){ G.goblins.forEach(function(g){ if(!views.gb[g.id]) views.gb[g.id]=goblinView(g); }); banner(tl('hired'), tl('u_'+e.kind)); }
         else banner(tl('unlocked'), tl('u_'+e.kind));
         syncPads(); Snd.buy(); PF.happy(); saveNow();
-        if (G.tut>=99 && G.t-lastAdT>150){ lastAdT=G.t; setTimeout(function(){ PF.midgame(); }, 1600); }
         break;
       case 'padpay': if(Math.random()<0.3) Snd.pay(); break;
       case 'pour': if(e.who==='p'){ Daily.count('pour'); Snd.pour(); } break;
@@ -1121,7 +1201,11 @@ function handleEvents(){
       case 'hero': if (e.boss){ Snd.boss(); banner(tl('bossWave'), tl('bossD2'), 3000); } break;
       case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😋',more:'🤤',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
       case 'angry': var av=views.hr[e.id]; if(av) floatText(tl('angry'), av.c.position.x, 2.6, av.c.position.z, '#ff8a7a'); Snd.bad(); break;
-      case 'exit': if(!e.angry) Daily.count('serve'); var xv=views.hr[e.id]; if(xv) floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); break;
+      case 'nightStart': banner(tl('night',{n:e.n}), tl('nightGoal',{g:'● '+fmt(e.goal)}), 2600); Snd.pop(); break;
+      case 'lastCall': banner(tl('lastCall'),'',1600); Snd.boss(); break;
+      case 'nightClose': banner(tl('closing'),'',2200); Snd.clank(); break;
+      case 'nightResult': showNight(e); break;
+      case 'exit': if(!e.angry) Daily.count('serve'); var xv=views.hr[e.id]; if(xv && !e.quiet) floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); break;
       case 'gone': var gv=views.hr[e.id]; if(gv){ world.remove(gv.c); world.remove(gv.need); world.remove(gv.em); scene.remove(gv.ring); delete views.hr[e.id]; } break;
       case 'wake': Snd.pop(); break;
     }
@@ -1137,6 +1221,36 @@ function coinBurst(x0,z0,x1,z1){
   for (var i=0;i<4;i++){ var m=mesh(coinGeo, M.gold, x0,1.2,z0,false); m.userData={x0:x0,z0:z0,x1:x1+(Math.random()-0.5)*0.3,z1:z1+(Math.random()-0.5)*0.3,t:-i*0.06}; world.add(m); arcs.push(m); }
 }
 
+
+// ---------------- night result + perk cards ----------------
+var CARD_EM={beer:'🍺',meat:'🍖',pat:'🛋️',tip:'💰',hands:'⚡',vip:'👑',clean:'✨',again:'🤤',crowd:'📣',gold:'🎁'};
+function cardDesc(k){
+  switch(k){ case 'beer': return '🍺 +2 ●'; case 'meat': return '🍖 +4 ●'; case 'pat': return '⏳ +20%'; case 'tip': return '💰 +100%';
+    case 'hands': return '🍺🧽 +30%'; case 'vip': return '👑 +25%'; case 'clean': return '🧽 −25%'; case 'again': return '🍺🍖 +15%'; case 'crowd': return '🚪 +12%';
+    case 'gold': return '+ ● '+fmt(DJ.goldAmt(G)); }
+}
+function showNight(e){
+  var m=$('nightM'), box=$('nmCards'), rr=$('nmReroll'), rt=$('nmRetry'), win=e.stars>0;
+  $('nmTitle').textContent=tl('night',{n:e.n});
+  $('nmStars').textContent='★'.repeat(e.stars)+'☆'.repeat(3-e.stars);
+  $('nmSum').textContent='● '+fmt(e.earned)+' / '+fmt(e.goal)+(e.bonus?'   🎁 +'+fmt(e.bonus):'');
+  $('nmPick').textContent=win? tl('pickOne') : tl('missed');
+  var go=function(card){ m.classList.remove('show'); var next=function(){ DJ.nextNight(G, card); saveNow(); };
+    if (card) Snd.buy();
+    if (G.t-lastAdT>100){ lastAdT=G.t; PF.midgame(next); } else next(); };
+  var deal=function(){ box.innerHTML='';
+    DJ.offerCards(G).forEach(function(k){
+      var lv=G.cards[k]||0, mx=DJ.CARDS[k].max, b=document.createElement('button'); b.className='pcard';
+      var dots=''; if (mx<10) for (var i=0;i<mx;i++) dots+= i<lv?'●':'○';
+      b.innerHTML='<span class="em">'+CARD_EM[k]+'</span><b>'+tl('c_'+k)+'</b><span class="ds">'+cardDesc(k)+'</span><span class="lv">'+dots+'</span>';
+      b.onclick=function(){ go(k); }; box.appendChild(b); }); };
+  box.innerHTML=''; rr.style.display=rt.style.display='none';
+  if (win){ deal(); rr.style.display=''; rr.textContent=tl('reroll'); rr.disabled=false;
+    rr.onclick=function(){ rr.disabled=true; PF.rewarded(function(ok){ if(ok){ deal(); rr.style.display='none'; } else rr.disabled=false; }); };
+    Snd.buy(); PF.happy(); }
+  else { rt.style.display=''; rt.textContent=tl('retry'); rt.onclick=function(){ go(null); }; Snd.bad(); }
+  m.classList.add('show'); saveNow();
+}
 
 // ---------------- frame ----------------
 var dailyT=0, last=performance.now(), acc=0, saveT=0, lightT=0, ipmT=0, ipmEarn=0;
@@ -1203,7 +1317,7 @@ function render(dt){
     if (h.state==='wait' && h.want){
       if (v.lastNeed!==h.want){ v.lastNeed=h.want; v.need.material=iconMat(FOOD_ICON[h.want], '#ffffff'); v.lastP=-1; }
       v.need.visible=true; v.need.position.set(h.x, top+0.55+Math.abs(Math.sin(t*5))*0.18, h.z);
-      var pr=Math.max(0,h.pat/(DJ.PATIENCE*(h.boss?0.8:1))); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
+      var pr=Math.max(0,h.pat/((h.pat0||DJ.PATIENCE)*(h.boss?0.8:1))); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
       var k=Math.round(pr*40); if (k!==v.lastP){ v.lastP=k; v.ring.userData.draw(pr, pr>0.5?'#7ee06a':(pr>0.25?'#ffc23a':'#ff5a4a')); }
       v.em.visible=false;
     } else if (h.state==='queue' && G.tut>=3 && h.pat<DJ.QPAT*0.6){
@@ -1269,7 +1383,7 @@ function checkOffline(){
   var amt=Math.round(mins*(G.ipm||0)*0.25); if (amt<10) return false;
   $('offAmt').textContent='● '+fmt(amt);
   var dbl=$('offDouble'); dbl.textContent=tl('double'); dbl.disabled=false;
-  var close=function(n){ $('offline').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, 'offline'); saveNow(); };
+  var close=function(n){ $('offline').classList.remove('show'); DJ.pay(G, n, G.player.x, G.player.z, null); saveNow(); };
   $('offTake').onclick=function(){ close(amt); Daily.reward(); };
   dbl.onclick=function(){ dbl.disabled=true; PF.rewarded(function(ok){ if(ok){ close(amt*2); Daily.reward(); } else dbl.disabled=false; }); };
   $('offline').classList.add('show'); return true;
