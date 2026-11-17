@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Dungeon Janitor</title>
+<title>Dungeon Tavern</title>
 <script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -109,303 +109,332 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
 <div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
 <div id="adfake"></div>
-<div id="loading"><div>Dungeon Janitor</div><div class="bar"><i></i></div></div>
+<div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
 <script id="gamesrc" type="text/plain">
 // ===== SIM START =====
-// v0.2 — continuous heroes, they WAIT at stations that aren't ready. Pure logic, events in G.ev.
+// v0.3 — Dungeon Tavern: heroes sit down and order 🍺 / 🍖, you pour / grab, serve, pick up coins, wipe tables.
+// Pure logic (node can run it), events go to G.ev.
 var DJ = (function(){
 'use strict';
-var W = 10, D = 9;
-// station coords: [x, up] (up = distance from the room's bottom edge)
-var ROOMS = [
-  {id:'hall',  cost:0,     st:[['trap',0,3.0,'spike'],['chest',2.6,6.3]], pile:[-3.4,2.0]},
-  {id:'vault', cost:60,    st:[['chest',-2.7,2.6],['trap',1.6,4.4,'arrow'],['chest',-1.2,7.0]]},
-  {id:'hall2', cost:220,   st:[['trap',-2.4,2.4,'spike'],['trap',2.4,4.6,'arrow'],['chest',0,7.0]]},
-  {id:'cave',  cost:650,   st:[['trap',2.2,2.6,'spike'],['chest',-2.6,4.6],['chest',2.6,7.0]], pile:[-3.6,1.6]},
-  {id:'crypt', cost:1700,  st:[['trap',-2.4,2.4,'rock'],['chest',2.6,4.4],['trap',-1.5,7.0,'rock']]},
-  {id:'lava',  cost:4500,  st:[['trap',2.2,2.4,'fire'],['trap',-2.2,4.6,'fire'],['chest',1.6,7.2]]},
-  {id:'ice',   cost:12000, st:[['chest',-2.6,2.4],['trap',2.0,4.4,'ice'],['chest',-1.4,7.0]]},
-  {id:'lair',  cost:30000, st:[['trap',-2.4,2.4,'fire'],['chest',2.6,4.4],['trap',0,6.0,'rock'],['chest',-2.6,7.3]]}
+var W = 12, D = 10;
+// tables [x, z]; table 0 is the tutorial table next to the keg
+var TABLES = [[-3.4,-5.2],[0,-5.2],[-3.4,-2.4],[3.4,-5.2],[0,-2.4],[3.4,-2.4]];
+var KEG = {x:-3.6, z:-8.7, fx:-3.6, fz:-7.5};
+var GRILL = {x:0, z:-8.7, fx:0, fz:-7.5};
+var POT = {x:3.6, z:-8.7};             // potion cauldron: locked teaser for now
+var TRASH = {x:5.15, z:-7.3};
+var PADS = {bench:[-4.5,-0.95], hire:[4.5,-0.95]};
+var PRICE = {beer:4, meat:9};
+var POUR = 0.45, TAKE = 0.2, COOK = 4.0, EAT = 2.6, WIPE = 0.8, PATIENCE = 22, QPAT = 30;
+var GRILL_MAX = 3;
+var UNL = [
+  {k:'table', i:1, c:20}, {k:'grill', c:45}, {k:'table', i:2, c:70}, {k:'wiper', c:130},
+  {k:'table', i:3, c:220}, {k:'table', i:4, c:340}, {k:'waiter', c:500}, {k:'table', i:5, c:750},
+  {k:'wiper', c:1000}, {k:'waiter', c:1400}
 ];
-var MULT = function(r){ return Math.pow(1.75, r); };
-var FEE = {trap:2, chest:5, exit:3, slime:1};
-var WORK = {slime:0.55, trap:0.75, door:1.0, fill:0.28, take:0.16};
-var PATIENCE = 15;
 var UPG = {
-  boots:{max:5, cost:[40,150,500,1600,5000]},
-  mop:  {max:5, cost:[50,180,600,1900,6000]},
-  bag:  {max:5, cost:[30,120,420,1400,4500]},
-  gob:  {max:4, cost:[300,1100,3800,12000]}
+  boots:{max:5, cost:[40,120,320,800,1800]},
+  tray: {max:5, cost:[30,100,280,700,1600]},
+  grill:{max:4, cost:[80,240,650,1500]},
+  gob:  {max:3, cost:[220,700,1600]}
 };
-var GOB = {clean:{base:80}, trap:{base:150}, carry:{base:220}};
-var GOB_MAX = 3;
-var PORTAL = [-2.8, D-0.9], RPAD = [3.0, D-1.2];
-var HALL_PADS = {bench:[-3.4,5.6], clean:[3.6,1.3], trap:[1.4,1.3], carry:[-1.0,1.3]};
-var HERO_SPEED = 2.4, BOSS_EVERY = 25;
+var HERO_SPEED = 2.6, BOSS_EVERY = 20;
+var KINDS = ['knight','archer','mage','rogue'];
 
 function rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-function W2(r, lx, up){ return {x:lx, z:-r*D-up}; }
 function dist(a,b){ var dx=a.x-b.x, dz=a.z-b.z; return Math.sqrt(dx*dx+dz*dz); }
 
 function newGame(seed){
-  var G = { t:0, rand:rnd(seed||12345), ev:[], coins:0, earned:0, rooms:1, rep:3,
-    upg:{boots:0,mop:0,bag:0,gob:0}, gob:{clean:0,trap:0,carry:0},
-    st:[], slimes:[], heroes:[], goblins:[], pads:[], piles:[], nid:1,
-    player:{x:2.4, z:-1.6, carry:0, face:Math.PI, moving:false},
-    spawnT:2, heroCount:0, flow:false, boost:0, tut:0, paused:false, timers:[],
-    stats:{roomAt:[0], served:0, angry:0} };
-  buildRoom(G,0); makePads(G);
+  var G = { t:0, rand:rnd(seed||12345), ev:[], coins:0, earned:0, rep:3, unl:0, padPaid:{},
+    upg:{boots:0,tray:0,grill:0,gob:0}, tables:[], heroes:[], goblins:[], pads:[], nid:1,
+    grill:{on:false, ready:0, t:0},
+    player:{x:0, z:-1.2, items:[], face:Math.PI, moving:false},
+    spawnT:2, heroCount:0, flow:false, boost:0, tut:0, paused:false,
+    stats:{unlAt:[], served:0, angry:0} };
+  TABLES.forEach(function(p,i){ G.tables.push({i:i, x:p[0], z:p[1], on:i===0, dirty:false, prog:0, coins:0, hero:null, food:null}); });
+  makePads(G);
   return G;
 }
-function buildRoom(G, r){
-  var R=ROOMS[r];
-  R.st.forEach(function(a){ var p=W2(r,a[1],a[2]); G.st.push({id:G.nid++, k:a[0], sub:a[3], r:r, x:p.x, z:p.z, ok:true, prog:0, coins:0, busy:null}); });
-  if (R.door){ var p=W2(r,0,0.3); G.st.push({id:G.nid++, k:'door', r:r, x:p.x, z:p.z, ok:true, prog:0, coins:0}); }
-  if (R.pile){ var q=W2(r,R.pile[0],R.pile[1]); G.piles.push({x:q.x, z:q.z, r:r}); }
-  G.ev.push({t:'room', r:r});
-}
-function padCost(G, kind){
-  if (kind==='room') return ROOMS[G.rooms]? ROOMS[G.rooms].cost : 0;
-  if (GOB[kind]) return Math.round(GOB[kind].base*Math.pow(2.2, G.gob[kind]));
-  return 0;
+function seatOf(t){ return {x:t.x, z:t.z-0.95}; }
+function frontOf(t){ return {x:t.x, z:t.z+1.0}; }
+function aisle(t){ return t.x>=0 ? t.x+1.7 : t.x-1.7; }
+
+// ---------- unlocks / pads ----------
+function unlPos(u){
+  if (u.k==='table'){ var p=TABLES[u.i]; return {x:p[0], z:p[1]-0.3}; }
+  if (u.k==='grill') return {x:GRILL.fx, z:GRILL.fz+0.3};
+  return {x:PADS.hire[0], z:PADS.hire[1]};
 }
 function makePads(G){
-  var old={}; (G.pads||[]).forEach(function(p){ old[p.kind]=p.paid; });
-  G.padPaid=G.padPaid||{}; Object.keys(old).forEach(function(k){ G.padPaid[k]=old[k]; });
   G.pads=[];
-  if (G.rooms<ROOMS.length && G.tut>=4){ var p=W2(G.rooms-1, RPAD[0], RPAD[1]); G.pads.push({kind:'room', x:p.x, z:p.z}); }
-  if (G.tut>=6){
-    G.pads.push({kind:'bench', x:HALL_PADS.bench[0], z:-HALL_PADS.bench[1]});
-    ['clean','trap','carry'].forEach(function(k){
-      if (G.gob[k]>=GOB_MAX) return;
-      if (k==='carry' && G.rooms<2) return; if (k==='trap' && G.rooms<2) return;
-      G.pads.push({kind:k, x:HALL_PADS[k][0], z:-HALL_PADS[k][1]});
-    });
-  }
-  G.pads.forEach(function(p){ p.cost=padCost(G,p.kind); p.paid=Math.min(p.cost-1, G.padPaid[p.kind]||0); if(p.paid<0) p.paid=0; });
+  if (G.tut>=4 && G.unl<UNL.length){ var u=UNL[G.unl], p=unlPos(u); G.pads.push({kind:u.k, u:u, x:p.x, z:p.z, cost:u.c, paid:Math.min(u.c-1, G.padPaid.next||0)}); }
+  if (G.tut>=7) G.pads.push({kind:'bench', x:PADS.bench[0], z:PADS.bench[1], cost:0, paid:0});
 }
-function allPiles(G){ return G.piles; }
-function stById(G,id){ for (var i=0;i<G.st.length;i++) if(G.st[i].id===id) return G.st[i]; return null; }
+function applyUnlock(G, u, silent){
+  if (u.k==='table'){ G.tables[u.i].on=true; }
+  else if (u.k==='grill'){ G.grill.on=true; }
+  else addGoblin(G, u.k);
+  if (!silent) G.ev.push({t:'buy', kind:u.k, i:u.i});
+}
+function buyPad(G, pd){
+  G.padPaid.next=0;
+  applyUnlock(G, pd.u); G.unl++; G.stats.unlAt.push(G.t);
+  makePads(G);
+}
 
 // ---------- heroes ----------
-var KINDS=['knight','archer','mage','rogue'];
-function heroPath(G){
-  var pts=[];
-  for (var r=0;r<G.rooms;r++){
-    pts.push({x:(G.rand()-0.5)*1.2, z:-r*D-0.6, room:r});
-    G.st.filter(function(s){return s.r===r&&(s.k==='trap'||s.k==='chest');}).sort(function(a,b){return b.z-a.z;}).forEach(function(s){
-      // stand point: next to chest (in front), on top of trap
-      var sp = s.k==='chest' ? {x:s.x+(s.x>0?-1.0:1.0), z:s.z} : {x:s.x, z:s.z+0.05};
-      pts.push({x:sp.x, z:sp.z, st:s.id});
-    });
-    if (r<G.rooms-1) pts.push({x:0, z:-(r+1)*D+0.6});
-  }
-  var e=W2(G.rooms-1, PORTAL[0], PORTAL[1]); pts.push({x:e.x, z:e.z+0.3, exit:true});
+function freeTable(G){
+  var c=G.tables.filter(function(t){ return t.on && !t.dirty && !t.hero; });
+  return c.length ? c[Math.floor(G.rand()*c.length)] : null;
+}
+function seatPath(h, t){
+  var a=aisle(t), s=seatOf(t), pts=[];
+  if (h.z>-0.2) pts.push({x:0, z:0.3});
+  pts.push({x:a, z:Math.min(-0.8, h.z>-0.2?-0.8:h.z)}, {x:a, z:s.z}, {x:s.x, z:s.z});
   return pts;
 }
+function maxHeroes(G){ return G.tables.filter(function(t){return t.on;}).length + 2; }
 function spawnGap(G){
-  var g = 8.5 - Math.min(3, G.rooms*0.45) - (G.rep-3)*0.8;
-  return Math.max(3.2, g);
+  var n=G.tables.filter(function(t){return t.on;}).length;
+  return Math.max(2.2, 7.5 - n*0.8 - (G.rep-3)*0.7);
 }
-function maxHeroes(G){ return 2 + G.rooms; }
+function pickWant(G){ return (G.grill.on && G.rand()<0.5) ? 'meat' : 'beer'; }
 function spawnHero(G, opt){
   opt=opt||{};
   G.heroCount++;
-  var boss = opt.boss || (G.heroCount>3 && G.heroCount%BOSS_EVERY===0);
-  var h={id:G.nid++, kind: boss?'king':(opt.kind||KINDS[Math.floor(G.rand()*4)]), boss:boss, x:(G.rand()-0.5)*1.5, z:2.5, path:heroPath(G), pi:0,
-    state:'walk', wait:0, pat:PATIENCE*(boss?0.8:1), sat:70, need:null, use:0, face:Math.PI, slipT:0};
+  var boss = opt.boss || (G.heroCount>4 && G.heroCount%BOSS_EVERY===0);
+  var h={id:G.nid++, kind:boss?'king':(opt.kind||KINDS[Math.floor(G.rand()*4)]), boss:boss, x:(G.rand()-0.5)*1.2, z:3.6,
+    path:[], pi:0, state:'walk', tbl:null, want:null, pat:QPAT, sat:70, eatT:0, face:Math.PI, orders:boss?2:1};
   G.heroes.push(h); G.ev.push({t:'hero', id:h.id, boss:boss});
+  if (opt.table){ seat(G,h,opt.table); } else { var t=freeTable(G); if (t) seat(G,h,t); else queue(G,h); }
   return h;
 }
-function pay(G, amt, x, z, why, pile){
-  amt=Math.max(1, Math.round(amt*(G.boostMoney>0?2:1)));
-  if (pile){ pile.coins+=amt; G.ev.push({t:'drop', id:pile.id, n:amt, x:x, z:z}); }
-  else { G.coins+=amt; G.earned+=amt; G.ev.push({t:'coin', n:amt, x:x, z:z, why:why}); }
-  return amt;
-}
-function collect(G, s){
-  if (s.coins<=0) return;
-  var n=Math.round(s.coins); s.coins=0; G.coins+=n; G.earned+=n; G.ev.push({t:'coin', n:n, x:s.x, z:s.z, why:'pick'});
-}
+function seat(G,h,t){ t.hero=h.id; h.tbl=t.i; h.path=seatPath(h,t); h.pi=0; h.state='walk'; }
+function queue(G,h){ h.state='queue'; h.tbl=null; h.pat=QPAT; }
+function queuePos(G,h){ var q=G.heroes.filter(function(o){return o.state==='queue';}); var i=q.indexOf(h); return {x:-0.6+(i%2)*1.2, z:1.4+Math.floor(i/2)*1.0}; }
 function emo(G,h,e){ G.ev.push({t:'emo', id:h.id, e:e}); }
-function stepHero(G, h, dt){
-  if (h.slipT>0){ h.slipT-=dt; return; }
-  if (h.state==='use'){ h.use-=dt; if (h.use<=0){ h.state='walk'; h.pi++; } return; }
-  var tg=h.path[h.pi];
-  if (!tg){ exitHero(G,h); return; }
-  var s = tg.st? stById(G,tg.st) : null;
-  // queue: don't walk into a station someone else is using/waiting at
-  var dx=tg.x-h.x, dz=tg.z-h.z, d=Math.sqrt(dx*dx+dz*dz);
-  if (s && d<1.6 && s.busy && s.busy!==h.id){ h.state='queue'; h.pat-=dt*0.5; h.need=null; if (h.pat<=0){ giveUp(G,h,s); } return; }
-  if (d>0.08){
-    var sp=HERO_SPEED*(h.boss?0.85:1)*dt, m=Math.min(d,sp);
-    h.x+=dx/d*m; h.z+=dz/d*m; h.face=Math.atan2(dx,dz); h.state='walk';
-    // slime: slip!
-    for (var i=0;i<G.slimes.length;i++){ var sl=G.slimes[i]; if (!sl['h'+h.id] && Math.abs(sl.x-h.x)<0.7*sl.sz && Math.abs(sl.z-h.z)<0.6*sl.sz){ sl['h'+h.id]=1; h.slipT=0.9; h.sat-=8; h.pat=Math.max(4,h.pat-2); emo(G,h,'slip'); G.ev.push({t:'slip', id:h.id}); break; } }
-    return;
-  }
-  if (tg.exit){ exitHero(G,h); return; }
-  if (!s){ // waypoint (doorway) — door check
-    if (tg.room!==undefined){ var door=G.st.filter(function(q){return q.r===tg.room&&q.k==='door';})[0]; if(door && !door.ok){ h.sat-=6; emo(G,h,'meh'); } }
-    h.pi++; return;
-  }
-  s.busy=h.id;
-  if (s.ok){
-    s.ok=false; s.busy=h.id; h.state='use'; h.use=s.k==='trap'?1.1:0.8; h.need=null;
-    var fee=(s.k==='trap'?FEE.trap:FEE.chest)*MULT(s.r)*(h.boss?5:1);
-    pay(G, fee, s.x, s.z, s.k, s); h.sat+= h.pat>PATIENCE*0.6? 10:4;
-    G.ev.push({t: s.k==='trap'?'spring':'loot', id:s.id, hid:h.id}); emo(G,h, s.k==='trap'?'ouch':'happy');
-    G.stats.served++;
-    G.timers.push({t:G.t+h.use, fn:function(){ if(s.busy===h.id) s.busy=null; }});
-    h.pat=Math.min(PATIENCE*(h.boss?0.8:1), h.pat+5);
-    return;
-  }
-  // not ready: wait with patience
-  h.state='wait'; h.need=s.k; if (G.tut>=4) h.pat-=dt;
-  if (h.pat<=0) giveUp(G,h,s);
+function walk(h, dt){
+  var tg=h.path[h.pi]; if (!tg) return true;
+  var dx=tg.x-h.x, dz=tg.z-h.z, d=Math.sqrt(dx*dx+dz*dz), sp=HERO_SPEED*(h.boss?0.85:1)*dt;
+  if (d<=sp){ h.x=tg.x; h.z=tg.z; h.pi++; return h.pi>=h.path.length; }
+  h.x+=dx/d*sp; h.z+=dz/d*sp; h.face=Math.atan2(dx,dz); return false;
 }
-function giveUp(G,h,s){
-  h.sat-=25; emo(G,h,'angry'); G.ev.push({t:'angry', id:h.id}); G.stats.angry++;
-  if (s && s.busy===h.id) s.busy=null;
-  h.state='walk'; h.need=null; h.pi++; h.pat=PATIENCE*0.7;
-  // skip over the next station in the queue too
+function order(G,h){
+  h.want = h.boss ? (h.orders===2?'beer':(G.grill.on?'meat':'beer')) : pickWant(G);
+  h.state='wait'; h.pat=PATIENCE*(h.boss?0.8:1); h.face=0;
+  G.ev.push({t:'order', id:h.id, want:h.want});
 }
-function exitHero(G,h){
+function leave(G,h,angry){
+  var t=h.tbl!==null? G.tables[h.tbl] : null;
+  var pts=[];
+  if (t){ var a=aisle(t), s=seatOf(t); pts.push({x:a, z:s.z}, {x:a, z:-0.8}); }
+  pts.push({x:0, z:0.3}, {x:(G.rand()-0.5)*2, z:4.2});
+  h.path=pts; h.pi=0; h.state='leave'; h.want=null;
+  if (t){ t.hero=null; t.food=null; if (!angry) t.dirty=true; }
+  h.tbl=null;
   h.sat=Math.max(0,Math.min(100,h.sat));
   var stars=Math.max(1,Math.min(5,Math.round(h.sat/20)));
-  pay(G, FEE.exit*MULT(G.rooms-1)*(0.4+h.sat/100)*(h.boss?5:1), h.x, h.z, 'exit');
   G.rep=G.rep*0.85+stars*0.15;
-  G.ev.push({t:'exit', id:h.id, stars:stars, boss:h.boss});
-  G.st.forEach(function(s){ if(s.busy===h.id) s.busy=null; });
-  G.heroes.splice(G.heroes.indexOf(h),1);
-  // mess: break a door sometimes, leave slime
+  G.ev.push({t:'exit', id:h.id, stars:stars, angry:!!angry});
 }
-function leaveSlime(G,h){
-  if (G.slimes.length>=14) return;
-  var r=Math.floor(-h.z/D); if (r<0||r>=G.rooms) return;
-  var x=Math.max(-W/2+1,Math.min(W/2-1,h.x+(G.rand()-0.5)*1.5)), z=Math.min(-r*D-1.2, Math.max(-(r+1)*D+1.2, h.z+(G.rand()-0.5)*1.5));
-  if (G.st.some(function(s){return dist(s,{x:x,z:z})<1.3;})) return;
-  if (dist(G.player,{x:x,z:z})<1) return;
-  var sl={id:G.nid++, x:x, z:z, r:r, c:Math.floor(G.rand()*4), sz:0.8+G.rand()*0.4, prog:0};
-  G.slimes.push(sl); G.ev.push({t:'slime', id:sl.id});
+function stepHero(G,h,dt){
+  var tutWait = G.tut<3;
+  if (h.state==='queue'){
+    var t=freeTable(G); var q=G.heroes.filter(function(o){return o.state==='queue';});
+    if (t && q[0]===h){ seat(G,h,t); return; }
+    var p=queuePos(G,h); var dx=p.x-h.x, dz=p.z-h.z, d=Math.sqrt(dx*dx+dz*dz);
+    if (d>0.05){ var m=Math.min(d,HERO_SPEED*dt); h.x+=dx/d*m; h.z+=dz/d*m; h.face=Math.atan2(dx,dz); h.moving=true; } else { h.moving=false; h.face=0; }
+    if (!tutWait){ h.pat-=dt; if (h.pat<=0){ h.sat-=40; emo(G,h,'angry'); G.ev.push({t:'angry', id:h.id}); G.stats.angry++; leave(G,h,true); } }
+    return;
+  }
+  if (h.state==='walk'){ h.moving=true; if (walk(h,dt)){ h.moving=false; order(G,h); } return; }
+  if (h.state==='leave'){ h.moving=true; if (walk(h,dt)){ G.heroes.splice(G.heroes.indexOf(h),1); G.ev.push({t:'gone', id:h.id}); } return; }
+  h.moving=false;
+  if (h.state==='wait'){
+    if (!tutWait) h.pat-=dt;
+    if (h.pat<=0){ h.sat-=35; emo(G,h,'angry'); G.ev.push({t:'angry', id:h.id}); G.stats.angry++; leave(G,h,true); }
+    return;
+  }
+  if (h.state==='eat'){
+    h.eatT-=dt;
+    if (h.eatT<=0){
+      var t2=G.tables[h.tbl];
+      var tip = h.patAt>0.6 ? 2 : (h.patAt>0.3 ? 1 : 0);
+      var amt = (PRICE[t2.food]+tip) * (h.boss?5:1);
+      pay(G, amt, t2.x, t2.z, t2);
+      t2.food=null; h.orders--;
+      if (h.orders>0 || (!h.boss && G.tut>=4 && G.rand()<0.25)){ if(h.orders<=0) h.orders=1; order(G,h); emo(G,h,'more'); }
+      else leave(G,h,false);
+    }
+  }
 }
-// ---------- workers ----------
-function needs(G,s){ return (s.k==='trap'||s.k==='door'||s.k==='chest') && !s.ok; }
-function workSpeed(G, who){ var b=G.boost>0?1.5:1; return who==='p' ? (1+0.25*G.upg.mop)*b : 0.6*(1+0.2*G.upg.gob)*b; }
-function doWork(G, w, who, dt, kinds){
-  var best=null, bd=1e9;
-  if (!kinds||kinds.slime) G.slimes.forEach(function(s){ var d=dist(s,w); if(d<0.95*s.sz+0.2&&d<bd){bd=d;best={sl:s};} });
-  if (!best) G.st.forEach(function(s){ if(kinds&&!kinds[s.k]) return; if(!needs(G,s)) return; if(s.k==='chest'&&w.carry<=0) return; var d=dist(s,w); if(d<1.35&&d<bd){bd=d;best={s:s};} });
-  if (!best) return false;
-  var sp=workSpeed(G,who)*dt;
-  if (best.sl){ var sl=best.sl; sl.prog+=sp/WORK.slime;
-    if (sl.prog>=1){ G.slimes.splice(G.slimes.indexOf(sl),1); G.ev.push({t:'clean',id:sl.id,x:sl.x,z:sl.z,who:who}); pay(G, FEE.slime*Math.max(1,MULT(sl.r)*0.5), sl.x, sl.z, 'slime'); }
-    return true; }
-  var s=best.s; s.prog+=sp/(s.k==='chest'?WORK.fill:WORK[s.k]);
-  if (s.prog>=1){ s.prog=0; s.ok=true; if(s.k==='chest') w.carry--; G.ev.push({t:'fixed',id:s.id,k:s.k,who:who}); }
-  return true;
+function serve(G,h,who){
+  var t=G.tables[h.tbl];
+  h.patAt=h.pat/PATIENCE; h.sat+= h.patAt>0.5?15:5;
+  t.food=h.want; h.state='eat'; h.eatT=EAT; h.want=null;
+  G.stats.served++;
+  G.ev.push({t:'serve', id:h.id, tbl:t.i, food:t.food, who:who}); emo(G,h,'happy');
 }
-function takeSacks(G, w, who, dt, cap){
-  var near=G.piles.some(function(p){ return dist(p,w)<1.6; });
-  if (!near||w.carry>=cap){ w.takeT=0; return false; }
-  w.takeT=(w.takeT||0)+dt;
-  while (w.takeT>=WORK.take && w.carry<cap){ w.takeT-=WORK.take; w.carry++; G.ev.push({t:'take',who:who}); }
-  return true;
+function pay(G, amt, x, z, tbl){
+  amt=Math.max(1, Math.round(amt*(G.boostMoney>0?2:1)));
+  if (tbl){ tbl.coins+=amt; G.ev.push({t:'drop', tbl:tbl.i, n:amt, x:x, z:z}); }
+  else { G.coins+=amt; G.earned+=amt; G.ev.push({t:'coin', n:amt, x:x, z:z}); }
+  return amt;
 }
-function bagCap(G){ return 3+2*G.upg.bag; }
+function collect(G,t){ if (t.coins<=0) return; var n=Math.round(t.coins); t.coins=0; G.coins+=n; G.earned+=n; G.ev.push({t:'coin', n:n, x:t.x, z:t.z, why:'pick'}); }
+
+// ---------- player ----------
+function trayCap(G){ return 2+G.upg.tray; }
 function playerSpeed(G){ return 5.0*(1+0.1*G.upg.boots)*(G.boost>0?1.35:1); }
+function workSpeed(G, who){ var b=G.boost>0?1.5:1; return who==='p' ? b : 0.6*(1+0.25*G.upg.gob)*b; }
 function clampPos(G,p){
-  p.x=Math.max(-W/2+0.55, Math.min(W/2-0.55, p.x));
-  p.z=Math.min(-0.45, Math.max(-G.rooms*D+0.55, p.z));
-  // solid stations (chests)
-  G.st.forEach(function(s){ if(s.k!=='chest') return; var dx=p.x-s.x, dz=p.z-s.z, hx=0.95, hz=0.75;
-    if (Math.abs(dx)<hx && Math.abs(dz)<hz){ if (hx-Math.abs(dx) < hz-Math.abs(dz)) p.x=s.x+(dx<0?-hx:hx); else p.z=s.z+(dz<0?-hz:hz); } });
+  p.x=Math.max(-W/2+0.5, Math.min(W/2-0.5, p.x));
+  p.z=Math.min(-0.4, Math.max(-7.8, p.z));
+  G.tables.forEach(function(t){ if(!t.on) return;
+    var cx=t.x, cz=t.z-0.32, hx=0.8+0.35, hz=0.92+0.35, dx=p.x-cx, dz=p.z-cz;
+    if (Math.abs(dx)<hx && Math.abs(dz)<hz){ if (hx-Math.abs(dx) < hz-Math.abs(dz)) p.x=cx+(dx<0?-hx:hx); else p.z=cz+(dz<0?-hz:hz); } });
+}
+function nearKeg(w){ return Math.abs(w.x-KEG.fx)<1.1 && w.z<-6.6; }
+function nearGrill(w){ return Math.abs(w.x-GRILL.fx)<1.1 && w.z<-6.6; }
+function serveNear(G, w, who){
+  if (!w.items.length) return false;
+  for (var i=0;i<G.heroes.length;i++){ var h=G.heroes[i]; if (h.state!=='wait') continue;
+    var t=G.tables[h.tbl]; if (dist(w,t)>1.75) continue;
+    var k=w.items.lastIndexOf(h.want); if (k<0) continue;
+    w.items.splice(k,1); serve(G,h,who); return true; }
+  return false;
+}
+function wipeNear(G, w, who, dt){
+  var best=null, bd=1.75;
+  G.tables.forEach(function(t){ if(!t.on||!t.dirty) return; var d=dist(w,t); if(d<bd){bd=d;best=t;} });
+  if (!best) return false;
+  best.prog+=dt*workSpeed(G,who)/WIPE;
+  if (best.prog>=1){ best.prog=0; best.dirty=false; G.ev.push({t:'wiped', tbl:best.i, who:who}); }
+  return true;
+}
+function fillFrom(G, w, who, dt, cap, only){
+  if (w.items.length>=cap){ w.pourT=0; w.takeT=0; return false; }
+  if ((!only||only==='beer') && nearKeg(w)){
+    w.pourT=(w.pourT||0)+dt*workSpeed(G,who)*(who==='p'?1:0.8);
+    if (w.pourT>=POUR){ w.pourT=0; w.items.push('beer'); G.ev.push({t:'pour', who:who}); }
+    return true;
+  }
+  w.pourT=0;
+  if ((!only||only==='meat') && G.grill.on && nearGrill(w) && G.grill.ready>0){
+    w.takeT=(w.takeT||0)+dt;
+    if (w.takeT>=TAKE){ w.takeT=0; G.grill.ready--; w.items.push('meat'); G.ev.push({t:'grab', who:who}); }
+    return true;
+  }
+  return false;
 }
 function stepPlayer(G, dt, ix, iz){
   var p=G.player, m=Math.sqrt(ix*ix+iz*iz); if(m>1){ix/=m;iz/=m;m=1;}
   var sp=playerSpeed(G); p.x+=ix*sp*dt; p.z+=iz*sp*dt; clampPos(G,p);
   p.moving=m>0.15; if(p.moving) p.face=Math.atan2(ix,iz);
-  takeSacks(G,p,'p',dt,bagCap(G));
-  p.working=doWork(G,p,'p',dt,null);
-  // coin magnet
-  G.st.forEach(function(s){ if(s.coins>0 && dist(s,p)<1.9) collect(G,s); });
-  // pads
+  p.working=false;
+  if (fillFrom(G,p,'p',dt,trayCap(G))) p.working=true;
+  if (p.items.length && dist(p,TRASH)<1.1){ p.items=[]; G.ev.push({t:'trash'}); }
+  serveNear(G,p,'p');
+  if (wipeNear(G,p,'p',dt)) p.working=true;
+  G.tables.forEach(function(t){ if(t.coins>0 && dist(t,p)<2.0) collect(G,t); });
   p.onPad=null;
   G.pads.forEach(function(pd){
-    if (Math.abs(p.x-pd.x)<1.0 && Math.abs(p.z-pd.z)<1.0){
+    if (Math.abs(p.x-pd.x)<0.95 && Math.abs(p.z-pd.z)<0.95){
       p.onPad=pd; if (pd.kind==='bench') return;
       var left=pd.cost-pd.paid; if(left<=0) return;
       var give=Math.min(left, Math.max(pd.cost/1.3,25)*dt, G.coins);
-      if (give>0){ G.coins-=give; pd.paid+=give; G.ev.push({t:'padpay',kind:pd.kind}); if(pd.paid>=pd.cost-1e-6) buyPad(G,pd); }
+      if (give>0){ G.coins-=give; pd.paid+=give; G.padPaid.next=pd.paid; G.ev.push({t:'padpay'}); if(pd.paid>=pd.cost-1e-6) buyPad(G,pd); }
     }
   });
   G.goblins.forEach(function(g){ if(g.sleep>0&&dist(g,p)<2){ g.sleep=0; G.ev.push({t:'wake',id:g.id}); } });
 }
-function buyPad(G,pd){
-  G.padPaid[pd.kind]=0; pd.paid=0;
-  if (pd.kind==='room'){ buildRoom(G,G.rooms); G.rooms++; G.stats.roomAt.push(G.t); G.ev.push({t:'buy',kind:'room',r:G.rooms-1});
-    // re-route heroes that haven't reached the old exit yet
-    G.heroes.forEach(function(h){ var cur=h.path[h.pi]; if(cur&&cur.exit){ var np=heroPath(G); var lastRoom=G.rooms-2; var idx=0; for(var i=0;i<np.length;i++){ if(np[i].room===lastRoom+1){ idx=i; break; } } h.path=np; h.pi=Math.max(0,idx-1); h.path.splice(h.pi,0,{x:0,z:-(lastRoom+1)*D+0.6}); } });
-  } else if (GOB[pd.kind]){ G.gob[pd.kind]++; addGoblin(G,pd.kind); G.ev.push({t:'buy',kind:pd.kind}); }
-  makePads(G);
+
+// ---------- goblins ----------
+function addGoblin(G,kind){ var g={id:G.nid++, kind:kind, x:PADS.hire[0]-0.5, z:-1.6, items:[], task:null, sleep:0, nap:50+G.rand()*50, face:Math.PI}; G.goblins.push(g); return g; }
+function moveTo(g,t,sp,dt){ var dx=t.x-g.x, dz=t.z-g.z, d=Math.sqrt(dx*dx+dz*dz); if(d<0.05){ g.moving=false; return true; } var m=Math.min(d,sp*dt); g.x+=dx/d*m; g.z+=dz/d*m; g.face=Math.atan2(dx,dz); g.moving=true; return d<=sp*dt; }
+// walking around tables: straight line if clear, else via the free lanes (z) and aisles (x)
+var LANES=[-0.9,-3.85,-6.75], AISLES=[-5.3,-1.7,1.7,5.3];
+function segHits(G,a,b){
+  for (var i=0;i<G.tables.length;i++){ var t=G.tables[i]; if(!t.on) continue;
+    var x0=t.x-1.05, x1=t.x+1.05, z0=t.z-1.5, z1=t.z+0.85;
+    for (var k=0;k<=10;k++){ var x=a.x+(b.x-a.x)*k/10, z=a.z+(b.z-a.z)*k/10; if(x>x0&&x<x1&&z>z0&&z<z1) return true; } }
+  return false;
 }
-function addGoblin(G,kind){ var g={id:G.nid++, kind:kind, x:(G.rand()-0.5)*3, z:-1.5, carry:0, task:null, sleep:0, nap:50+G.rand()*50, face:Math.PI}; G.goblins.push(g); return g; }
-var GOB_KINDS={clean:{slime:1,door:1}, trap:{trap:1}, carry:{chest:1}};
-function taken(G,g,obj){ return G.goblins.some(function(o){ return o!==g && o.task && (o.task.s===obj||o.task.sl===obj); }); }
+function near(arr,v){ var b=arr[0]; arr.forEach(function(l){ if(Math.abs(l-v)<Math.abs(b-v)) b=l; }); return b; }
+function nextStep(G,g,tgt){
+  if (!segHits(G,g,tgt)) return tgt;
+  var tl=near(LANES,tgt.z), ax0=near(AISLES,g.x);
+  if (Math.abs(g.x-ax0)<0.15){ if (Math.abs(g.z-tl)>0.15) return {x:ax0, z:tl}; return {x:tgt.x, z:tl}; }
+  var lz=near(LANES,g.z);
+  if (Math.abs(g.z-lz)>0.15) return {x:g.x, z:lz};
+  if (tl===lz) return {x:tgt.x, z:lz};
+  return {x:near(AISLES,(g.x+tgt.x)/2), z:lz};
+}
+function routeTo(g, tgt, sp, dt, G){ var s=nextStep(G,g,tgt); var done=moveTo(g,s,sp,dt); return done && s===tgt; }
 function stepGoblin(G,g,dt){
-  g.moving=false;
-  if (g.sleep>0){ g.sleep-=dt; g.working=false; if(g.sleep<=0) G.ev.push({t:'wake',id:g.id}); return; }
-  g.nap-=dt; if (g.nap<=0){ g.nap=60+G.rand()*60; if(G.rand()<0.45){ g.sleep=15; G.ev.push({t:'sleep',id:g.id}); return; } }
-  var sp=2.8*(1+0.15*G.upg.gob)*(G.boost>0?1.5:1), t=g.task;
-  if (t&&t.sl&&G.slimes.indexOf(t.sl)<0) t=g.task=null;
-  if (t&&t.s&&!needs(G,t.s)) t=g.task=null;
-  if (!t){
-    var best=null,bd=1e9, pick=function(o,key,w){ if(taken(G,g,o)) return; var d=dist(o,g)*(w||1); if(d<bd){bd=d;best={}; best[key]=o;} };
-    if (g.kind==='clean'){ G.slimes.forEach(function(s){pick(s,'sl');}); G.st.forEach(function(s){ if(s.k==='door'&&!s.ok) pick(s,'s',0.8); }); }
-    else if (g.kind==='trap'){ G.st.forEach(function(s){ if(s.k==='trap'&&!s.ok) pick(s,'s',G.heroes.some(function(h){return h.need&&h.path[h.pi]&&h.path[h.pi].st===s.id;})?0.5:1); }); }
-    else { if (g.carry<=0){ if (G.st.some(function(s){return s.k==='chest'&&!s.ok;})) G.piles.forEach(function(p){ var d=dist(p,g); if(d<bd){bd=d;best={pile:p};} }); }
-      else G.st.forEach(function(s){ if(s.k==='chest'&&!s.ok) pick(s,'s'); }); }
-    g.task=t=best;
+  g.moving=false; g.working=false;
+  if (g.sleep>0){ g.sleep-=dt; if(g.sleep<=0) G.ev.push({t:'wake',id:g.id}); return; }
+  g.nap-=dt; if (g.nap<=0){ g.nap=70+G.rand()*60; if(G.rand()<0.4){ g.sleep=12; G.ev.push({t:'sleep',id:g.id}); return; } }
+  var sp=2.8*(1+0.15*G.upg.gob)*(G.boost>0?1.5:1);
+  var others=G.goblins.filter(function(o){return o!==g&&o.task;});
+  if (g.kind==='wiper'){
+    var t=g.task;
+    if (t && (!t.dirty)) t=g.task=null;
+    if (!t){ var bd=1e9; G.tables.forEach(function(tb){ if(!tb.on||!tb.dirty) return; if(others.some(function(o){return o.task===tb;})) return; var d=dist(tb,g); if(d<bd){bd=d;t=tb;} }); g.task=t; }
+    if (!t){ routeTo(g,{x:-5.0+((g.id*0.9)%1.5), z:-3.85}, sp*0.5, dt, G); return; }
+    var f=frontOf(t);
+    if (dist(g,f)>0.25){ routeTo(g,f,sp,dt,G); return; }
+    g.face=Math.PI; g.working=wipeNear(G,g,'g',dt); return;
   }
-  if (!t){ moveTo(g,{x:-3+((g.id*1.3)%6), z:-1.4}, sp*0.5, dt); g.working=false; return; }
-  var tgt=t.sl||t.s||t.pile, near=t.pile?1.2:(t.s&&t.s.k==='chest'?1.15:0.6);
-  if (dist(g,tgt)>near){ moveTo(g,tgt,sp,dt); g.working=false; return; }
-  if (t.pile){ takeSacks(G,g,'g',dt,3); g.working=true; if(g.carry>=3) g.task=null; return; }
-  g.working=doWork(G,g,'g',dt,GOB_KINDS[g.kind]); if(!g.working) g.task=null;
+  // waiter: fetch for the most impatient hero nobody else is serving
+  if (g.items.length){
+    var want=g.items[0], hh=null, bp=1e9;
+    G.heroes.forEach(function(h){ if(h.state==='wait'&&h.want===want&&h.pat<bp&&!others.some(function(o){return o.task===h;})){ bp=h.pat; hh=h; } });
+    if (!hh){ if (G.rand()<dt*0.1) g.items=[]; routeTo(g,{x:2.0,z:-6.75},sp*0.5,dt,G); return; }
+    g.task=hh; var ft=frontOf(G.tables[hh.tbl]);
+    if (dist(g,ft)>0.3){ routeTo(g,ft,sp,dt,G); return; }
+    serveNear(G,g,'g'); return;
+  }
+  var tgt=null, bp2=1e9;
+  G.heroes.forEach(function(h){ if(h.state==='wait'&&h.pat<bp2&&!others.some(function(o){return o.task===h;})){ if(h.want==='meat'&&G.grill.ready<=0&&G.heroes.some(function(x){return x.state==='wait'&&x.want==='beer';})) return; bp2=h.pat; tgt=h; } });
+  g.task=tgt;
+  if (!tgt){ routeTo(g,{x:2.0,z:-6.75},sp*0.5,dt,G); return; }
+  var src = tgt.want==='beer' ? {x:KEG.fx+0.5, z:-7.2} : {x:GRILL.fx+0.5, z:-7.2};
+  if (dist(g,src)>0.25){ routeTo(g,src,sp,dt,G); return; }
+  g.working=fillFrom(G,g,'g',dt,1,tgt.want);
 }
-function moveTo(g,t,sp,dt){ var dx=t.x-g.x, dz=t.z-g.z, d=Math.sqrt(dx*dx+dz*dz); if(d<0.05) return; var m=Math.min(d,sp*dt); g.x+=dx/d*m; g.z+=dz/d*m; g.face=Math.atan2(dx,dz); g.moving=true; }
+
 // ---------- main ----------
 function step(G, dt, ix, iz){
   if (G.paused) return;
   G.t+=dt;
   if (G.boost>0) G.boost=Math.max(0,G.boost-dt);
   if (G.boostMoney>0) G.boostMoney=Math.max(0,G.boostMoney-dt);
-  for (var i=G.timers.length-1;i>=0;i--) if(G.t>=G.timers[i].t){ var f=G.timers[i].fn; G.timers.splice(i,1); f(); }
+  if (G.grill.on && G.grill.ready<GRILL_MAX){ G.grill.t+=dt*(1+0.35*G.upg.grill)*(G.boost>0?1.5:1); if (G.grill.t>=COOK){ G.grill.t=0; G.grill.ready++; G.ev.push({t:'cooked'}); } }
   stepPlayer(G,dt,ix||0,iz||0);
   G.goblins.forEach(function(g){ stepGoblin(G,g,dt); });
-  G.heroes.slice().forEach(function(h){ var pz=h.z; stepHero(G,h,dt); if (h.state==='walk' && G.rand()<dt*0.09) leaveSlime(G,h); });
-  // doors break sometimes when heroes pass
-  if (G.flow){ G.spawnT-=dt; if (G.spawnT<=0 && G.heroes.length<maxHeroes(G)){ G.spawnT=spawnGap(G)*(0.8+G.rand()*0.4); spawnHero(G); } }
+  G.heroes.slice().forEach(function(h){ stepHero(G,h,dt); });
+  if (G.flow){ G.spawnT-=dt; if (G.spawnT<=0 && G.heroes.filter(function(h){return h.state!=='leave';}).length<maxHeroes(G)){ G.spawnT=spawnGap(G)*(0.8+G.rand()*0.4); spawnHero(G); } }
 }
 // ---------- save ----------
 function save(G){
-  return JSON.stringify({v:2, coins:Math.floor(G.coins), earned:Math.floor(G.earned), rooms:G.rooms, rep:G.rep, upg:G.upg, gob:G.gob, tut:G.tut, heroCount:G.heroCount,
-    st:G.st.map(function(s){return [s.ok?1:0, Math.round(s.coins)];}), padPaid:G.pads.reduce(function(o,p){o[p.kind]=Math.floor(p.paid);return o;},{}), ipm:G.ipm||0});
+  return JSON.stringify({v:3, coins:Math.floor(G.coins), earned:Math.floor(G.earned), rep:G.rep, unl:G.unl, upg:G.upg, tut:G.tut, heroCount:G.heroCount,
+    tb:G.tables.map(function(t){ return [t.dirty?1:0, Math.round(t.coins)]; }), next:Math.floor(G.padPaid.next||0), ipm:G.ipm||0, ready:G.grill.ready});
 }
 function load(str){
-  var o=JSON.parse(str); if(!o||o.v!==2) return null;
-  var G=newGame(Date.now()%100000); G.st=[]; G.piles=[];
-  for (var r=0;r<o.rooms;r++) buildRoom(G,r);
-  G.ev=[]; G.rooms=o.rooms; G.coins=o.coins; G.earned=o.earned||0; G.rep=o.rep; G.upg=o.upg; G.gob=o.gob; G.tut=o.tut; G.heroCount=o.heroCount||0; G.padPaid=o.padPaid||{}; G.ipm=o.ipm||0;
-  (o.st||[]).forEach(function(a,i){ if(G.st[i]){ G.st[i].ok=!!a[0]; G.st[i].coins=a[1]||0; } });
-  Object.keys(G.gob).forEach(function(k){ for(var i=0;i<G.gob[k];i++) addGoblin(G,k); });
-  G.pads=[]; makePads(G);
+  var o=JSON.parse(str); if(!o||o.v!==3) return null;
+  var G=newGame(Date.now()%100000);
+  G.coins=o.coins; G.earned=o.earned||0; G.rep=o.rep||3; G.upg=o.upg; G.tut=o.tut; G.heroCount=o.heroCount||0; G.ipm=o.ipm||0; G.padPaid={next:o.next||0};
+  for (var i=0;i<o.unl&&i<UNL.length;i++) applyUnlock(G, UNL[i], true);
+  G.unl=Math.min(o.unl, UNL.length); G.grill.ready=o.ready||0;
+  (o.tb||[]).forEach(function(a,i){ var t=G.tables[i]; if(t&&t.on){ t.dirty=!!a[0]; t.coins=a[1]||0; } });
+  G.ev=[]; makePads(G);
   return G;
 }
 function buyUpgrade(G,k){ var u=UPG[k]; if(G.upg[k]>=u.max) return false; var c=u.cost[G.upg[k]]; if(G.coins<c) return false; G.coins-=c; G.upg[k]++; G.ev.push({t:'buy',kind:'upg',k:k}); return true; }
-return {W:W,D:D,ROOMS:ROOMS,MULT:MULT,UPG:UPG,GOB:GOB,GOB_MAX:GOB_MAX,PORTAL:PORTAL,RPAD:RPAD,HALL_PADS:HALL_PADS,PATIENCE:PATIENCE,
-  newGame:newGame, step:step, makePads:makePads, spawnHero:spawnHero, bagCap:bagCap, playerSpeed:playerSpeed, save:save, load:load,
-  needs:needs, stById:stById, W2:W2, buyUpgrade:buyUpgrade, pay:pay, collect:collect};
+return {W:W, D:D, TABLES:TABLES, KEG:KEG, GRILL:GRILL, POT:POT, TRASH:TRASH, PADS:PADS, UNL:UNL, UPG:UPG, PATIENCE:PATIENCE, QPAT:QPAT, GRILL_MAX:GRILL_MAX, PRICE:PRICE,
+  newGame:newGame, step:step, makePads:makePads, spawnHero:spawnHero, trayCap:trayCap, playerSpeed:playerSpeed, save:save, load:load,
+  buyUpgrade:buyUpgrade, nextStep:nextStep, pay:pay, collect:collect, seatOf:seatOf, frontOf:frontOf, nearKeg:nearKeg, nearGrill:nearGrill};
 })();
 
 // ===== SIM END =====
@@ -415,20 +444,33 @@ return {W:W,D:D,ROOMS:ROOMS,MULT:MULT,UPG:UPG,GOB:GOB,GOB_MAX:GOB_MAX,PORTAL:POR
 var CODES=['en','fr','it','de','es','tr','zh','ja','ko','pt','ru'];
 var LANG_NAMES={en:'English',fr:'Français',it:'Italiano',de:'Deutsch',es:'Español',tr:'Türkçe',zh:'中文',ja:'日本語',ko:'한국어',pt:'Português',ru:'Русский'};
 var TL={
+  t0:['A hero wants beer! Walk to the keg to pour one 🍺','Un héros veut une bière ! Va au tonneau pour en servir une 🍺','Un eroe vuole una birra! Vai alla botte e spillala 🍺','Ein Held will Bier! Geh zum Fass und zapf eins 🍺','¡Un héroe quiere cerveza! Ve al barril a servir una 🍺','Bir kahraman bira istiyor! Fıçıya git ve doldur 🍺','勇者想喝啤酒！走到酒桶前接一杯 🍺','勇者がビールを注文！樽の前でついでね 🍺','용사가 맥주를 원해요! 술통 앞에 가서 따르세요 🍺','Um herói quer cerveja! Vá ao barril e sirva uma 🍺','Герой хочет пива! Подойди к бочке и налей 🍺'],
+  t1:['Bring it to his table!','Apporte-la à sa table !','Portala al suo tavolo!','Bring es an seinen Tisch!','¡Llévala a su mesa!','Masasına götür!','端过去！走到他的桌子旁边','テーブルまで運ぼう！','그의 테이블로 가져가세요!','Leve até a mesa dele!','Отнеси к его столу!'],
+  t2a:['Cheers! He is drinking…','Santé ! Il boit…','Salute! Sta bevendo…','Prost! Er trinkt…','¡Salud! Está bebiendo…','Şerefe! İçiyor…','干杯！他在喝……','乾杯！飲んでるよ…','건배! 마시는 중…','Saúde! Ele está bebendo…','Будем! Он пьёт…'],
+  t2:['He paid! Grab the coins and wipe the table','Il a payé ! Prends les pièces et essuie la table','Ha pagato! Prendi le monete e pulisci il tavolo','Er hat bezahlt! Nimm die Münzen und wisch den Tisch','¡Ha pagado! Coge las monedas y limpia la mesa','Ödedi! Paraları al ve masayı sil','付钱了！走过去捡钱，顺手擦桌子','お金を払った！コインを拾ってテーブルを拭こう','돈을 냈어요! 동전을 줍고 테이블을 닦으세요','Ele pagou! Pegue as moedas e limpe a mesa','Он заплатил! Забери монеты и протри стол'],
+  t3:['More heroes are coming! Look above their heads and bring what they want','D\'autres héros arrivent ! Regarde au-dessus de leur tête et apporte ce qu\'ils veulent','Arrivano altri eroi! Guarda sopra la loro testa e porta ciò che vogliono','Mehr Helden kommen! Schau über ihre Köpfe und bring, was sie wollen','¡Vienen más héroes! Mira sobre su cabeza y llévales lo que piden','Daha çok kahraman geliyor! Başlarının üstüne bak, istediklerini getir','勇者会一个接一个来！看头顶要什么，就端什么','勇者が次々来るよ！頭の上を見て、欲しい物を運ぼう','용사가 계속 와요! 머리 위를 보고 원하는 걸 가져다주세요','Mais heróis vêm aí! Olhe acima da cabeça deles e leve o que pedem','Идут новые герои! Смотри, что над головой, и неси это'],
+  t4:['Enough gold! Stand on the sign to buy a new table','Assez d\'or ! Place-toi sur le panneau pour acheter une table','Abbastanza oro! Mettiti sul cartello per comprare un tavolo','Genug Gold! Stell dich aufs Schild, um einen Tisch zu kaufen','¡Ya tienes oro! Ponte sobre el cartel para comprar una mesa','Yeterli altın! Yeni masa için tabelanın üstünde dur','钱够了！站到格子上买新桌子','お金がたまった！看板に乗って新しいテーブルを買おう','돈이 모였어요! 표지판 위에 서서 테이블을 사세요','Ouro suficiente! Fique na placa para comprar uma mesa','Хватает золота! Встань на табличку, чтобы купить стол'],
+  t5:['Unlock the grill — roast meat pays double!','Débloque le grill : la viande rapporte le double !','Sblocca la griglia: la carne paga il doppio!','Schalte den Grill frei – Braten bringt doppelt!','Desbloquea la parrilla: ¡la carne paga el doble!','Izgarayı aç — et iki kat kazandırır!','解锁烤肉架：烤肉卖双倍价钱！','グリルを解放！お肉は2倍のお値段！','그릴을 열어요! 고기는 두 배 가격!','Desbloqueie a grelha: carne paga o dobro!','Открой гриль — мясо стоит вдвое дороже!'],
+  t6:['The grill cooks by itself. Grab the meat 🍖','Le grill cuit tout seul. Prends la viande 🍖','La griglia cuoce da sola. Prendi la carne 🍖','Der Grill brät von selbst. Hol dir das Fleisch 🍖','La parrilla cocina sola. Coge la carne 🍖','Izgara kendi pişirir. Eti al 🍖','烤架会自己烤，走过去拿肉 🍖','グリルは自動で焼けるよ。お肉を取ろう 🍖','그릴은 알아서 구워요. 고기를 가져가세요 🍖','A grelha assa sozinha. Pegue a carne 🍖','Гриль жарит сам. Возьми мясо 🍖'],
+  t7:['Workbench: faster boots, bigger tray, faster grill','Établi : bottes rapides, plus grand plateau, grill plus rapide','Banco: stivali veloci, vassoio più grande, griglia più rapida','Werkbank: schnellere Stiefel, größeres Tablett, schnellerer Grill','Banco: botas rápidas, bandeja más grande, parrilla más rápida','Tezgâh: hızlı bot, büyük tepsi, hızlı ızgara','工具台：升级鞋子、托盘、烤架','作業台：靴・トレー・グリルを強化','작업대: 장화, 쟁반, 그릴 강화','Bancada: botas rápidas, bandeja maior, grelha mais rápida','Верстак: быстрые сапоги, большой поднос, быстрый гриль'],
+  trashHint:['Wrong order? Drop it in the bin on the right','Mauvaise commande ? Jette-la dans la poubelle à droite','Ordine sbagliato? Buttalo nel secchio a destra','Falsche Bestellung? Wirf sie rechts in den Eimer','¿Pedido equivocado? Tíralo al cubo de la derecha','Yanlış sipariş mi? Sağdaki çöpe at','拿错了？右边有垃圾桶可以扔掉','注文違い？右のゴミ箱に捨てよう','잘못 가져왔어요? 오른쪽 쓰레기통에 버리세요','Pedido errado? Jogue no lixo à direita','Не то? Выброси в ведро справа'],
+  goal:['Next: {r}','Suivant : {r}','Prossimo: {r}','Als Nächstes: {r}','Siguiente: {r}','Sıradaki: {r}','下一个：{r}','次：{r}','다음: {r}','Próximo: {r}','Далее: {r}'],
+  allUnl:['All unlocked! Private rooms & potions coming soon','Tout est débloqué ! Salons privés et potions bientôt','Tutto sbloccato! Salette e pozioni in arrivo','Alles frei! Séparées & Tränke kommen bald','¡Todo desbloqueado! Pronto: reservados y pociones','Hepsi açıldı! Özel odalar ve iksirler yakında','全部解锁！包间和药水即将推出','全部解放！個室とポーションは近日公開','모두 열었어요! 별실과 물약은 곧 나와요','Tudo liberado! Salas privadas e poções em breve','Всё открыто! Скоро: кабинеты и зелья'],
+  soon:['Soon','Bientôt','Presto','Bald','Pronto','Yakında','即将推出','近日公開','곧 출시','Em breve','Скоро'],
+  u_table:['New table','Nouvelle table','Nuovo tavolo','Neuer Tisch','Mesa nueva','Yeni masa','新桌子','新しいテーブル','새 테이블','Mesa nova','Новый стол'],
+  u_grill:['Roast grill','Grill à rôtir','Griglia','Bratgrill','Parrilla','Kebap ızgarası','烤肉架','肉焼きグリル','고기 그릴','Grelha','Гриль'],
+  u_wiper:['Cleaner goblin','Gobelin nettoyeur','Goblin pulitore','Putz-Goblin','Goblin limpiador','Temizlikçi goblin','擦桌哥布林','掃除ゴブリン','청소 고블린','Goblin faxineiro','Гоблин-уборщик'],
+  u_waiter:['Waiter goblin','Gobelin serveur','Goblin cameriere','Kellner-Goblin','Goblin camarero','Garson goblin','跑堂哥布林','給仕ゴブリン','서빙 고블린','Goblin garçom','Гоблин-официант'],
+  unlocked:['Unlocked!','Débloqué !','Sbloccato!','Freigeschaltet!','¡Desbloqueado!','Açıldı!','解锁！','解放！','해금!','Desbloqueado!','Открыто!'],
+  bossD2:['Orders twice, pays ×5!','Commande deux fois, paie ×5 !','Ordina due volte, paga ×5!','Bestellt zweimal, zahlt ×5!','Pide dos veces, ¡paga ×5!','İki kez sipariş, ×5 öder!','点两样，付 5 倍钱！','2回注文して5倍払う！','두 번 주문, 5배 지불!','Pede duas vezes, paga ×5!','Заказывает дважды, платит ×5!'],
+  tray:['Tray','Plateau','Vassoio','Tablett','Bandeja','Tepsi','托盘','トレー','쟁반','Bandeja','Поднос'],
+  trayD:['Carry {n} items','Porter {n} objets','Porta {n} oggetti','{n} Sachen tragen','Lleva {n} cosas','{n} şey taşı','一次端 {n} 样','{n}個運べる','{n}개 운반','Carregue {n} itens','Нести {n} предметов'],
+  grill:['Grill','Grill','Griglia','Grill','Parrilla','Izgara','烤架','グリル','그릴','Grelha','Гриль'],
+  grillD:['Meat cooks faster','La viande cuit plus vite','La carne cuoce più in fretta','Fleisch brät schneller','La carne se hace más rápido','Et daha hızlı pişer','烤肉更快','肉が早く焼ける','고기가 빨리 익어요','A carne assa mais rápido','Мясо жарится быстрее'],
+  task_wipe:['Wipe {n} tables','Essuyer {n} tables','Pulisci {n} tavoli','{n} Tische wischen','Limpia {n} mesas','{n} masa sil','擦 {n} 张桌子','テーブルを{n}回拭く','테이블 {n}번 닦기','Limpe {n} mesas','Протри {n} столов'],
+  task_pour:['Pour {n} beers','Servir {n} bières','Spilla {n} birre','{n} Bier zapfen','Sirve {n} cervezas','{n} bira doldur','接 {n} 杯啤酒','ビールを{n}杯つぐ','맥주 {n}잔 따르기','Sirva {n} cervejas','Налей {n} кружек пива'],
   move_kb:['WASD / arrows to move','ZQSD / flèches pour bouger','WASD / frecce per muoverti','WASD / Pfeiltasten zum Laufen','WASD / flechas para moverte','WASD / ok tuşları ile yürü','WASD / 方向键 移动','WASD / 矢印キーで移動','WASD / 방향키로 이동','WASD / setas para andar','WASD / стрелки — ходьба'],
   move_touch:['Drag anywhere to move','Glisse n\'importe où pour bouger','Trascina ovunque per muoverti','Irgendwo ziehen zum Laufen','Arrastra en cualquier sitio para moverte','Yürümek için ekranı sürükle','按住屏幕拖动来走路','画面をドラッグして移動','화면을 드래그해서 이동','Arraste na tela para andar','Тяни по экрану, чтобы идти'],
-  t0:['A hero is waiting! Walk next to the trap to reset it','Un héros attend ! Va près du piège pour le réarmer','Un eroe aspetta! Vai vicino alla trappola per riarmarla','Ein Held wartet! Stell dich neben die Falle, um sie zu spannen','¡Un héroe espera! Acércate a la trampa para rearmarla','Bir kahraman bekliyor! Tuzağı kurmak için yanına git','勇者在等你！走到陷阱旁边，站一下就能重置','勇者が待ってる！罠のそばに立ってリセットしよう','용사가 기다려요! 함정 옆에 서서 다시 설치하세요','Um herói está esperando! Fique perto da armadilha para rearmá-la','Герой ждёт! Подойди к ловушке, чтобы взвести её'],
-  t1:['He paid! Walk over the coins to grab them','Il a payé ! Marche sur les pièces pour les prendre','Ha pagato! Passa sulle monete per raccoglierle','Er hat bezahlt! Lauf über die Münzen, um sie einzusammeln','¡Ha pagado! Pasa por encima de las monedas para cogerlas','Ödedi! Paraları almak için üstlerinden geç','勇者付钱了！走过去捡金币','お金を払った！コインの上を歩いて拾おう','돈을 냈어요! 동전 위를 지나가서 주우세요','Ele pagou! Passe por cima das moedas para pegá-las','Он заплатил! Пройди по монетам, чтобы собрать их'],
-  t2:['The chest is empty — grab gold sacks from the pile','Le coffre est vide : prends des sacs d\'or sur le tas','Il forziere è vuoto: prendi i sacchi d\'oro dal mucchio','Die Truhe ist leer – hol Goldsäcke vom Haufen','El cofre está vacío: coge sacos de oro del montón','Sandık boş — yığından altın çuvalı al','宝箱空了！去金袋堆拿金袋','宝箱が空っぽ！山から金袋を取ろう','상자가 비었어요! 더미에서 금 자루를 가져오세요','O baú está vazio — pegue sacos de ouro na pilha','Сундук пуст — возьми мешки золота из кучи'],
-  t3:['Put the gold in the chest','Mets l\'or dans le coffre','Metti l\'oro nel forziere','Leg das Gold in die Truhe','Mete el oro en el cofre','Altını sandığa koy','把金袋放进宝箱','金袋を宝箱に入れよう','금 자루를 상자에 넣으세요','Coloque o ouro no baú','Положи золото в сундук'],
-  t4:['More heroes are coming! Keep traps and chests ready, grab the coins','D\'autres héros arrivent ! Garde pièges et coffres prêts, ramasse les pièces','Arrivano altri eroi! Tieni pronte trappole e forzieri, raccogli le monete','Mehr Helden kommen! Halte Fallen und Truhen bereit, sammle die Münzen','¡Vienen más héroes! Ten listas trampas y cofres, recoge las monedas','Daha çok kahraman geliyor! Tuzakları ve sandıkları hazır tut, paraları topla','勇者会一个接一个来！陷阱、宝箱随时准备好，记得捡钱','勇者が次々来るよ！罠と宝箱を準備して、コインを拾おう','용사가 계속 와요! 함정과 상자를 준비하고 동전을 주우세요','Mais heróis vêm aí! Deixe armadilhas e baús prontos e pegue as moedas','Идут новые герои! Держи ловушки и сундуки готовыми, собирай монеты'],
-  t6:['Stand on the sign to build a new room','Place-toi sur le panneau pour construire une salle','Mettiti sul cartello per costruire una stanza','Stell dich auf das Schild, um einen Raum zu bauen','Ponte sobre el cartel para construir una sala','Yeni oda kurmak için tabelanın üstünde dur','站到格子上，扩建新房间','看板の上に立って新しい部屋を作ろう','표지판 위에 서서 새 방을 지으세요','Fique na placa para construir uma sala nova','Встань на табличку, чтобы построить комнату'],
-  t7:['Hire a goblin to mop the slime for you','Embauche un gobelin pour nettoyer la bave','Assumi un goblin che pulisca la melma','Stell einen Goblin ein, der den Schleim wischt','Contrata a un goblin para fregar el slime','Balçığı silmesi için bir goblin tut','雇个哥布林帮你拖史莱姆','ゴブリンを雇ってスライムを掃除させよう','고블린을 고용해서 슬라임을 닦게 하세요','Contrate um goblin para limpar a gosma','Найми гоблина, чтобы он мыл слизь'],
-  t8:['Workbench: upgrade your boots, mop and bag','Établi : améliore bottes, serpillière et sac','Banco da lavoro: migliora stivali, mocio e borsa','Werkbank: verbessere Stiefel, Mopp und Tasche','Banco de trabajo: mejora botas, fregona y bolsa','Tezgâh: botlarını, paspasını ve çantanı geliştir','工具台：升级靴子、拖把和背包','作業台：ブーツ・モップ・バッグを強化','작업대: 장화, 대걸레, 가방을 강화하세요','Bancada: melhore botas, esfregão e bolsa','Верстак: улучшай сапоги, швабру и сумку'],
-  goal:['Next: {r}','Suivant : {r}','Prossima: {r}','Als Nächstes: {r}','Siguiente: {r}','Sıradaki: {r}','下一个房间：{r}','次：{r}','다음: {r}','Próxima: {r}','Далее: {r}'],
-  allRooms:['Dungeon complete!','Donjon terminé !','Dungeon completato!','Dungeon fertig!','¡Mazmorra completa!','Zindan tamamlandı!','地牢已经全部扩建！','ダンジョン完成！','던전 완성!','Masmorra completa!','Подземелье готово!'],
-  slimeHint:['Slime makes heroes slip! Stand on it to mop','La bave fait glisser les héros ! Reste dessus pour nettoyer','La melma fa scivolare gli eroi! Fermati sopra per pulire','Schleim lässt Helden ausrutschen! Stell dich drauf zum Wischen','¡El slime hace resbalar a los héroes! Ponte encima para fregar','Balçık kahramanları kaydırır! Silmek için üstünde dur','史莱姆会让勇者滑倒！站上去拖干净','スライムで勇者が滑る！上に立って掃除しよう','슬라임 때문에 용사가 미끄러져요! 위에 서서 닦으세요','A gosma faz os heróis escorregarem! Fique em cima para limpar','На слизи герои скользят! Встань на неё, чтобы вымыть'],
-  bossD2:['Pays ×5 — don\'t keep him waiting!','Paie ×5 : ne le fais pas attendre !','Paga ×5: non farlo aspettare!','Zahlt ×5 – lass ihn nicht warten!','Paga ×5: ¡no le hagas esperar!','×5 öder — onu bekletme!','付 5 倍钱——别让他等！','5倍払う！待たせないで！','5배로 내요. 기다리게 하지 마세요!','Paga ×5 — não o deixe esperando!','Платит ×5 — не заставляй его ждать!'],
   bossWave:['👑 The Hero King!','👑 Le Roi des héros !','👑 Il Re degli eroi!','👑 Der Heldenkönig!','👑 ¡El Rey de los héroes!','👑 Kahramanlar Kralı!','👑 勇者王来了！','👑 勇者王が来た！','👑 용사왕 등장!','👑 O Rei dos heróis!','👑 Король героев!'],
   angry:['Too slow! 😡','Trop lent ! 😡','Troppo lento! 😡','Zu langsam! 😡','¡Muy lento! 😡','Çok yavaş! 😡','太慢了！😡','遅すぎ！😡','너무 느려요! 😡','Muito lento! 😡','Слишком долго! 😡'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
@@ -439,10 +481,6 @@ var TL={
   close:['Close','Fermer','Chiudi','Schließen','Cerrar','Kapat','关闭','閉じる','닫기','Fechar','Закрыть'],
   boots:['Boots','Bottes','Stivali','Stiefel','Botas','Bot','靴子','ブーツ','장화','Botas','Сапоги'],
   bootsD:['Walk faster','Marcher plus vite','Cammina più veloce','Schneller laufen','Camina más rápido','Daha hızlı yürü','走得更快','歩くのが速くなる','더 빨리 걷기','Ande mais rápido','Ходить быстрее'],
-  mop:['Mop','Serpillière','Mocio','Mopp','Fregona','Paspas','拖把','モップ','대걸레','Esfregão','Швабра'],
-  mopD:['Clean & fix faster','Nettoyer et réparer plus vite','Pulisci e ripara più in fretta','Schneller putzen & reparieren','Limpia y repara más rápido','Daha hızlı temizle ve onar','清理和修理更快','掃除と修理が速くなる','청소와 수리가 빨라져요','Limpe e conserte mais rápido','Быстрее мыть и чинить'],
-  bag:['Bag','Sac','Borsa','Tasche','Bolsa','Çanta','背包','バッグ','가방','Bolsa','Сумка'],
-  bagD:['Carry {n} gold sacks','Porter {n} sacs d\'or','Porta {n} sacchi d\'oro','{n} Goldsäcke tragen','Lleva {n} sacos de oro','{n} altın çuvalı taşı','一次背 {n} 个金袋','金袋を{n}個運べる','금 자루 {n}개 운반','Carregue {n} sacos de ouro','Нести {n} мешков золота'],
   gob:['Goblin coffee','Café gobelin','Caffè goblin','Goblin-Kaffee','Café goblin','Goblin kahvesi','哥布林咖啡','ゴブリンコーヒー','고블린 커피','Café goblin','Кофе для гоблинов'],
   gobD:['Goblins work faster','Les gobelins travaillent plus vite','I goblin lavorano più veloci','Goblins arbeiten schneller','Los goblins trabajan más rápido','Goblinler daha hızlı çalışır','哥布林干活更快','ゴブリンの仕事が速くなる','고블린이 더 빨리 일해요','Os goblins trabalham mais rápido','Гоблины работают быстрее'],
   max:['MAX','MAX','MAX','MAX','MÁX','MAKS','满级','MAX','MAX','MÁX','МАКС'],
@@ -450,19 +488,7 @@ var TL={
   offTitle:['Welcome back!','Bon retour !','Bentornato!','Willkommen zurück!','¡Bienvenido de nuevo!','Tekrar hoş geldin!','欢迎回来！','おかえり！','다시 오신 걸 환영해요!','Bem-vindo de volta!','С возвращением!'],
   offDesc:['Your goblins kept working while you were away','Tes gobelins ont travaillé pendant ton absence','I tuoi goblin hanno lavorato mentre non c\'eri','Deine Goblins haben weitergearbeitet, während du weg warst','Tus goblins siguieron trabajando mientras no estabas','Sen yokken goblinlerin çalışmaya devam etti','你不在的时候，哥布林一直在干活','いない間もゴブリンが働いていたよ','없는 동안 고블린들이 계속 일했어요','Seus goblins continuaram trabalhando enquanto você estava fora','Пока тебя не было, гоблины работали'],
   collect:['Collect','Récupérer','Raccogli','Einsammeln','Recoger','Topla','收下','受け取る','받기','Coletar','Забрать'],
-  newRoom:['New room!','Nouvelle salle !','Nuova stanza!','Neuer Raum!','¡Nueva sala!','Yeni oda!','新房间！','新しい部屋！','새 방!','Sala nova!','Новая комната!'],
   hired:['Goblin hired!','Gobelin embauché !','Goblin assunto!','Goblin eingestellt!','¡Goblin contratado!','Goblin işe alındı!','雇到哥布林！','ゴブリンを雇った！','고블린 고용!','Goblin contratado!','Гоблин нанят!'],
-  r_hall:['Entrance Hall','Hall d\'entrée','Atrio','Eingangshalle','Vestíbulo','Giriş Salonu','入口大厅','エントランス','입구 홀','Saguão','Входной зал'],
-  r_vault:['Treasure Vault','Salle du trésor','Camera del tesoro','Schatzkammer','Cámara del tesoro','Hazine Odası','宝箱库','宝物庫','보물 창고','Câmara do tesouro','Сокровищница'],
-  r_hall2:['Trap Corridor','Couloir piégé','Corridoio trappola','Fallengang','Pasillo trampa','Tuzaklı Koridor','陷阱走廊','罠の回廊','함정 복도','Corredor de armadilhas','Коридор ловушек'],
-  r_cave:['Slime Cave','Grotte à bave','Grotta melmosa','Schleimhöhle','Cueva de slime','Balçık Mağarası','史莱姆洞','スライム洞窟','슬라임 동굴','Caverna de gosma','Пещера слизи'],
-  r_crypt:['Bone Crypt','Crypte d\'os','Cripta d\'ossa','Knochengruft','Cripta de huesos','Kemik Mahzeni','骷髅墓穴','骨の地下墓所','해골 묘지','Cripta de ossos','Склеп костей'],
-  r_lava:['Lava Bridge','Pont de lave','Ponte di lava','Lavabrücke','Puente de lava','Lav Köprüsü','熔岩桥','溶岩の橋','용암 다리','Ponte de lava','Лавовый мост'],
-  r_ice:['Ice Hall','Salle de glace','Sala di ghiaccio','Eishalle','Sala de hielo','Buz Salonu','冰晶厅','氷の広間','얼음 홀','Salão de gelo','Ледяной зал'],
-  r_lair:['Dragon Lair','Antre du dragon','Tana del drago','Drachenhort','Guarida del dragón','Ejderha İni','龙穴','竜の巣','용의 둥지','Covil do dragão','Логово дракона'],
-  g_clean:['Mop goblin','Gobelin nettoyeur','Goblin pulitore','Wisch-Goblin','Goblin fregón','Paspas goblini','清洁哥布林','掃除ゴブリン','청소 고블린','Goblin faxineiro','Гоблин-уборщик'],
-  g_trap:['Trap goblin','Gobelin des pièges','Goblin trappole','Fallen-Goblin','Goblin trampero','Tuzak goblini','机关哥布林','罠ゴブリン','함정 고블린','Goblin das armadilhas','Гоблин-механик'],
-  g_carry:['Carry goblin','Gobelin porteur','Goblin facchino','Träger-Goblin','Goblin cargador','Taşıyıcı goblin','搬运哥布林','運搬ゴブリン','운반 고블린','Goblin carregador','Гоблин-носильщик'],
   adTest:['(test build: ad placeholder)','(version test : pub factice)','(versione di prova: pubblicità finta)','(Testversion: Werbe-Platzhalter)','(versión de prueba: anuncio simulado)','(test sürümü: sahte reklam)','（测试版：广告占位）','（テスト版：広告のダミー）','(테스트 버전: 광고 자리)','(versão de teste: anúncio fictício)','(тестовая версия: заглушка рекламы)'],
   noAd:['No ad available right now','Aucune pub disponible','Nessuna pubblicità disponibile','Gerade keine Werbung verfügbar','No hay anuncios ahora mismo','Şu an reklam yok','暂时没有广告','今は広告がありません','지금은 광고가 없어요','Nenhum anúncio agora','Сейчас нет рекламы'],
   // daily reward + daily tasks
@@ -471,9 +497,7 @@ var TL={
   claim:['Claim','Récupérer','Riscuoti','Abholen','Reclamar','Al','领取','受け取る','받기','Resgatar','Забрать'],
   streakTip:['Come back every day — day 7 is huge!','Reviens chaque jour : le jour 7 est énorme !','Torna ogni giorno: il giorno 7 è enorme!','Komm jeden Tag – Tag 7 ist riesig!','Vuelve cada día: ¡el día 7 es enorme!','Her gün gel — 7. gün çok büyük!','每天来领，第 7 天大奖！','毎日来てね。7日目は大当たり！','매일 오세요. 7일차는 대박!','Volte todo dia — o dia 7 é enorme!','Заходи каждый день — на 7-й день огромный приз!'],
   tasks:['Daily tasks','Tâches du jour','Compiti del giorno','Tagesaufgaben','Tareas diarias','Günlük görevler','每日任务','デイリータスク','일일 임무','Tarefas diárias','Задания дня'],
-  task_serve:['Serve {n} heroes','Servir {n} héros','Servi {n} eroi','{n} Helden bedienen','Atiende a {n} héroes','{n} kahramana hizmet et','接待 {n} 个勇者','勇者を{n}人もてなす','용사 {n}명 접대','Atenda {n} heróis','Обслужи {n} героев'],
-  task_mop:['Mop {n} slimes','Nettoyer {n} baves','Pulisci {n} melme','{n} Schleime wischen','Friega {n} slimes','{n} balçık sil','拖掉 {n} 滩史莱姆','スライムを{n}個掃除','슬라임 {n}개 닦기','Limpe {n} gosmas','Вымой {n} луж слизи'],
-  task_fix:['Reset {n} traps or chests','Réarmer {n} pièges ou coffres','Riarma {n} trappole o forzieri','{n} Fallen oder Truhen bereitmachen','Prepara {n} trampas o cofres','{n} tuzak ya da sandık hazırla','重置 {n} 个陷阱或宝箱','罠か宝箱を{n}回リセット','함정이나 상자 {n}번 준비','Prepare {n} armadilhas ou baús','Подготовь {n} ловушек или сундуков'],
+  task_serve:['Serve {n} heroes','Servir {n} héros','Servi {n} eroi','{n} Helden bedienen','Atiende a {n} héroes','{n} kahramana hizmet et','招待 {n} 位勇者','勇者を{n}人もてなす','용사 {n}명 접대','Atenda {n} heróis','Обслужи {n} героев'],
   allDone:['All done — new tasks tomorrow!','Tout est fait : nouvelles tâches demain !','Tutto fatto: nuovi compiti domani!','Alles erledigt – morgen gibt es neue!','¡Todo hecho! Nuevas tareas mañana','Hepsi tamam — yarın yeni görevler!','全部完成，明天有新任务！','全部完了！明日また新しいタスク','모두 완료! 내일 새 임무가 와요','Tudo feito — novas tarefas amanhã!','Всё готово — завтра новые задания!'],
   taskDone:['Task complete!','Tâche terminée !','Compito completato!','Aufgabe erledigt!','¡Tarea completada!','Görev tamam!','任务完成！','タスク完了！','임무 완료!','Tarefa concluída!','Задание выполнено!']
 };
@@ -605,6 +629,8 @@ var Snd = (function(){
     bad:function(){ tone(300,0.25,'sawtooth',0.07,0.6); },
     pay:function(){ tone(880,0.03,'square',0.04); },
     pop:function(){ tone(700,0.08,'sine',0.15,1.8); },
+    pour:function(){ noise(0.25,0.12,1800); tone(500,0.18,'sine',0.06,1.6); },
+    sizzle:function(){ noise(0.35,0.06,5000); },
     door:function(){ noise(0.3,0.25,900); tone(140,0.2,'square',0.06,0.6); },
     mute:function(m){ muted=m; S.bgm&&S.bgm(); },
     pmute:function(m){ pmuted=m; plog('platformMute',m); S.bgm&&S.bgm(); },
@@ -640,115 +666,116 @@ var M={};
 function mesh(g, m, x,y,z, cast){ var o=new T.Mesh(g,m); o.position.set(x||0,y||0,z||0); o.castShadow=cast!==false; o.receiveShadow=true; return o; }
 function canvasTex(w,h,draw){ var c=document.createElement('canvas'); c.width=w; c.height=h; draw(c.getContext('2d'),w,h); var t=new T.CanvasTexture(c); t.colorSpace=T.SRGBColorSpace; t.anisotropy=4; return t; }
 
-// floor textures
-var floorTex=canvasTex(256,256,function(x,w,h){
-  x.fillStyle='#4a3b4c'; x.fillRect(0,0,w,h);
-  var cols=['#8d7b7a','#958281','#86756f','#9a8984','#8a7a80'];
-  for (var j=0;j<4;j++) for (var i=0;i<4;i++){ x.fillStyle=cols[(i*7+j*3)%cols.length]; x.beginPath(); if(x.roundRect) x.roundRect(i*64+3,j*64+3,58,58,8); else x.rect(i*64+3,j*64+3,58,58); x.fill(); }
-  x.globalAlpha=0.08; for (var k=0;k<400;k++){ x.fillStyle=Math.random()<0.5?'#fff':'#000'; x.fillRect(Math.random()*w,Math.random()*h,2,2); }
+// textures
+var plankTex=canvasTex(256,256,function(x,w,h){
+  var cols=['#9a6a3e','#a5734a','#8f6138','#a06b40'];
+  for (var i=0;i<8;i++){ x.fillStyle=cols[i%4]; x.fillRect(0,i*32,w,31); x.fillStyle='#5e3a1e'; x.fillRect(0,i*32+31,w,1); var o=(i*97)%w; x.fillRect(o,i*32,2,31); x.fillRect((o+128)%w,i*32,2,31);
+    x.globalAlpha=0.12; for (var k=0;k<6;k++){ x.fillStyle='#3a2210'; x.fillRect(Math.random()*w, i*32+4+Math.random()*24, 30+Math.random()*60, 1); } x.globalAlpha=1; }
 });
-floorTex.wrapS=floorTex.wrapT=T.RepeatWrapping; floorTex.repeat.set(W/4, D/4);
-var woodTex=canvasTex(128,128,function(x,w,h){ for(var i=0;i<8;i++){ x.fillStyle=['#9a6a3e','#a7744a','#8f6138'][i%3]; x.fillRect(0,i*16,w,15); x.fillStyle='#6b4325'; x.fillRect(0,i*16+15,w,1); x.fillRect((i*37)%w,i*16,1,15);} });
-woodTex.wrapS=woodTex.wrapT=T.RepeatWrapping; woodTex.repeat.set(2,3);
-M.floor=new T.MeshLambertMaterial({map:floorTex});
-M.floorDark=new T.MeshLambertMaterial({map:floorTex, color:0x3a3040});
-M.wood=new T.MeshLambertMaterial({map:woodTex});
-M.wall=mat(0x6a5a7e); M.wallTop=mat(0x8a7aa0); M.wallDark=mat(0x4c3f5c);
+plankTex.wrapS=plankTex.wrapT=T.RepeatWrapping; plankTex.repeat.set(3, 2.5);
+var stoneTex=canvasTex(256,128,function(x,w,h){ x.fillStyle='#3e3044'; x.fillRect(0,0,w,h); var cols=['#7a6a80','#857488','#6f6176','#8a7b8c'];
+  for (var j=0;j<4;j++) for (var i=0;i<5;i++){ x.fillStyle=cols[(i*3+j)%4]; var o=j%2?25:0; x.fillRect(i*52+o-24+3,j*32+3,46,26); } });
+stoneTex.wrapS=stoneTex.wrapT=T.RepeatWrapping; stoneTex.repeat.set(3,1);
+M.floor=new T.MeshLambertMaterial({map:plankTex});
+M.wall=new T.MeshLambertMaterial({map:stoneTex}); M.wallTop=mat(0x8a7aa0); M.wallDark=mat(0x4c3f5c);
+M.wood=mat(0xa0683a); M.woodDark=mat(0x6e4224); M.woodLight=mat(0xc58a52);
 M.metal=mat(0xb9c2cc); M.darkMetal=mat(0x5a6170); M.gold=mat(0xffcf3a,{emissive:0x553300}); M.chest=mat(0x9b5a2e); M.chestDark=mat(0x6e3b1c);
 M.flame=new T.MeshBasicMaterial({color:0xffb347}); M.flame2=new T.MeshBasicMaterial({color:0xfff07a});
-M.rock=mat(0x8a8090); M.lava=new T.MeshBasicMaterial({color:0xff6a2a}); M.ice=mat(0x9fe3ff,{transparent:true,opacity:0.85}); M.sack=mat(0xb07a42); M.rope=mat(0x6b4a2a);
-M.portal=new T.MeshBasicMaterial({color:0xb27cff, transparent:true, opacity:0.85}); M.black=new T.MeshBasicMaterial({color:0x1b1220});
-M.white=mat(0xffffff); M.bone=mat(0xeee6d0);
+M.rock=mat(0x8a8090); M.sack=mat(0xb07a42); M.rope=mat(0x6b4a2a);
+M.black=new T.MeshBasicMaterial({color:0x1b1220}); M.white=mat(0xffffff); M.bone=mat(0xeee6d0);
+M.beer=mat(0xf2a31b,{emissive:0x442200}); M.foam=mat(0xfff8e8); M.glass=mat(0xd8eef5); M.meat=mat(0x9c4a24); M.meatHi=mat(0xc8703a);
+M.dirt=new T.MeshBasicMaterial({color:0x4a2e18, transparent:true, opacity:0.55, depthWrite:false});
+M.ghost=new T.MeshBasicMaterial({color:0xffe45c, transparent:true, opacity:0.18, depthWrite:false});
+M.potion=new T.MeshBasicMaterial({color:0x7cff6a}); M.red=mat(0xc0392b);
 
 var world=new T.Group(); scene.add(world);
-var roomGroups=[], wallGroup=new T.Group(); world.add(wallGroup);
 var torches=[];
-
-// ---------------- static world ----------------
 var gBox=function(w,h,d){ return new T.BoxGeometry(w,h,d); };
 function addWall(grp, x0,z0,x1,z1, h, m){
   var w=Math.abs(x1-x0)||0.6, d=Math.abs(z1-z0)||0.6, cx=(x0+x1)/2, cz=(z0+z1)/2;
-  var b=mesh(gBox(w,h,d), m||M.wall, cx, h/2, cz); grp.add(b);
-  var top=mesh(gBox(w+0.06,0.14,d+0.06), M.wallTop, cx, h+0.07, cz, false); grp.add(top);
-}
-function buildWalls(){
-  world.remove(wallGroup); wallGroup=new T.Group(); world.add(wallGroup);
-  var n=G.rooms, H=2.0, T2=0.3;
-  // side walls per room
-  for (var r=0;r<n;r++){
-    var z0=-r*D, z1=-(r+1)*D;
-    addWall(wallGroup, -W/2-T2, z0, -W/2-T2, z1, H);
-    addWall(wallGroup, W/2+T2, z0, W/2+T2, z1, H);
-    // pillars at room borders
-    if (r>0){ [-W/2-T2, W/2+T2].forEach(function(x){ wallGroup.add(mesh(gBox(0.8,2.2,0.8), M.wallDark, x, 1.1, z0)); });
-      addWall(wallGroup, -W/2, z0, -1.5, z0, 0.4, M.wallDark); addWall(wallGroup, 1.5, z0, W/2, z0, 0.4, M.wallDark); }
-  }
-  // top wall of last room (with the locked next room behind)
-  var zt=-n*D; addWall(wallGroup, -W/2-T2, zt, W/2+T2, zt, H+0.4, M.wallDark);
-  // front low wall with gate
-  addWall(wallGroup, -W/2-T2, 0.15, -1.6, 0.15, 0.4); addWall(wallGroup, 1.6, 0.15, W/2+T2, 0.15, 0.4);
-  [-1.7,1.7].forEach(function(x){ wallGroup.add(mesh(gBox(0.7,1.0,0.7), M.wallDark, x, 0.5, 0.15)); wallGroup.add(mesh(new T.ConeGeometry(0.16,0.4,6), M.flame, x, 1.2, 0.15, false)); });
-  // locked next room teaser
-  if (n<DJ.ROOMS.length){
-    var lz=-n*D-D/2;
-    var f=mesh(new T.PlaneGeometry(W, D), M.floorDark, 0, 0.01, lz, false); f.rotation.x=-Math.PI/2; wallGroup.add(f);
-    var lock=makeLabel('🔒 '+tl('r_'+DJ.ROOMS[n].id), 512, 96, '#ffffff', 'rgba(40,24,48,0.75)'); lock.position.set(0,2.9,-n*D-1.0); lock.scale.set(5,0.94,1); wallGroup.add(lock);
-  }
-}
-function buildRoomStatic(r){
-  var g=new T.Group(), R=DJ.ROOMS[r], zc=-r*D-D/2;
-  var f=mesh(new T.PlaneGeometry(W, D), M.floor, 0, 0, zc, false); f.rotation.x=-Math.PI/2; f.receiveShadow=true; g.add(f);
-  // theme tint strip / decor
-  var deco={hall:0x6a5a7e, vault:0xc79a3a, hall2:0x6a5a7e, cave:0x58b05a, crypt:0xd8d0c0, lava:0xff6a2a, ice:0x8fdcff, lair:0xc0392b}[R.id];
-  // rug down the middle
-  var rug=mesh(new T.PlaneGeometry(2.4, D-1.2), mat(deco,{flat:false, transparent:true, opacity:0.35}), 0, 0.012, zc, false); rug.rotation.x=-Math.PI/2; g.add(rug);
-  // torches on side walls
-  [-W/2, W/2].forEach(function(x, i){
-    var tz=zc+(i?1.5:-1.5);
-    var stick=mesh(new T.CylinderGeometry(0.07,0.09,0.6,6), M.rope, x+(i?-0.15:0.15), 1.7, tz); stick.rotation.z=i?0.5:-0.5; g.add(stick);
-    var fl=mesh(new T.ConeGeometry(0.16,0.42,6), M.flame, x+(i?-0.32:0.32), 2.12, tz, false); g.add(fl);
-    var fl2=mesh(new T.ConeGeometry(0.08,0.24,6), M.flame2, x+(i?-0.32:0.32), 2.08, tz, false); g.add(fl2);
-    torches.push({x:x+(i?-0.6:0.6), z:tz, fl:fl, ph:Math.random()*6});
-  });
-  // decor props
-  var rr=mulberry(r*77+5);
-  for (var k=0;k<3;k++){
-    var side=k%2?1:-1, px=side*(W/2-0.55), pz=-r*D-1.2-rr()*(D-2.4);
-    if (Math.abs(pz-(zc+(side>0?1.5:-1.5)))<1) continue;
-    if (G.st.some(function(s){ return Math.hypot(s.x-px,s.z-pz)<1.8; }) || G.piles.some(function(s){ return Math.hypot(s.x-px,s.z-pz)<1.8; })) continue;
-    if (r===0 && pz>-6.5 && side<0) continue;
-    if (R.id==='crypt'||R.id==='lair'){ var sk=mesh(new T.SphereGeometry(0.22,6,5), M.bone, px, 0.2, pz); g.add(sk); }
-    else { var br=mesh(new T.CylinderGeometry(0.35,0.3,0.7,8), M.chest, px, 0.35, pz); g.add(br); var hp=mesh(new T.TorusGeometry(0.33,0.04,4,10), M.darkMetal, px,0.55,pz); hp.rotation.x=Math.PI/2; g.add(hp); }
-  }
-  if (R.id==='lava'){ [-1,1].forEach(function(s){ var lv=mesh(new T.PlaneGeometry(0.8,D),M.lava,s*(W/2-0.45),0.02,zc,false); lv.rotation.x=-Math.PI/2; g.add(lv); }); }
-  if (R.id==='ice'){ for(var q=0;q<5;q++){ var cr=mesh(new T.ConeGeometry(0.3,1.2+rr(),5), M.ice, (q%2?1:-1)*(W/2-0.35), 0.6, -r*D-1-q*1.7); g.add(cr);} }
-  // room name on floor
-  var nm=makeLabel(tl('r_'+R.id), 512, 80, 'rgba(255,255,255,0.75)', null); nm.position.set(0,0.03,-r*D-(r?1.6:0.9)); nm.rotation.x=-Math.PI/2; nm.scale.set(4,0.62,1); nm.material.depthWrite=false; g.add(nm);
-  world.add(g); roomGroups[r]=g;
+  grp.add(mesh(gBox(w,h,d), m||M.wall, cx, h/2, cz));
+  grp.add(mesh(gBox(w+0.06,0.14,d+0.06), M.wallTop, cx, h+0.07, cz, false));
 }
 function mulberry(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
-function buildOutside(){
-  var g=new T.Group();
+
+// ---------------- static tavern ----------------
+var kegV=null, grillV=null, trashV=null;
+function buildTavern(){
+  var g=new T.Group(), hw=W/2;
+  // outside ground + path
   var gr=mesh(new T.PlaneGeometry(60, 30), mat(0x2b2032), 0, -0.02, 14, false); gr.rotation.x=-Math.PI/2; g.add(gr);
-  var path=mesh(new T.PlaneGeometry(3, 8), mat(0x6a5a64), 0, -0.01, 4, false); path.rotation.x=-Math.PI/2; g.add(path);
+  var path=mesh(new T.PlaneGeometry(2.6, 8), mat(0x6a5a64), 0, -0.01, 4, false); path.rotation.x=-Math.PI/2; g.add(path);
+  // floor
+  var f=mesh(new T.PlaneGeometry(W, D), M.floor, 0, 0, -D/2, false); f.rotation.x=-Math.PI/2; g.add(f);
+  // rug at the entrance
+  var rug=mesh(new T.PlaneGeometry(2.2, 1.4), mat(0xb03a3a,{flat:false}), 0, 0.012, -0.8, false); rug.rotation.x=-Math.PI/2; g.add(rug);
+  // walls
+  addWall(g, -hw-0.3, 0.15, -hw-0.3, -D, 2.4); addWall(g, hw+0.3, 0.15, hw+0.3, -D, 2.4);
+  addWall(g, -hw-0.3, -D-0.2, hw+0.3, -D-0.2, 3.2);
+  addWall(g, -hw-0.3, 0.15, -1.4, 0.15, 0.45); addWall(g, 1.4, 0.15, hw+0.3, 0.15, 0.45);
+  [-1.5,1.5].forEach(function(x){ g.add(mesh(gBox(0.45,0.8,0.45), M.woodDark, x, 0.4, 0.15)); g.add(mesh(new T.ConeGeometry(0.12,0.3,6), M.flame, x, 0.95, 0.15, false)); });
+  // shelves with bottles on the back wall
+  var rr=mulberry(7);
+  [1.3,2.1].forEach(function(y){ g.add(mesh(gBox(W-1,0.08,0.4), M.woodDark, 0, y, -D+0.1, false));
+    for (var i=0;i<14;i++){ var bx=-hw+0.9+i*0.75+rr()*0.2; if (Math.abs(bx-DJ.GRILL.x)<1.3) continue; var c=[0x5ad27a,0xd25a5a,0x5a8ad2,0xe0c050][Math.floor(rr()*4)];
+      g.add(mesh(new T.CylinderGeometry(0.08,0.1,0.32,6), mat(c), bx, y+0.2, -D+0.12, false)); } });
+  // bar counter (gap behind it is staff-only)
+  g.add(mesh(gBox(W-0.6,0.95,0.7), M.wood, 0, 0.475, -8.35));
+  g.add(mesh(gBox(W-0.4,0.1,0.85), M.woodLight, 0, 1.0, -8.35));
+  // lanterns on the side walls
+  [-5.2,-1.6].forEach(function(z){ [-hw, hw].forEach(function(x,i){
+    var lx=x+(i?-0.18:0.18); g.add(mesh(gBox(0.22,0.3,0.22), M.darkMetal, lx, 1.9, z));
+    var fl=mesh(new T.ConeGeometry(0.1,0.24,6), M.flame, lx, 1.92, z, false); g.add(fl);
+    torches.push({x:x+(i?-0.6:0.6), z:z, fl:fl, ph:Math.random()*6}); }); });
+  // barrels in corners
+  [[-5.4,-7.0],[-5.4,-6.3],[5.4,-3.8]].forEach(function(p){ var br=mesh(new T.CylinderGeometry(0.35,0.3,0.7,8), M.chest, p[0], 0.35, p[1]); g.add(br); });
+  world.add(g);
+  buildKeg(); buildGrill(); buildPot(); buildTrash();
+}
+function buildKeg(){
+  var K=DJ.KEG, g=new T.Group(); g.position.set(K.x,0,K.z);
+  var st=mesh(gBox(1.4,1.1,0.9), M.woodDark, 0,0.55,0); g.add(st);
+  var b=mesh(new T.CylinderGeometry(0.62,0.62,1.3,12), M.chest, 0,1.7,0); b.rotation.z=Math.PI/2; g.add(b);
+  [-0.45,0.45].forEach(function(x){ var r=mesh(new T.TorusGeometry(0.63,0.05,5,14), M.darkMetal, x,1.7,0,false); r.rotation.y=Math.PI/2; g.add(r); });
+  g.add(mesh(new T.CylinderGeometry(0.06,0.06,0.35,6), M.metal, 0,1.2,0.45));
+  var ic=iconSprite('🍺','#fff2b0'); ic.position.set(0,2.9,0); g.add(ic);
+  world.add(g); kegV={g:g, ic:ic};
+}
+function buildGrill(){
+  var K=DJ.GRILL, g=new T.Group(); g.position.set(K.x,0,K.z);
+  g.add(mesh(gBox(1.8,1.0,1.0), M.rock, 0,0.5,-0.1));
+  g.add(mesh(gBox(1.9,0.15,1.1), M.wallDark, 0,2.4,-0.1));
+  [-0.8,0.8].forEach(function(x){ g.add(mesh(gBox(0.2,1.4,0.2), M.rock, x,1.7,-0.4)); });
+  var fire=new T.Group(); fire.add(mesh(new T.ConeGeometry(0.25,0.5,6), M.flame, -0.25,1.2,-0.2,false)); fire.add(mesh(new T.ConeGeometry(0.2,0.42,6), M.flame2, 0.2,1.18,-0.2,false)); fire.add(mesh(new T.ConeGeometry(0.28,0.6,6), M.flame, 0,1.25,-0.25,false)); g.add(fire);
+  var spit=mesh(new T.CylinderGeometry(0.03,0.03,1.7,5), M.metal, 0,1.75,-0.2,false); spit.rotation.z=Math.PI/2; g.add(spit);
+  var roast=makeMeat(); roast.scale.setScalar(1.6); roast.position.set(0,1.75,-0.2); g.add(roast);
+  var plate=mesh(new T.CylinderGeometry(0.5,0.5,0.05,12), M.white, 0,1.08,0.32,false); g.add(plate);
+  var ready=[]; for (var i=0;i<DJ.GRILL_MAX;i++){ var m=makeMeat(); m.position.set(-0.28+i*0.28,1.16,0.32); m.rotation.y=i; g.add(m); ready.push(m); }
+  var cover=new T.Group(); cover.add(mesh(gBox(2.0,2.6,0.12), M.woodDark, 0,1.3,0.45)); [-0.5,0.5].forEach(function(x){ cover.add(mesh(gBox(0.12,2.6,0.14), M.wood, x,1.3,0.47,false)); });
+  var lock=makeLabel('🔒', 128, 128, '#fff', null); lock.position.set(0,1.6,0.6); lock.scale.set(0.8,0.8,1); cover.add(lock); g.add(cover);
+  var ic=iconSprite('🍖','#ffd9b8'); ic.position.set(0,3.0,0); g.add(ic);
+  world.add(g); grillV={g:g, fire:fire, roast:roast, ready:ready, cover:cover, ic:ic};
+}
+function buildPot(){
+  var K=DJ.POT, g=new T.Group(); g.position.set(K.x,0,K.z);
+  g.add(mesh(new T.SphereGeometry(0.6,10,8,0,Math.PI*2,Math.PI/2.6,Math.PI/1.6), M.black, 0,1.45,0));
+  var liq=mesh(new T.CircleGeometry(0.5,12), M.potion, 0,1.72,0,false); liq.rotation.x=-Math.PI/2; g.add(liq);
+  var lab=makeLabel('🔒 '+tl('soon'), 384, 96, '#ffffff', 'rgba(40,24,48,0.8)'); lab.position.set(0,2.75,0.2); lab.scale.set(2.2,0.55,1); g.add(lab);
   world.add(g);
 }
-function buildBench(){
-  var b=DJ.HALL_PADS.bench, bx=b[0]-1.25, bz=-b[1], g=new T.Group();
-  var tb=mesh(gBox(0.8,0.12,1.8), M.chest, bx, 0.8, bz); g.add(tb);
-  [-0.7,0.7].forEach(function(dz){ g.add(mesh(gBox(0.7,0.8,0.12), M.chestDark, bx, 0.4, bz+dz)); });
-  var hd=mesh(new T.CylinderGeometry(0.05,0.05,0.8,5), M.rope, bx, 0.95, bz-0.3); hd.rotation.x=1.3; g.add(hd);
-  g.add(mesh(gBox(0.2,0.2,0.3), M.darkMetal, bx, 0.95, bz+0.4));
-  world.add(g); return g;
+function buildTrash(){
+  var K=DJ.TRASH, g=new T.Group(); g.position.set(K.x,0,K.z);
+  g.add(mesh(new T.CylinderGeometry(0.32,0.26,0.7,10), M.darkMetal, 0,0.35,0));
+  var rim=mesh(new T.TorusGeometry(0.32,0.04,4,12), M.metal, 0,0.7,0,false); rim.rotation.x=Math.PI/2; g.add(rim);
+  var ic=iconSprite('🗑️','#e8e8e8'); ic.position.set(0,1.4,0); ic.scale.set(0.55,0.55,1); g.add(ic);
+  world.add(g); trashV={g:g, ic:ic};
 }
-function makePile(x,z){
-  var g=new T.Group();
-  for (var i=0;i<7;i++){ var a=i/7*Math.PI*2, rr=i?0.55:0; var sk=makeSack(); sk.position.set(x+Math.cos(a)*rr, i?0:0.35, z+Math.sin(a)*rr); sk.rotation.y=a; g.add(sk); }
-  var c=mesh(new T.CylinderGeometry(0.9,1.0,0.12,10), M.gold, x, 0.06, z); g.add(c);
-  world.add(g); return g;
-}
+// props
+function makeMug(){ var g=new T.Group(); g.add(mesh(new T.CylinderGeometry(0.14,0.13,0.3,8), M.beer, 0,0.15,0,false)); g.add(mesh(new T.CylinderGeometry(0.15,0.15,0.08,8), M.foam, 0,0.32,0,false));
+  var hd=mesh(new T.TorusGeometry(0.08,0.025,4,8,Math.PI), M.glass, 0.15,0.16,0,false); hd.rotation.z=-Math.PI/2; g.add(hd); return g; }
+function makeMeat(){ var g=new T.Group(); var m=mesh(new T.SphereGeometry(0.15,7,6), M.meat, 0,0.12,0,false); m.scale.set(1.3,0.9,1); g.add(m);
+  var b=mesh(new T.CylinderGeometry(0.03,0.03,0.22,5), M.bone, 0.2,0.12,0,false); b.rotation.z=Math.PI/2; g.add(b); g.add(mesh(new T.SphereGeometry(0.045,5,4), M.bone, 0.31,0.12,0,false)); return g; }
 var sackGeo=new T.SphereGeometry(0.3,7,6);
-function makeSack(){ var g=new T.Group(); var b=mesh(sackGeo, M.sack, 0,0.3,0); b.scale.set(1,0.9,1); g.add(b); g.add(mesh(new T.CylinderGeometry(0.08,0.12,0.14,6), M.rope, 0,0.58,0)); var cn=mesh(new T.CylinderGeometry(0.11,0.11,0.03,8), M.gold, 0, 0.34, 0.27, false); cn.rotation.x=Math.PI/2; g.add(cn); return g; }
 
 // ---------------- labels / sprites ----------------
 function makeLabel(text, w, h, color, bg, font){
@@ -829,104 +856,70 @@ var HERO_LOOK={
 };
 
 // ---------------- game state & views ----------------
-var G=null, views={st:{}, sl:{}, hr:{}, gb:{}}, player=null, sackStack=[], pileMeshes=[], padViews=[], portal=null, arrow3d=null, floorArrow=null, benchMesh=null;
-var RING_COL={slime:'#7ee06a', trap:'#ffb347', door:'#ffd84a', chest:'#ffe45c'};
+var G=null, views={tb:{}, hr:{}, gb:{}}, player=null, carryStack=[], padViews=[], arrow3d=null, floorArrow=null, benchMesh=null;
 var coinGeo=new T.CylinderGeometry(0.17,0.17,0.06,10);
+var FOOD_ICON={beer:'🍺', meat:'🍖'};
 
-function stationView(s){
-  var g=new T.Group(); g.position.set(s.x,0,s.z); world.add(g);
-  var v={g:g, s:s, armed:new T.Group(), sprung:new T.Group(), shake:0, coinN:-1};
-  g.add(v.armed); g.add(v.sprung);
-  if (s.k==='trap'){
-    var base=mesh(gBox(1.3,0.08,1.3), M.darkMetal, 0,0.04,0); g.add(base);
-    // ready marker: green glow ring
-    var rg=mesh(new T.RingGeometry(0.72,0.86,24), new T.MeshBasicMaterial({color:0x7ee06a, transparent:true, opacity:0.8}), 0,0.1,0,false); rg.rotation.x=-Math.PI/2; v.armed.add(rg);
-    var rr=mesh(new T.RingGeometry(0.72,0.86,24), new T.MeshBasicMaterial({color:0xff5a4a, transparent:true, opacity:0.85}), 0,0.1,0,false); rr.rotation.x=-Math.PI/2; v.sprung.add(rr);
-    if (s.sub==='spike'||s.sub==='arrow'){
-      for (var i=0;i<9;i++){ var x=(i%3-1)*0.38, z=(Math.floor(i/3)-1)*0.38;
-        v.armed.add(mesh(new T.CylinderGeometry(0.07,0.07,0.02,6), M.black, x,0.09,z,false));
-        v.sprung.add(mesh(new T.ConeGeometry(0.1,0.5,5), M.metal, x,0.33,z)); }
-      if (s.sub==='arrow'){ var side=s.x>0?1:-1; g.add(mesh(gBox(0.4,0.7,0.9), M.wallDark, side*1.0, 0.35, 0)); }
-    } else if (s.sub==='rock'){
-      v.armed.add(mesh(new T.DodecahedronGeometry(0.5), M.rock, 0,2.5,0)); v.armed.add(mesh(new T.CylinderGeometry(0.02,0.02,1.2,4), M.rope, 0,3.3,0));
-      var rk2=mesh(new T.DodecahedronGeometry(0.5), M.rock, 0.1,0.45,0); rk2.rotation.set(0.5,0.3,0.2); v.sprung.add(rk2);
-    } else if (s.sub==='fire'){
-      g.add(mesh(gBox(1.1,0.1,1.1), mat(0x3a2a2a), 0,0.1,0));
-      v.armed.add(mesh(new T.ConeGeometry(0.18,0.4,6), M.flame, 0,0.35,0,false));
-      v.sprung.add(mesh(new T.SphereGeometry(0.3,6,5), mat(0x555055), 0,0.3,0,false));
-    } else if (s.sub==='ice'){
-      v.armed.add(mesh(new T.ConeGeometry(0.35,1.2,5), M.ice, 0,0.6,0));
-      for (var j=0;j<4;j++) v.sprung.add(mesh(new T.TetrahedronGeometry(0.2), M.ice, Math.cos(j*1.6)*0.45,0.15,Math.sin(j*1.6)*0.45));
-    }
-    v.icon=iconSprite('🔧','#ffe8c2');
-  } else if (s.k==='chest'){
-    var body=mesh(gBox(1.1,0.6,0.75), M.chest, 0,0.3,0); g.add(body);
-    g.add(mesh(gBox(1.0,0.04,0.65), M.black, 0,0.6,0,false));
-    [-0.36,0.36].forEach(function(z){ g.add(mesh(gBox(1.14,0.06,0.07), M.gold, 0,0.6,z*1.05,false)); });
-    [-0.4,0.4].forEach(function(x){ g.add(mesh(gBox(0.08,0.62,0.79), M.gold, x,0.31,0,false)); });
-    var lid=new T.Group(); lid.position.set(0,0.62,-0.375); lid.add(mesh(gBox(1.1,0.3,0.75), M.chestDark, 0,0.15,0.375)); g.add(lid); v.lid=lid;
-    var gold=new T.Group(); var mound=mesh(new T.SphereGeometry(0.42,10,6,0,Math.PI*2,0,Math.PI/2), M.gold, 0,0.58,0,false); mound.scale.set(1.15,0.45,0.75); gold.add(mound); v.armed.add(gold);
-    g.rotation.y = s.x>0? -Math.PI/2 : Math.PI/2;   // face the walkway
-    v.icon=iconSprite('💰','#fff2b0');
-  } else if (s.k==='door'){
-    var pnl=gBox(1.45,1.8,0.14);
-    var L=mesh(pnl, M.chest, 0.72,0.9,0), R2=mesh(pnl, M.chest, -0.72,0.9,0);
-    var Lh=new T.Group(); Lh.position.x=-1.5; Lh.add(L); var Rh=new T.Group(); Rh.position.x=1.5; Rh.add(R2);
-    Lh.rotation.y=1.3; Rh.rotation.y=-1.3; v.armed.add(Lh); v.armed.add(Rh);
-    var b1=mesh(pnl, M.chestDark, -0.7,0.1,0.6); b1.rotation.set(-Math.PI/2,0,0.3); var b2=mesh(pnl, M.chestDark, 0.8,0.18,-0.5); b2.rotation.set(-Math.PI/2+0.2,0,-0.4); v.sprung.add(b1); v.sprung.add(b2);
-    v.icon=iconSprite('🔨','#ffe8c2');
-  }
-  v.icon.position.set(0, 1.7, 0); g.add(v.icon); v.icon.scale.set(0.75,0.75,1);
-  // coin heap next to the station (world-aligned, not rotated with chest)
-  v.heap=new T.Group(); v.heap.position.set(s.x+(s.k==='chest'?(s.x>0?-0.2:0.2):0.95), 0, s.z+(s.k==='chest'?0.95:0.6)); world.add(v.heap);
+function tableView(t){
+  var g=new T.Group(); g.position.set(t.x,0,t.z); world.add(g);
+  var body=new T.Group(); g.add(body);
+  body.add(mesh(gBox(1.6,0.1,1.15), M.woodLight, 0,0.78,0));
+  [[-0.65,-0.45],[0.65,-0.45],[-0.65,0.45],[0.65,0.45]].forEach(function(a){ body.add(mesh(gBox(0.1,0.75,0.1), M.woodDark, a[0],0.38,a[1])); });
+  var stool=new T.Group(); stool.add(mesh(new T.CylinderGeometry(0.3,0.3,0.08,10), M.wood, 0,0.48,0)); stool.add(mesh(new T.CylinderGeometry(0.06,0.08,0.45,6), M.woodDark, 0,0.23,0)); stool.position.z=-0.95; body.add(stool);
+  var candle=mesh(new T.CylinderGeometry(0.05,0.05,0.16,6), M.white, 0.55,0.91,0.35,false); body.add(candle); body.add(mesh(new T.ConeGeometry(0.04,0.1,5), M.flame, 0.55,1.04,0.35,false));
+  var dirt=new T.Group(); [[-0.3,0.1,0.35],[0.25,-0.2,0.28],[0.05,0.25,0.2]].forEach(function(a){ var d=mesh(new T.CircleGeometry(a[2],10), M.dirt, a[0],0.84,a[1],false); d.rotation.x=-Math.PI/2; dirt.add(d); });
+  for (var i=0;i<5;i++) dirt.add(mesh(new T.BoxGeometry(0.06,0.04,0.06), M.meatHi, -0.4+i*0.2,0.86,(i%2?0.2:-0.15),false));
+  var bones=makeMeat(); bones.children[0].visible=false; bones.position.set(-0.1,0.83,-0.15); dirt.add(bones);
+  var emptyMug=makeMug(); emptyMug.children[0].visible=false; emptyMug.position.set(0.3,0.83,0); dirt.add(emptyMug);
+  body.add(dirt);
+  var food={beer:makeMug(), meat:makeMeat()}; food.beer.position.set(0,0.83,-0.3); food.meat.position.set(0,0.83,-0.3); food.meat.scale.setScalar(1.3); body.add(food.beer); body.add(food.meat);
+  var heap=new T.Group(); heap.position.set(-0.45,0.84,0.22); body.add(heap);
+  var icon=iconSprite('🧽','#d8f4ff'); icon.position.set(0,1.9,0.2); icon.scale.set(0.7,0.7,1); g.add(icon);
+  var ghost=mesh(gBox(1.6,0.06,1.15), M.ghost, 0,0.03,0,false); g.add(ghost);
+  var v={g:g, t:t, body:body, dirt:dirt, food:food, heap:heap, icon:icon, ghost:ghost, coinN:-1, shake:0, pop:t.on?0:-1};
   return v;
 }
 function setHeap(v, n){
-  var k = n<=0?0: Math.min(14, 2+Math.floor(Math.sqrt(n)*1.6));
+  var k = n<=0?0: Math.min(12, 2+Math.floor(Math.sqrt(n)*1.4));
   if (k===v.coinN) return; v.coinN=k;
   while (v.heap.children.length) v.heap.remove(v.heap.children[0]);
-  for (var i=0;i<k;i++){ var c=mesh(coinGeo, M.gold, ((i*37)%5-2)*0.08, 0.04+Math.floor(i/3)*0.06, ((i*53)%5-2)*0.08, false); c.rotation.y=i; v.heap.add(c); }
-}
-var slimeGeo=new T.CylinderGeometry(1,1,0.08,14), SLIME_COL=[0x7cff4f,0xff6ad5,0x58c8ff,0xffa83c];
-var slimeMats=SLIME_COL.map(function(c){ return new T.MeshLambertMaterial({color:c, transparent:true, opacity:0.82, emissive:c, emissiveIntensity:0.12}); });
-function slimeView(sl){
-  var g=new T.Group(); g.position.set(sl.x,0.03,sl.z);
-  g.add(mesh(slimeGeo, slimeMats[sl.c%4], 0,0,0,false)); g.children[0].scale.set(0.55*sl.sz,1,0.45*sl.sz);
-  var b=mesh(slimeGeo, slimeMats[sl.c%4], 0.3*sl.sz,0,0.2,false); b.scale.set(0.3*sl.sz,1,0.28*sl.sz); g.add(b);
-  g.add(mesh(new T.SphereGeometry(0.16,7,5), slimeMats[sl.c%4], -0.15,0.08,0.05,false));
-  g.scale.setScalar(0.01); world.add(g);
-  return {g:g, sl:sl, born:0};
+  for (var i=0;i<k;i++){ var c=mesh(coinGeo, M.gold, ((i*37)%5-2)*0.06, 0.03+Math.floor(i/3)*0.06, ((i*53)%5-2)*0.06, false); c.rotation.y=i; v.heap.add(c); }
 }
 function heroView(h){
   var c=makeChar(HERO_LOOK[h.kind]); c.position.set(h.x,0,h.z); c.rotation.y=Math.PI;
-  var need=new T.Sprite(iconMat('🔧','#fff')); need.scale.set(1.15,1.15,1); need.renderOrder=12; need.visible=false; world.add(need);
+  var need=new T.Sprite(iconMat('🍺','#fff')); need.scale.set(1.15,1.15,1); need.renderOrder=12; need.visible=false; world.add(need);
   var em=new T.Sprite(iconMat('😀')); em.scale.set(0.8,0.8,1); em.visible=false; world.add(em);
   var ring=ringSprite(); ring.visible=false; ring.scale.set(1.5,1.5,1); ring.renderOrder=11;
   return {h:h, c:c, need:need, em:em, emT:0, ring:ring, lastP:-1, lastNeed:null};
 }
 function goblinView(g){
-  var col={clean:0x3ec8e0, trap:0xff9a3c, carry:0xb07a42}[g.kind];
-  var c=makeChar({body:0x5a8a3a, skin:0x7ed957, ears:1, hat:'cap', hatc:col, apron:col, mop:g.kind==='clean', scale:0.85, leg:0x3a2a1a});
+  var col={wiper:0x3ec8e0, waiter:0xff9a3c}[g.kind];
+  var c=makeChar({body:0x5a8a3a, skin:0x7ed957, ears:1, hat:'cap', hatc:col, apron:col, mop:g.kind==='wiper', scale:0.85, leg:0x3a2a1a});
   c.position.set(g.x,0,g.z);
   var z=new T.Sprite(iconMat('💤','#cfe8ff')); z.scale.set(0.7,0.7,1); z.position.y=2.3; z.visible=false; c.add(z);
   var stack=new T.Group(); c.add(stack);
-  return {g:g, c:c, z:z, stack:stack, n:-1};
+  return {g:g, c:c, z:z, stack:stack, key:''};
 }
+function fillStack(stack, items, sc){
+  while(stack.children.length) stack.remove(stack.children[0]);
+  items.forEach(function(it,i){ var m= it==='beer'?makeMug():makeMeat(); m.scale.setScalar(sc); m.position.set((i%2?0.12:-0.12), 0.95+Math.floor(i/2)*0.32*sc+ (i%2?0.04:0), 0.42); stack.add(m); });
+}
+var PAD_EMOJI={table:'🪑', grill:'🍖', wiper:'🧽', waiter:'🍺', bench:'⬆️'};
+function padName(pd){ return pd.kind==='bench'? tl('benchTitle') : tl('u_'+pd.kind); }
 function padView(pd){
   var g=new T.Group(); g.position.set(pd.x,0.02,pd.z);
   var base=mesh(new T.PlaneGeometry(1.8,1.8), new T.MeshBasicMaterial({color:0x2a1a2e, transparent:true, opacity:0.6}), 0,0,0,false); base.rotation.x=-Math.PI/2; g.add(base);
   var fill=mesh(new T.PlaneGeometry(1.8,1.8), new T.MeshBasicMaterial({color:0xf5c542, transparent:true, opacity:0.6}), 0,0.005,0,false); fill.rotation.x=-Math.PI/2; g.add(fill);
   var brd=mesh(new T.RingGeometry(1.13,1.25,4,1), new T.MeshBasicMaterial({color:0xffe45c}), 0,0.01,0,false); brd.rotation.x=-Math.PI/2; brd.rotation.z=Math.PI/4; g.add(brd);
-  var em={room:'🏰', clean:'🧽', trap:'🔧', carry:'💰', bench:'⬆️'}[pd.kind];
   var lab=makeLabel('', 256, 160, '#fff', null); lab.position.set(0,0.02,0); lab.rotation.x=-Math.PI/2; lab.scale.set(1.75,1.1,1); g.add(lab);
-  var ic=iconSprite(em,'#fff'); ic.position.y=1.4; ic.scale.set(0.8,0.8,1); g.add(ic);
+  var ic=iconSprite(PAD_EMOJI[pd.kind]||'⭐','#fff'); ic.position.y=1.4; ic.scale.set(0.8,0.8,1); g.add(ic);
   world.add(g);
   var v={pd:pd, g:g, fill:fill, lab:lab, last:'', ic:ic};
   v.update=function(){
     var txt = pd.kind==='bench' ? '' : fmt(Math.ceil(pd.cost-pd.paid));
     if (txt!==v.last){ v.last=txt; var cv=lab.material.map.image, x=cv.getContext('2d'); x.clearRect(0,0,256,160);
       x.textAlign='center'; x.textBaseline='middle'; x.lineWidth=7; x.strokeStyle='#2a1a2e';
-      var sub = pd.kind==='room'? tl('r_'+DJ.ROOMS[G.rooms].id) : pd.kind==='bench'? tl('benchTitle') : tl('g_'+pd.kind);
+      var sub=padName(pd);
       x.font='900 30px "Trebuchet MS",system-ui'; x.strokeText(sub,128,txt?40:80); x.fillStyle='#fff'; x.fillText(sub,128,txt?40:80);
       if (txt){ x.font='900 58px "Trebuchet MS",system-ui'; x.strokeText('● '+txt,128,108); x.fillStyle='#ffe45c'; x.fillText('● '+txt,128,108); }
       lab.material.map.needsUpdate=true; }
@@ -935,27 +928,27 @@ function padView(pd){
   v.update(); return v;
 }
 function fmt(n){ n=Math.floor(n); if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1)+'M'; if(n>=1e4) return (n/1e3).toFixed(n>=1e5?0:1)+'K'; return ''+n; }
+function buildBench(){
+  var b=DJ.PADS.bench, bx=b[0]-1.0, bz=b[1]-0.9, g=new T.Group();
+  g.add(mesh(gBox(1.6,0.12,0.7), M.chest, bx, 0.8, bz));
+  [-0.7,0.7].forEach(function(dx){ g.add(mesh(gBox(0.12,0.8,0.6), M.chestDark, bx+dx, 0.4, bz)); });
+  var hd=mesh(new T.CylinderGeometry(0.05,0.05,0.8,5), M.rope, bx-0.3, 0.9, bz); hd.rotation.z=1.3; g.add(hd);
+  g.add(mesh(gBox(0.3,0.2,0.2), M.darkMetal, bx+0.4, 0.95, bz));
+  world.add(g); return g;
+}
 function syncPads(){ padViews.forEach(function(v){ world.remove(v.g); }); padViews=COVER?[]:G.pads.map(padView);
   var hasBench=G.pads.some(function(p){return p.kind==='bench';}); if (hasBench && !benchMesh) benchMesh=buildBench(); }
-function syncPortal(){
-  var p=DJ.W2(G.rooms-1, DJ.PORTAL[0], DJ.PORTAL[1]);
-  if (!portal){ portal=new T.Group(); portal.add(mesh(new T.TorusGeometry(0.8,0.13,8,20), M.portal, 0,1.0,0,false));
-    portal.add(mesh(new T.CircleGeometry(0.75,20), new T.MeshBasicMaterial({color:0x5a2a9a, transparent:true, opacity:0.6, side:T.DoubleSide}), 0,1.0,0,false)); world.add(portal); }
-  portal.position.set(p.x,0,p.z);
-}
-function syncPiles(){ pileMeshes.forEach(function(m){ world.remove(m); }); pileMeshes=G.piles.map(function(p){ return makePile(p.x,p.z); }); }
 function fullRebuild(){
   while(world.children.length) world.remove(world.children[0]);
   ringPool.forEach(function(r){ r.visible=false; });
-  roomGroups=[]; torches=[]; views={st:{}, sl:{}, hr:{}, gb:{}}; pileMeshes=[]; padViews=[]; portal=null; benchMesh=null; wallGroup=new T.Group(); world.add(wallGroup);
-  buildOutside();
-  for (var r=0;r<G.rooms;r++) buildRoomStatic(r);
-  buildWalls(); syncPiles(); syncPads(); syncPortal();
-  G.st.forEach(function(s){ views.st[s.id]=stationView(s); });
-  G.slimes.forEach(function(sl){ var v=slimeView(sl); v.born=1; v.g.scale.setScalar(1); views.sl[sl.id]=v; });
+  Object.keys(views.hr).forEach(function(k){ scene.remove(views.hr[k].ring); });
+  torches=[]; views={tb:{}, hr:{}, gb:{}}; padViews=[]; benchMesh=null;
+  buildTavern();
+  G.tables.forEach(function(t){ views.tb[t.i]=tableView(t); });
+  syncPads();
   G.goblins.forEach(function(g){ views.gb[g.id]=goblinView(g); });
-  player=makeChar({body:0x3d7bd9, hat:'cap', hatc:0xffd84a, mop:1, leg:0x2b4a8a, scale:1.1}); player.rotation.y=Math.PI;
-  sackStack=[];
+  player=makeChar({body:0x3d7bd9, hat:'cap', hatc:0xffd84a, apron:0xffffff, leg:0x2b4a8a, scale:1.1}); player.rotation.y=Math.PI;
+  carryStack=new T.Group(); player.add(carryStack); carryStack.userData.key='';
   arrow3d=new T.Group(); var cone=mesh(new T.ConeGeometry(0.35,0.7,8), new T.MeshBasicMaterial({color:0xffe45c}), 0,0,0,false); cone.rotation.x=Math.PI; arrow3d.add(cone); arrow3d.visible=false; world.add(arrow3d);
   floorArrow=new T.Group(); var sh=new T.Shape(); sh.moveTo(0,0.55); sh.lineTo(0.38,0); sh.lineTo(0.15,0); sh.lineTo(0.15,-0.4); sh.lineTo(-0.15,-0.4); sh.lineTo(-0.15,0); sh.lineTo(-0.38,0); sh.closePath();
   var fa=mesh(new T.ShapeGeometry(sh), new T.MeshBasicMaterial({color:0xffe45c, transparent:true, opacity:0.9, depthWrite:false}), 0,0.06,-1.4,false); fa.rotation.x=-Math.PI/2; floorArrow.add(fa); floorArrow.visible=false; world.add(floorArrow);
@@ -998,14 +991,13 @@ $('sndBtn').textContent=Snd.isOn()?'🔊':'🔇';
 function updHud(){
   coinShown=Math.max(0, G.coins-Math.max(0,pendingFly));
   coinEl.textContent=fmt(coinShown);
-  // top: next goal = next room
   var wv=$('wave');
   if (G.tut<4){ wv.style.display='none'; }
   else {
     wv.style.display='';
-    var rp=G.pads.filter(function(p){return p.kind==='room';})[0];
-    if (rp){ var have=Math.min(rp.cost, G.coins+rp.paid); $('waveTx').textContent=tl('goal',{r:tl('r_'+DJ.ROOMS[G.rooms].id)})+'  ● '+fmt(have)+' / '+fmt(rp.cost); $('waveBar').style.width=(have/rp.cost*100)+'%'; }
-    else { $('waveTx').textContent=tl('allRooms'); $('waveBar').style.width='100%'; }
+    var rp=G.pads.filter(function(p){return p.kind!=='bench';})[0];
+    if (rp){ var have=Math.min(rp.cost, G.coins+rp.paid); $('waveTx').textContent=tl('goal',{r:padName(rp)})+'  ● '+fmt(have)+' / '+fmt(rp.cost); $('waveBar').style.width=(have/rp.cost*100)+'%'; }
+    else { $('waveTx').textContent=tl('allUnl'); $('waveBar').style.width='100%'; }
   }
   var st=Math.round(G.rep*2)/2, s=''; for (var i=1;i<=5;i++) s+= st>=i?'★':'☆'; $('stars').textContent=s; $('repTx').textContent=tl('rep');
   var bb=$('boostBtn');
@@ -1020,12 +1012,13 @@ var benchOpen=false, benchDismissed=false;
 function openBench(){ var m=$('bench'); m.classList.add('show'); renderBench(); benchOpen=true; }
 function renderBench(){
   var rows=$('benchRows'); rows.innerHTML='';
-  [['boots','👢'],['mop','🧽'],['bag','🎒'],['gob','☕']].forEach(function(a){
+  [['boots','👢'],['tray','🍽️'],['grill','🔥'],['gob','☕']].forEach(function(a){
     var k=a[0], u=DJ.UPG[k], lv=G.upg[k];
     if (k==='gob' && G.goblins.length===0) return;
+    if (k==='grill' && !G.grill.on) return;
     var r=document.createElement('div'); r.className='row';
     var dots=''; for (var i=0;i<u.max;i++) dots+= i<lv?'●':'○';
-    var desc = k==='bag'? tl('bagD',{n:DJ.bagCap(G)+(lv<u.max?' → '+(DJ.bagCap(G)+2):'')}) : tl(k+'D');
+    var desc = k==='tray'? tl('trayD',{n:DJ.trayCap(G)+(lv<u.max?' → '+(DJ.trayCap(G)+1):'')}) : tl(k+'D');
     r.innerHTML='<div class="em">'+a[1]+'</div><div class="tx"><b>'+tl(k)+'</b> <span class="lv">'+dots+'</span><br>'+desc+'</div>';
     var b=document.createElement('button'); b.className='btn';
     if (lv>=u.max){ b.textContent=tl('max'); b.disabled=true; }
@@ -1034,6 +1027,7 @@ function renderBench(){
   });
 }
 $('benchClose').onclick=function(){ $('bench').classList.remove('show'); benchOpen=false; benchDismissed=true; };
+
 
 // ---------------- input ----------------
 var keys={}, joy={on:false, id:null, sx:0, sy:0, x:0, y:0};
@@ -1059,84 +1053,90 @@ function readInput(){
   return [x,z];
 }
 
-
 // ---------------- tutorial ----------------
-var tutT=0, slimeHinted=false;
-function firstSt(k, ok){ return G.st.filter(function(s){ return s.r===0 && s.k===k && (ok===undefined || s.ok===ok); })[0]; }
+var tutT=0, trashHinted=false, wrongT=0;
+function tutHero(){ return G.heroes.filter(function(h){ return h.tbl===0 && h.state!=='leave'; })[0]; }
 function tutTarget(){
-  var t=G.tut;
-  if (t===0){ var tr=firstSt('trap'); return {x:tr.x,z:tr.z,txt:tl('t0')+'\n'+(TOUCH?tl('move_touch'):tl('move_kb'))}; }
-  if (t===1){ var s=G.st.filter(function(s){return s.coins>0;})[0]; return s? {x:views.st[s.id].heap.position.x, z:views.st[s.id].heap.position.z, txt:tl('t1')} : {txt:tl('t1')}; }
-  if (t===2){ var p=G.piles[0]; return {x:p.x,z:p.z,txt:tl('t2')}; }
-  if (t===3){ var c=firstSt('chest'); return {x:c.x,z:c.z,txt:tl('t3')}; }
-  if (t===4) return {txt:tl('t4')};
-  if (t===5){ var pd=G.pads.filter(function(p){return p.kind==='room';})[0]; if(pd && G.coins+pd.paid>=pd.cost) return {x:pd.x,z:pd.z,txt:tl('t6')}; return null; }
-  if (t===6){ var hp=G.pads.filter(function(p){return p.kind==='clean';})[0]; if(hp && G.coins+hp.paid>=hp.cost) return {x:hp.x,z:hp.z,txt:tl('t7')}; return null; }
-  if (t===7){ var b=G.pads.filter(function(p){return p.kind==='bench';})[0]; return b?{x:b.x,z:b.z,txt:tl('t8')}:null; }
+  var t=G.tut, K=DJ.KEG, Gr=DJ.GRILL, t0=G.tables[0];
+  if (t===0) return {x:K.fx, z:K.fz, txt:tl('t0')+'\n'+(TOUCH?tl('move_touch'):tl('move_kb'))};
+  if (t===1){ var h=tutHero(); if(h && h.state==='eat') return {txt:tl('t2a')}; return {x:t0.x, z:t0.z+0.2, txt:tl('t1')}; }
+  if (t===2){ if (t0.coins<=0 && !t0.dirty) return null; var h2=tutHero(); if(h2) return {txt:tl('t2a')}; return {x:t0.x, z:t0.z+0.2, txt:tl('t2')}; }
+  if (t===3) return {txt:tl('t3')};
+  if (t===4||t===5){ var pd=G.pads.filter(function(p){return p.kind!=='bench';})[0]; if(pd && G.coins+pd.paid>=pd.cost) return {x:pd.x,z:pd.z,txt:tl(pd.kind==='grill'?'t5':'t4')}; return null; }
+  if (t===6){ if (G.grill.ready<=0) return null; return {x:Gr.fx, z:Gr.fz, txt:tl('t6')}; }
+  if (t===7){ var b=G.pads.filter(function(p){return p.kind==='bench';})[0]; return b?{x:b.x,z:b.z,txt:tl('t7')}:null; }
   return null;
 }
 function stepTut(dt){
-  var t=G.tut, tr, ch;
-  if (t===0){ tr=firstSt('trap'); if (tr.ok) G.tut=1; }
-  else if (t===1){ if (G.coins>0 && G.st.every(function(s){return s.coins<=0;})) G.tut=2; }
-  else if (t===2){ if (G.player.carry>0) G.tut=3; }
-  else if (t===3){ ch=firstSt('chest'); if (ch.ok){ G.tut=4; tutT=0; G.flow=true; G.spawnT=3; DJ.makePads(G); syncPads(); } }
-  else if (t===4){ tutT+=dt; if (tutT>9) G.tut=5; }
-  else if (t===5){ if (G.rooms>=2){ G.tut=6; DJ.makePads(G); syncPads(); } }
-  else if (t===6){ if (G.goblins.length>0){ G.tut=7; tutT=0; } }
+  var t=G.tut, t0=G.tables[0];
+  if (t===0){ if (G.player.items.indexOf('beer')>=0) G.tut=1; }
+  else if (t===1){ if (G.stats.served>0) G.tut=2; }
+  else if (t===2){ if (!tutHero() && t0.coins<=0 && !t0.dirty){ G.tut=3; tutT=0; G.flow=true; G.spawnT=1.5; } }
+  else if (t===3){ tutT+=dt; if (tutT>8){ G.tut=4; DJ.makePads(G); syncPads(); } }
+  else if (t===4){ if (G.unl>=1) G.tut=5; }
+  else if (t===5){ if (G.grill.on) G.tut=6; }
+  else if (t===6){ if (G.player.items.indexOf('meat')>=0){ G.tut=7; tutT=0; DJ.makePads(G); syncPads(); } }
   else if (t===7){ tutT+=dt; if (benchOpen || tutT>12) G.tut=99; }
+  // hint: tray full of things nobody wants
+  if (G.tut>=99 && !trashHinted){ var p=G.player, waiting=G.heroes.filter(function(h){return h.state==='wait';});
+    if (p.items.length>=DJ.trayCap(G) && waiting.length>=2 && !waiting.some(function(h){ return p.items.indexOf(h.want)>=0; })) wrongT+=dt; else wrongT=0;
+    if (wrongT>5){ trashHinted=true; banner(tl('trashHint'),'',3500); } }
   var tg = G.tut<99 ? tutTarget() : null;
   setTut(tg? tg.txt : '');
   if (tg && tg.x!==undefined){
-    arrow3d.visible=!(G.tut===0||G.tut===3); arrow3d.position.set(tg.x, 2.4+Math.sin(performance.now()/180)*0.25, tg.z);
+    arrow3d.visible=true; arrow3d.position.set(tg.x, 2.6+Math.sin(performance.now()/180)*0.25, tg.z);
     var dx=tg.x-G.player.x, dz=tg.z-G.player.z, d=Math.hypot(dx,dz);
     floorArrow.visible = d>2.6; floorArrow.position.set(G.player.x,0,G.player.z); floorArrow.rotation.y=Math.atan2(-dx,-dz);
   } else { arrow3d.visible=false; floorArrow.visible=false; }
 }
 function setupTutorial(){
-  firstSt('trap').ok=false; firstSt('chest').ok=false;
-  var h=DJ.spawnHero(G,{kind:'knight'}); h.z=1.0;
+  var h=DJ.spawnHero(G,{kind:'knight', table:G.tables[0]}); h.z=1.2; h.x=0;
 }
 
 // ---------------- events ----------------
-var NEED_ICON={trap:'🔧', chest:'💰', door:'🔨'};
+var lastAdT=0;
 function handleEvents(){
   var ev=G.ev; G.ev=[];
   ev.forEach(function(e){
     switch(e.t){
       case 'coin': coinFly(e.n, e.x, e.z); if (e.why!=='pick') floatText('+'+fmt(e.n), e.x, 1.6, e.z); break;
-      case 'drop': var dv=views.st[e.id]; if(dv){ dv.heapPop=0.35; floatText('+'+fmt(e.n), dv.heap.position.x, 1.3, dv.heap.position.z, '#ffe45c', true); coinBurst(dv.s.x, dv.s.z, dv.heap.position.x, dv.heap.position.z); } Snd.coin(); break;
-      case 'room': if (roomGroups.length && !roomGroups[e.r]){ buildRoomStatic(e.r); G.st.forEach(function(s){ if(s.r===e.r && !views.st[s.id]) views.st[s.id]=stationView(s); }); syncPiles(); } break;
+      case 'drop': var dv=views.tb[e.tbl]; if(dv){ dv.heapPop=0.35; floatText('+'+fmt(e.n), e.x, 1.6, e.z, '#ffe45c', true); coinBurst(e.x, e.z-0.3, e.x-0.45, e.z+0.22); } Snd.coin(); break;
       case 'buy':
-        if (e.kind==='room'){ buildWalls(); syncPads(); syncPortal(); Snd.buy(); banner(tl('newRoom'), tl('r_'+DJ.ROOMS[e.r].id)); PF.happy(); saveNow(); setTimeout(function(){ PF.midgame(); }, 1600); }
-        else if (e.kind!=='upg'){ G.goblins.forEach(function(g){ if(!views.gb[g.id]) views.gb[g.id]=goblinView(g); }); syncPads(); Snd.buy(); banner(tl('hired'), tl('g_'+e.kind)); saveNow(); }
+        if (e.kind==='upg') break;
+        if (e.kind==='table'){ var tv=views.tb[e.i]; if(tv) tv.pop=0.5; puff(G.tables[e.i].x, G.tables[e.i].z, 0xffe45c); }
+        if (e.kind==='grill'){ puff(DJ.GRILL.x, DJ.GRILL.z+0.6, 0xff9a40); }
+        if (e.kind==='wiper'||e.kind==='waiter'){ G.goblins.forEach(function(g){ if(!views.gb[g.id]) views.gb[g.id]=goblinView(g); }); banner(tl('hired'), tl('u_'+e.kind)); }
+        else banner(tl('unlocked'), tl('u_'+e.kind));
+        syncPads(); Snd.buy(); PF.happy(); saveNow();
+        if (G.tut>=99 && G.t-lastAdT>150){ lastAdT=G.t; setTimeout(function(){ PF.midgame(); }, 1600); }
         break;
       case 'padpay': if(Math.random()<0.3) Snd.pay(); break;
-      case 'slime': var sl=G.slimes.filter(function(s){return s.id===e.id;})[0]; if(sl){ views.sl[sl.id]=slimeView(sl); if(!slimeHinted && G.tut>=4){ slimeHinted=true; banner(tl('slimeHint'),'',2600); } } break;
-      case 'clean': if(e.who==='p') Daily.count('mop'); var v=views.sl[e.id]; if(v){ world.remove(v.g); delete views.sl[e.id]; } Snd.squish(); puff(e.x,e.z,0x9fffd0); break;
-      case 'fixed': if(e.who==='p') Daily.count('fix'); var sv=views.st[e.id]; if(sv) sv.shake=0.3; if(e.k==='chest') Snd.fill(); else Snd.clank(); if(e.who==='p') puff(sv.s.x, sv.s.z, 0xfff3a0); break;
-      case 'spring': var s2=views.st[e.id]; if(s2) s2.shake=0.4; Snd.spring(); var hv=views.hr[e.hid]; if(hv) hv.bonk=0.5; break;
-      case 'loot': var s3=views.st[e.id]; if(s3) s3.shake=0.3; break;
-      case 'take': Snd.take(); break;
+      case 'pour': if(e.who==='p'){ Daily.count('pour'); Snd.pour(); } break;
+      case 'grab': if(e.who==='p') Snd.take(); break;
+      case 'cooked': if (Math.hypot(G.player.x-DJ.GRILL.x, G.player.z-DJ.GRILL.z)<5) Snd.sizzle(); break;
+      case 'trash': Snd.squish(); puff(DJ.TRASH.x, DJ.TRASH.z, 0xaaaaaa); break;
+      case 'serve': var sv=views.tb[e.tbl]; if(sv) sv.shake=0.3; Snd.fill(); break;
+      case 'wiped': if(e.who==='p') Daily.count('wipe'); var wv=views.tb[e.tbl]; if(wv){ wv.shake=0.3; puff(wv.t.x, wv.t.z, 0x9fffd0); } Snd.clank(); break;
+      case 'order': break;
       case 'hero': if (e.boss){ Snd.boss(); banner(tl('bossWave'), tl('bossD2'), 3000); } break;
-      case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😄',ouch:'😵',slip:'😵‍💫',meh:'😒',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
-      case 'slip': var sv2=views.hr[e.id]; if(sv2){ sv2.slip=0.9; } Snd.squish(); break;
+      case 'emo': var pv=views.hr[e.id]; if(pv){ pv.em.material=iconMat({happy:'😋',more:'🤤',angry:'😡'}[e.e]||'😀'); pv.em.visible=true; pv.emT=1.3; } break;
       case 'angry': var av=views.hr[e.id]; if(av) floatText(tl('angry'), av.c.position.x, 2.6, av.c.position.z, '#ff8a7a'); Snd.bad(); break;
-      case 'exit': Daily.count('serve'); var xv=views.hr[e.id]; if(xv){ floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); puff(xv.c.position.x, xv.c.position.z, 0xb27cff);
-          world.remove(xv.c); world.remove(xv.need); world.remove(xv.em); scene.remove(xv.ring); delete views.hr[e.id]; } break;
+      case 'exit': if(!e.angry) Daily.count('serve'); var xv=views.hr[e.id]; if(xv) floatText('★'.repeat(e.stars), xv.c.position.x, 2.8, xv.c.position.z, '#ffd84a'); break;
+      case 'gone': var gv=views.hr[e.id]; if(gv){ world.remove(gv.c); world.remove(gv.need); world.remove(gv.em); scene.remove(gv.ring); delete views.hr[e.id]; } break;
       case 'wake': Snd.pop(); break;
     }
   });
 }
 var puffs=[], puffGeo=new T.SphereGeometry(0.16,6,4);
 function puff(x,z,col){
-  for (var i=0;i<7;i++){ var m=mesh(puffGeo, new T.MeshBasicMaterial({color:col, transparent:true}), x,0.4,z,false); var a=i/7*Math.PI*2;
+  for (var i=0;i<7;i++){ var m=mesh(puffGeo, new T.MeshBasicMaterial({color:col, transparent:true}), x,0.6,z,false); var a=i/7*Math.PI*2;
     m.userData.v=[Math.cos(a)*2.2, 2+Math.random()*2, Math.sin(a)*2.2]; m.userData.t=0.6; world.add(m); puffs.push(m); }
 }
 var arcs=[];
 function coinBurst(x0,z0,x1,z1){
-  for (var i=0;i<4;i++){ var m=mesh(coinGeo, M.gold, x0,0.8,z0,false); m.userData={x0:x0,z0:z0,x1:x1+(Math.random()-0.5)*0.4,z1:z1+(Math.random()-0.5)*0.4,t:-i*0.06}; world.add(m); arcs.push(m); }
+  for (var i=0;i<4;i++){ var m=mesh(coinGeo, M.gold, x0,1.2,z0,false); m.userData={x0:x0,z0:z0,x1:x1+(Math.random()-0.5)*0.3,z1:z1+(Math.random()-0.5)*0.3,t:-i*0.06}; world.add(m); arcs.push(m); }
 }
+
 
 // ---------------- frame ----------------
 var dailyT=0, last=performance.now(), acc=0, saveT=0, lightT=0, ipmT=0, ipmEarn=0;
@@ -1167,70 +1167,76 @@ function render(dt){
   player.position.set(p.x,0,p.z);
   player.rotation.y += angDiff(player.rotation.y, p.face)*Math.min(1,dt*14);
   animChar(player, p.moving, dt, p.working);
-  while (sackStack.length<p.carry){ var sk=makeSack(); sk.scale.setScalar(0.62); player.add(sk); sackStack.push(sk); }
-  while (sackStack.length>p.carry){ player.remove(sackStack.pop()); }
-  sackStack.forEach(function(s,i){ s.position.set(0, 1.0+i*0.36, -0.42); s.rotation.y=Math.sin(t*3+i)*0.1*(p.moving?1:0.2); });
+  var key=p.items.join(','); if (carryStack.userData.key!==key){ carryStack.userData.key=key; fillStack(carryStack, p.items, 0.9); }
   var ringI=0;
-  Object.keys(views.st).forEach(function(id){ var v=views.st[id], s=v.s;
-    v.armed.visible=s.ok; v.sprung.visible=!s.ok;
-    if (v.lid) v.lid.rotation.x += ((s.ok?0:-1.9)-v.lid.rotation.x)*Math.min(1,dt*8);
-    v.icon.visible=!s.ok && !(s.busy && G.heroes.some(function(h){return h.id===s.busy && h.state==='wait';})); v.icon.position.y=1.7+Math.sin(t*4+s.id)*0.1;
-    if (s.k==='chest' && !s.ok) v.icon.material = iconMat(p.carry>0?'💰':'👜', p.carry>0?'#fff2b0':'#ffd0c8');
-    if (v.shake>0){ v.shake-=dt; v.g.scale.setScalar(1+Math.sin(v.shake*40)*v.shake*0.4); } else v.g.scale.setScalar(1);
-    setHeap(v, s.coins);
+  function ring(x,y,z,pr,col){ if (ringI>=ringPool.length) return; var r=ringPool[ringI++]; r.visible=true; r.position.set(x,y,z); r.userData.draw(pr,col); }
+  // keg / grill
+  if (p.pourT>0) ring(DJ.KEG.x, 3.0, DJ.KEG.z+0.4, p.pourT/0.45, '#ffcf3a');
+  G.goblins.forEach(function(g){ if(g.pourT>0) ring(g.x, 2.4, g.z, g.pourT/0.45, '#ffcf3a'); });
+  var gr=G.grill, gv=grillV;
+  gv.cover.visible=!gr.on; gv.fire.visible=gr.on; gv.roast.visible=gr.on; gv.ic.visible=gr.on && gr.ready>0;
+  gv.ready.forEach(function(m,i){ m.visible=gr.on && i<gr.ready; });
+  if (gr.on){ gv.roast.rotation.x=t*2; gv.fire.children.forEach(function(f,i){ f.scale.y=1+Math.sin(t*11+i*2)*0.2; }); if (gr.ready<DJ.GRILL_MAX) ring(DJ.GRILL.x, 3.0, DJ.GRILL.z+0.4, gr.t/4, '#ff8a3a'); }
+  kegV.ic.position.y=2.9+Math.sin(t*3)*0.08; gv.ic.position.y=3.0+Math.sin(t*3+1)*0.08;
+  trashV.ic.visible = p.items.length>0;
+  // tables
+  Object.keys(views.tb).forEach(function(id){ var v=views.tb[id], tb=v.t;
+    v.body.visible=tb.on; v.ghost.visible=!tb.on && G.pads.some(function(pd){ return pd.kind==='table' && pd.u.i===tb.i; });
+    if (!tb.on){ v.icon.visible=false; return; }
+    if (v.pop>0){ v.pop-=dt; v.body.scale.setScalar(1+Math.sin(v.pop*12)*v.pop*0.5); } else if (v.shake>0){ v.shake-=dt; v.body.scale.setScalar(1+Math.sin(v.shake*40)*v.shake*0.3); } else v.body.scale.setScalar(1);
+    v.dirt.visible=tb.dirty; v.icon.visible=tb.dirty; v.icon.position.y=1.9+Math.sin(t*4+tb.i)*0.1;
+    v.food.beer.visible=tb.food==='beer'; v.food.meat.visible=tb.food==='meat';
+    setHeap(v, tb.coins);
     if (v.heapPop>0){ v.heapPop-=dt; v.heap.scale.setScalar(1+v.heapPop); } else v.heap.scale.setScalar(1);
-    if (s.prog>0 && ringI<ringPool.length){ var r=ringPool[ringI++]; r.visible=true; r.position.set(s.x,2.3,s.z); r.userData.draw(s.prog, RING_COL[s.k]); }
-    if (s.sub==='fire' && s.ok) v.armed.children[1].scale.y=1+Math.sin(t*12+s.id)*0.25;
-  });
-  Object.keys(views.sl).forEach(function(id){ var v=views.sl[id], sl=v.sl;
-    if (v.born<1){ v.born=Math.min(1, v.born+dt*3); }
-    var k=v.born*(1-sl.prog*0.6); v.g.scale.set(k*(1+Math.sin(t*3+sl.id)*0.05), 1, k*(1-Math.sin(t*3+sl.id)*0.05));
-    if (sl.prog>0 && ringI<ringPool.length){ var r=ringPool[ringI++]; r.visible=true; r.position.set(sl.x,1.5,sl.z); r.userData.draw(sl.prog, RING_COL.slime); }
+    if (tb.prog>0) ring(tb.x, 2.3, tb.z+0.2, tb.prog, '#7ee06a');
   });
   for (var i=ringI;i<ringPool.length;i++) ringPool[i].visible=false;
   // heroes
   G.heroes.forEach(function(h){ if(!views.hr[h.id]) views.hr[h.id]=heroView(h); });
-  Object.keys(views.hr).forEach(function(id){ var v=views.hr[id], h=v.h, c=v.c;
-    var mv = Math.hypot(h.x-c.position.x, h.z-c.position.z) > 0.002;
+  Object.keys(views.hr).forEach(function(id){ var v=views.hr[id], h=v.h, c=v.c, u=c.userData;
+    var seated = h.state==='wait'||h.state==='eat';
     c.position.set(h.x,0,h.z);
-    if (v.slip>0){ v.slip-=dt; c.rotation.y+=dt*16; c.userData.inner.rotation.x=-0.5; }
-    else { c.userData.inner.rotation.x=0; c.rotation.y += angDiff(c.rotation.y, h.state==='wait'?0:h.face)*Math.min(1,dt*10); }
-    animChar(c, mv && h.state==='walk', dt, false);
-    if (v.bonk>0){ v.bonk-=dt; c.userData.inner.position.y=Math.sin(v.bonk*12)*0.25+0.1; }
-    var top=(h.boss?2.9:2.15);
-    if (h.state==='wait' && h.need){
-      if (v.lastNeed!==h.need){ v.lastNeed=h.need; v.need.material=iconMat(NEED_ICON[h.need]||'❗', '#ffffff'); }
+    c.rotation.y += angDiff(c.rotation.y, seated?0:h.face)*Math.min(1,dt*10);
+    animChar(c, h.moving, dt, h.state==='eat');
+    if (seated){ u.inner.position.y=-0.22; u.legs[0].rotation.x=u.legs[1].rotation.x=-1.3; }
+    var top=(h.boss?2.9:2.15)+(seated?-0.2:0);
+    if (h.state==='wait' && h.want){
+      if (v.lastNeed!==h.want){ v.lastNeed=h.want; v.need.material=iconMat(FOOD_ICON[h.want], '#ffffff'); v.lastP=-1; }
       v.need.visible=true; v.need.position.set(h.x, top+0.55+Math.abs(Math.sin(t*5))*0.18, h.z);
-      var pr=Math.max(0,h.pat/DJ.PATIENCE); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
-      var key=Math.round(pr*40); if (key!==v.lastP){ v.lastP=key; v.ring.userData.draw(pr, pr>0.5?'#7ee06a':(pr>0.25?'#ffc23a':'#ff5a4a')); }
+      var pr=Math.max(0,h.pat/(DJ.PATIENCE*(h.boss?0.8:1))); v.ring.visible=true; v.ring.position.set(h.x, top+0.55, h.z);
+      var k=Math.round(pr*40); if (k!==v.lastP){ v.lastP=k; v.ring.userData.draw(pr, pr>0.5?'#7ee06a':(pr>0.25?'#ffc23a':'#ff5a4a')); }
       v.em.visible=false;
-    } else { v.need.visible=false; v.ring.visible=false; v.lastNeed=null;
+    } else if (h.state==='queue' && G.tut>=3 && h.pat<DJ.QPAT*0.6){
+      v.need.visible=false; v.lastNeed=null; v.ring.visible=true; v.ring.position.set(h.x, top+0.3, h.z);
+      var pq=Math.max(0,h.pat/DJ.QPAT), kq=Math.round(pq*40)+100; if (kq!==v.lastP){ v.lastP=kq; v.ring.userData.draw(pq, pq>0.25?'#ffc23a':'#ff5a4a'); }
+    } else { v.need.visible=false; v.ring.visible=false; v.lastNeed=null; v.lastP=-1;
       v.em.position.set(h.x, top+0.4, h.z); if (v.emT>0){ v.emT-=dt; if(v.emT<=0) v.em.visible=false; } }
   });
   G.goblins.forEach(function(g){ var v=views.gb[g.id]; if(!v) return;
     v.c.position.set(g.x,0,g.z); v.c.rotation.y += angDiff(v.c.rotation.y, g.face)*Math.min(1,dt*10);
     animChar(v.c, g.moving&&g.sleep<=0, dt, g.working);
     v.z.visible=g.sleep>0; if (g.sleep>0){ v.z.position.y=2.3+Math.sin(t*3)*0.15; v.c.userData.inner.rotation.z=0.25; }
-    if (v.n!==g.carry){ v.n=g.carry; while(v.stack.children.length) v.stack.remove(v.stack.children[0]); for (var k=0;k<g.carry;k++){ var s=makeSack(); s.scale.setScalar(0.55); s.position.set(0,1.0+k*0.34,-0.4); v.stack.add(s); } }
+    var k2=g.items.join(','); if (v.key!==k2){ v.key=k2; fillStack(v.stack, g.items, 0.8); }
   });
   padViews.forEach(function(v){ v.update(); v.ic.position.y=1.4+Math.sin(t*3)*0.12; });
-  if (portal){ portal.children[0].rotation.z+=dt*2; portal.children[1].material.opacity=0.45+Math.sin(t*4)*0.15; }
-  for (var j=puffs.length-1;j>=0;j--){ var m=puffs[j], u=m.userData; u.t-=dt; m.position.x+=u.v[0]*dt; m.position.y+=u.v[1]*dt; m.position.z+=u.v[2]*dt; u.v[1]-=6*dt; m.material.opacity=Math.max(0,u.t/0.6); if(u.t<=0){ world.remove(m); puffs.splice(j,1);} }
-  for (var a=arcs.length-1;a>=0;a--){ var cm=arcs[a], ud=cm.userData; ud.t+=dt; var k2=Math.max(0,Math.min(1,ud.t/0.45));
-    cm.position.set(ud.x0+(ud.x1-ud.x0)*k2, 0.8+Math.sin(k2*Math.PI)*1.4-0.7*k2, ud.z0+(ud.z1-ud.z0)*k2); cm.rotation.x+=dt*12; if(ud.t>=0.45){ world.remove(cm); arcs.splice(a,1);} }
+  for (var j=puffs.length-1;j>=0;j--){ var m=puffs[j], ud0=m.userData; ud0.t-=dt; m.position.x+=ud0.v[0]*dt; m.position.y+=ud0.v[1]*dt; m.position.z+=ud0.v[2]*dt; ud0.v[1]-=6*dt; m.material.opacity=Math.max(0,ud0.t/0.6); if(ud0.t<=0){ world.remove(m); puffs.splice(j,1);} }
+  for (var a=arcs.length-1;a>=0;a--){ var cm=arcs[a], ud=cm.userData; ud.t+=dt; var k3=Math.max(0,Math.min(1,ud.t/0.45));
+    cm.position.set(ud.x0+(ud.x1-ud.x0)*k3, 1.2+Math.sin(k3*Math.PI)*1.0-0.35*k3, ud.z0+(ud.z1-ud.z0)*k3); cm.rotation.x+=dt*12; if(ud.t>=0.45){ world.remove(cm); arcs.splice(a,1);} }
   lightT-=dt;
   if (lightT<=0){ lightT=0.5; var sorted=torches.slice().sort(function(a,b){ return Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z); });
     torchLights.forEach(function(L,i){ var tt=sorted[i]; if(tt){ L.position.set(tt.x,2.3,tt.z); L.userData.t=tt; } else L.userData.t=null; }); }
-  torchLights.forEach(function(L){ var tt=L.userData.t; L.intensity = tt? 8+Math.sin(t*9+tt.ph)*1.5+Math.sin(t*23+tt.ph)*0.8 : 0; });
+  torchLights.forEach(function(L){ var tt=L.userData.t; L.intensity = tt? 6+Math.sin(t*9+tt.ph)*1.2+Math.sin(t*23+tt.ph)*0.6 : 0; });
   torches.forEach(function(tt){ tt.fl.scale.y=1+Math.sin(t*10+tt.ph)*0.15; });
   var portrait = innerHeight>innerWidth*1.1;
-  var cy = portrait? 17:11, cz = portrait? 10.5:8.2;
-  camGoal.set(p.x*0.6, cy, p.z+cz);
+  var cy = portrait? 20:14.5, cz = portrait? 11.5:10;
+  var fz = portrait? -4.9+(p.z+4.9)*0.3 : -4.7+(p.z+4.7)*0.22;
+  camGoal.set(p.x*(portrait?0.45:0.3), cy, fz+cz);
   camera.position.lerp(camGoal, Math.min(1, dt*5));
   camera.lookAt(camera.position.x, 0, camera.position.z-cz-0.8);
-  sun.position.set(p.x+6, 18, p.z+8); sun.target.position.set(p.x,0,p.z-2);
+  sun.position.set(p.x*0.3+6, 18, -5+8); sun.target.position.set(p.x*0.3,0,-5);
   renderer.render(scene,camera);
 }
+
 var camGoal=new T.Vector3();
 function angDiff(a,b){ var d=(b-a)%(Math.PI*2); if(d>Math.PI) d-=Math.PI*2; if(d<-Math.PI) d+=Math.PI*2; return d; }
 var perfT=0, perfN=0, perfWarm=3, fpsEl=null;
@@ -1254,7 +1260,7 @@ function resize(){ renderer.setSize(innerWidth, innerHeight, false); camera.aspe
 addEventListener('resize', resize);
 
 // ---------------- save / offline ----------------
-function saveNow(){ if(!G) return; PF.saveData('dj_save_v2', DJ.save(G)); PF.saveData('dj_seen', ''+Date.now()); }
+function saveNow(){ if(!G) return; PF.saveData('dj_save_v3', DJ.save(G)); PF.saveData('dj_seen', ''+Date.now()); }
 document.addEventListener('visibilitychange', function(){ if(document.hidden) saveNow(); });
 addEventListener('pagehide', saveNow);
 function checkOffline(){
@@ -1272,16 +1278,16 @@ function checkOffline(){
 // ---------------- daily reward + daily tasks ----------------
 // Rewards scale with the next room's price so they stay meaningful at every stage.
 var Daily = (function(){
-  var D=null, DAYS=[0.10,0.12,0.15,0.18,0.22,0.27,0.6], DEF={serve:[20,8],mop:[8,3],fix:[18,6]};
+  var D=null, DAYS=[0.10,0.12,0.15,0.18,0.22,0.27,0.6], DEF={serve:[20,10],wipe:[12,6],pour:[20,10]};
   function today(o){ var d=new Date(Date.now()+(o||0)*864e5); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-  function nextCost(){ var R=DJ.ROOMS[Math.min(G.rooms, DJ.ROOMS.length-1)]; return Math.max(60, R.cost); }
+  function nextCost(){ var u=DJ.UNL[Math.min(G.unl, DJ.UNL.length-1)]; return Math.max(60, u.c); }
   function amt(f){ return Math.max(20, Math.round(nextCost()*f/5)*5); }
   function load(){ try{ D=JSON.parse(PF.loadData('dj_daily')||'null'); }catch(e){ D=null; } if(!D||typeof D!=='object') D={last:'',streak:0,tday:'',tasks:[]}; }
   function save(){ PF.saveData('dj_daily', JSON.stringify(D)); }
   function rollTasks(){
     if (D.tday===today()) return;
-    D.tday=today(); var r=Math.max(1,G.rooms);
-    D.tasks=['serve','mop','fix'].map(function(k){ return {k:k, n:DEF[k][0]+DEF[k][1]*r, c:0, claimed:false, f:0.25}; });
+    D.tday=today(); var r=1+Math.floor(G.unl/3);
+    D.tasks=['serve','wipe','pour'].map(function(k){ return {k:k, n:DEF[k][0]+DEF[k][1]*r, c:0, claimed:false, f:0.25}; });
     save();
   }
   function count(k){ if(!D||G.tut<99) return; D.tasks.forEach(function(t){ if(t.k!==k||t.c>=t.n) return; t.c++; if(t.c===t.n){ banner(tl('taskDone'), tl('task_'+t.k,{n:t.n}), 2000); Snd.buy(); save(); } }); dot(); }
@@ -1325,16 +1331,16 @@ var Daily = (function(){
 // ---------------- boot ----------------
 function boot(){
   LANG=detectLang(PF.locale); applyLang();
-  var s=PF.loadData('dj_save_v2');
+  var s=PF.loadData('dj_save_v3');
   if (QS.has('reset')) s=null;
   try{ G = s? DJ.load(s) : null; }catch(e){ G=null; }
   var fresh=!G;
   if (!G){ G=DJ.newGame(Date.now()%100000); }
-  else { G.flow = G.tut>=4; if (G.tut<4){ G=DJ.newGame(Date.now()%100000); fresh=true; } }
+  else { G.flow = G.tut>=3; if (G.tut<3){ G=DJ.newGame(Date.now()%100000); fresh=true; } }
   if (fresh) setupTutorial();
   G.ev=[];
   fullRebuild(); resize();
-  camera.position.set(G.player.x*0.6, 11, G.player.z+8.2);
+  camera.position.set(0, 14.5, -4.0+10);
   $('loading').style.display='none';
   PF.loaded();
   Daily.start();
