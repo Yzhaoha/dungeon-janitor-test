@@ -1,33 +1,24 @@
-// Bot playthrough of the tavern sim: node tools/bot.js [skill 0..1] [minutes]
+// Bot playthrough of the brawl sim: node tools/bot.js [night] [metaLevel 0..5] [runs]
+// The bot kites: runs away from nearby monsters, drifts toward coins, picks random upgrades.
 const DJ=require('../src/sim.js');
-function dir(P,t){ const s=DJ.nextStep(G_,P,t); const dx=s.x-P.x,dz=s.z-P.z,d=Math.hypot(dx,dz); return d>0.12?[dx/d,dz/d]:[0,0]; }
-let G_=null;
-function run(seed, skill, mins){
-  const G=DJ.newGame(seed); G_=G; G.tut=99; DJ.makePads(G); G.flow=true;
-  const dt=1/20, P=G.player; let tl=[];
-  for(let i=0;i<mins*60/dt;i++){
+function run(seed, night, ml){
+  const meta={hp:ml,power:ml,speed:ml,magnet:ml,gold:ml};
+  const G=DJ.newRun(meta, night, seed), dt=1/30, P=G.player; let rs=seed*7+1;
+  const rnd=()=>{ rs=(rs*1103515245+12345)&0x7fffffff; return rs/0x7fffffff; };
+  for (let i=0;i<(DJ.RUN+180)/dt;i++){
     G.ev.length=0;
-    if(G.night.phase==='result'){ const c=DJ.offerCards(G); DJ.nextNight(G, G.night.stars? c[0] : null); }
-    for(const k of ['tray','boots','grill','gob']){ const u=DJ.UPG[k]; if(G.upg[k]<u.max && G.coins>u.cost[G.upg[k]]*3 && (k!=='gob'||G.goblins.length)&&(k!=='grill'||G.grill.on)) DJ.buyUpgrade(G,k); }
-    let goal=null;
-    const pad=G.pads.find(p=>p.kind!=='bench');
-    const waiting=G.heroes.filter(h=>h.state==='wait');
-    if(pad && G.coins>=pad.cost-pad.paid && !waiting.some(h=>h.pat<8)) goal=pad;
-    if(!goal){
-      const serv=waiting.filter(h=>P.items.includes(h.want)).sort((a,b)=>a.pat-b.pat)[0];
-      if(serv) goal=DJ.frontOf(G.tables[serv.tbl]);
-      else if(waiting.some(h=>h.want==='beer')&&!P.items.includes('beer')) goal={x:DJ.KEG.fx,z:-7.6};
-      else if(waiting.some(h=>h.want==='meat')&&!P.items.includes('meat')&&G.grill.ready>0) goal={x:DJ.GRILL.fx,z:-7.6};
-      else if(G.pot.on&&waiting.some(h=>h.want==='potion')&&!P.items.includes('potion')) goal={x:DJ.POT.fx,z:-7.6};
-      else if(P.items.length>=DJ.trayCap(G)&&waiting.length) goal={x:DJ.TRASH.x,z:DJ.TRASH.z};
-      else { const dirty=G.tables.find(t=>t.on&&(t.dirty||t.coins>0)); if(dirty) goal=DJ.frontOf(dirty); else if(P.items.length<DJ.trayCap(G)) goal={x:DJ.KEG.fx,z:-7.6}; }
-    }
-    let [ix,iz]=goal?dir(P,goal):[0,0];
-    if(Math.random()>skill){ix=0;iz=0;}
+    if (G.phase==='levelup'){ const smart=process.argv[5]==='smart', o=G.offer, w=o.filter(k=>DJ.WEAP.includes(k)); DJ.choose(G, smart&&w.length? w[Math.floor(rnd()*w.length)] : o[Math.floor(rnd()*o.length)]); continue; }
+    if (G.phase!=='play') break;
+    let ix=0, iz=0;
+    for (const e of G.enemies){ const dx=P.x-e.x, dz=P.z-e.z, d=Math.hypot(dx,dz)-e.r; if (d<5){ const w=1/Math.max(0.3,d)**2; ix+=dx*w; iz+=dz*w; } }
+    for (const g of G.gems){ const dx=g.x-P.x, dz=g.z-P.z, d=Math.hypot(dx,dz); if (d<6){ ix+=dx/d*0.15; iz+=dz/d*0.15; } }
+    ix+=-P.x*0.02; iz+=(-DJ.D/2-P.z)*0.02;
+    const m=Math.hypot(ix,iz); if (m>0){ ix/=m; iz/=m; }
     DJ.step(G,dt,ix,iz);
-    while(G.stats.unlAt.length>tl.length) tl.push(DJ.UNL[tl.length].k[0]+Math.round(G.stats.unlAt[tl.length]/6)/10);
   }
-  return {unl:G.unl, at:tl.join(' '), served:G.stats.served, angry:G.stats.angry, heroes:G.heroCount, rep:G.rep.toFixed(2), coins:Math.round(G.coins), upg:Object.values(G.upg).join(''), gob:G.goblins.length, nights:G.stats.nights.map(n=>n[0]+':'+n[1]+'/'+n[2]+'*'+n[3]).join(' ')};
+  return {end:G.phase, t:Math.round(G.t), lvl:G.lvl, kills:G.kills, hp:Math.round(P.hp), gold:DJ.goldEarned(G), w:Object.entries(G.w).map(a=>a[0][0]+a[0][1]+a[1]).join(' ')};
 }
-const skill=+process.argv[2]||0.9, mins=+process.argv[3]||20;
-for(let s=1;s<=3;s++) console.log(JSON.stringify(run(s,skill,mins)));
+const night=+process.argv[2]||1, ml=+process.argv[3]||0, runs=+process.argv[4]||8;
+let wins=0, tt=0;
+for (let s=1;s<=runs;s++){ const r=run(s,night,ml); if(r.end==='win') wins++; tt+=r.t; console.log(JSON.stringify(r)); }
+console.log('night',night,'meta',ml,'wins',wins+'/'+runs,'avg t',Math.round(tt/runs));

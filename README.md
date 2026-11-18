@@ -1,4 +1,4 @@
-# 地牢冒险者酒馆（暂名 Dungeon Tavern，仓库沿用 dungeon-janitor）
+# 地牢酒馆·割草打怪（暂名 Dungeon Tavern，仓库沿用 dungeon-janitor）
 
 玩法：勇者入座点啤酒/烤肉，你端过去、捡钱、擦桌子，攒钱加桌子、开烤架、雇哥布林。详见 docs/云端交接.md。
 
@@ -6,7 +6,7 @@
 平台版也可以直接打开：`/poki/`、`/crazygames/`（不在平台域名下时 SDK 走本地模拟广告）。
 
 ## 目录
-- `src/`：源码。`head.html`（样式 + HUD）、`sim.js`（酒馆纯逻辑，node 可跑）、`i18n.js`（11 种语言）、`game.js`（three.js 渲染、UI、平台包装 `PF`）
+- `src/`：源码。`head.html`（样式 + HUD）、`sim.js`（割草打怪纯逻辑，node 可跑）、`i18n.js`（11 种语言）、`game.js`（three.js 渲染、UI、平台包装 `PF`）
 - `src/platform/*.head.html`：Poki / CrazyGames 的 SDK script
 - `tools/build.py`：拼出根目录测试版 `index.html`、`poki/`、`crazygames/`，以及 `dist/dungeon-janitor-{poki,crazygames}.zip`（zip 根目录就是 index.html + three.module.min.js）
 - `tools/bot.js`：机器人数值模拟（`node tools/bot.js`）

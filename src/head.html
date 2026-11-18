@@ -78,7 +78,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #pref{position:absolute;left:12px;top:54px;display:flex;gap:6px;pointer-events:auto}
 @media (max-width:600px){
   #coinBox{font-size:20px;top:8px;left:8px}
-  #wave{font-size:14px;top:88px;padding:4px 10px}
+  #wave{font-size:14px;padding:4px 10px}
   #comboWrap{top:124px}
   #combo{font-size:22px}
   #rep{font-size:16px;right:8px;top:8px}
@@ -107,28 +107,56 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #taskRows .pb{height:7px;background:#ffffff22;border-radius:4px;margin-top:4px;overflow:hidden}
 #taskRows .pb i{display:block;height:100%;background:#7ee06a}
 #taskRows .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
-/* Poki pill sits at top centre on mobile: keep the goal bar clear of it */
+#xpBar{position:absolute;left:0;right:0;top:0;height:9px;background:#00000066}
+#xpFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd84a,#ff9a3c);transition:width .15s}
+#lvlTx{position:absolute;right:12px;top:14px;background:rgba(40,24,48,.72);border-radius:14px;padding:4px 12px;font-size:19px;font-weight:900;color:#ffd84a}
+#coinBox{top:14px} #pref{top:58px} #wave{top:14px}
+#hpBar{position:absolute;width:54px;height:8px;background:#000a;border:1.5px solid #2a1a2e;border-radius:5px;overflow:hidden;display:none}
+#hpFill{display:block;height:100%;background:#ff4d4d}
+#wbar{position:absolute;left:10px;bottom:12px;display:none;flex-wrap:wrap;gap:4px;max-width:60vw}
+#wbar span{background:rgba(40,24,48,.72);border-radius:10px;padding:3px 6px;font-size:19px}
+#wbar i{font-style:normal;font-size:12px;font-weight:900;color:#ffd84a;margin-left:2px}
+body.run #hpBar{display:block} body.run #wbar{display:flex} body.run #langSel{display:none}
+#hurt{position:fixed;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 120px 40px #ff2020}
+#menu .card{max-height:96vh;overflow:auto}
+#mnTitle{font-size:34px;font-weight:900;margin:0 0 2px}
+#mnNightRow{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;font-weight:900;margin:6px 0}
+#mnNightRow .rb{font-size:20px;padding:4px 12px} #mnNightRow .rb:disabled{opacity:.3}
+#mnPlay{font-size:26px;padding:13px 44px;margin:4px 0 10px}
+#mnGold{font-size:20px;font-weight:900;color:#ffe45c;margin-top:4px}
+.srow{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:6px 10px;margin:6px 0;text-align:left}
+.srow .em{font-size:26px;width:34px;text-align:center} .srow .tx{flex:1;font-size:15px} .srow .tx b{font-size:16px}
+.srow .lv{color:#ffd84a;letter-spacing:2px;font-size:12px} .srow .btn{font-size:15px;padding:8px 10px;margin:0;min-width:86px}
+.pcard .ds.w{white-space:normal;font-size:13px;font-weight:700;color:#5a3a20;line-height:1.2}
+.pcard .lv u{text-decoration:none;background:#ff5a4a;color:#fff;border-radius:6px;padding:1px 5px;letter-spacing:0;font-weight:900}
+#lvTitle{color:#ffd84a}
+#enGold{font-size:38px;font-weight:900;color:#ffe45c;margin:6px 0}
+#enStats{font-size:16px;font-weight:800;opacity:.9}
+@media (max-width:600px){ #wave{top:52px} #lvlTx{font-size:16px;top:12px;right:8px} #coinBox{top:12px} #mnTitle{font-size:28px} #wbar span{font-size:16px} }
 @media (pointer:coarse),(max-width:900px),(max-height:500px){ body.pf-poki #wave{top:62px} }
 @media (max-width:600px){ body.pf-poki #wave{top:92px} }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="hurt"></div>
 <div id="hud">
+  <div id="xpBar"><i id="xpFill"></i></div>
   <div id="coinBox" class="out"><span class="ico"></span><span id="coins">0</span></div>
-  <div id="pref"><button class="rb" id="sndBtn">🔊</button><button class="rb" id="taskBtn">📋<i id="taskDot"></i></button><select id="langSel"></select></div>
+  <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
   <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
-  <div id="rep" class="out"><small id="repTx"></small><span id="stars">★★★☆☆</span></div>
-  <button id="boostBtn" class="out"></button>
-  <div id="comboWrap"><div id="combo" class="out" style="display:none"></div><div class="bar"><i id="comboBar"></i></div></div>
+  <div id="lvlTx" class="out"></div>
+  <div id="hpBar"><i id="hpFill"></i></div>
+  <div id="wbar"></div>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
 </div>
 <div id="joy"><i></i></div>
-<div class="modal" id="bench"><div class="card"><h2 class="out" data-t="benchTitle"></h2><div id="benchRows"></div><button class="btn gray" id="benchClose" data-t="close"></button></div></div>
-<div class="modal" id="daily"><div class="card"><h2 class="out" data-t="daily"></h2><div id="dlDays"></div><div data-t="streakTip" style="font-size:14px;opacity:.85;margin:6px 0"></div><div class="big out" id="dlAmt"></div><button class="btn ad" id="dlDouble"></button><button class="btn" id="dlTake" data-t="claim"></button></div></div>
-<div class="modal" id="taskM"><div class="card"><h2 class="out" data-t="tasks"></h2><div id="taskRows"></div><button class="btn gray" id="taskClose" data-t="close"></button></div></div>
-<div class="modal" id="offline"><div class="card"><h2 class="out" data-t="offTitle"></h2><div data-t="offDesc" style="font-size:15px"></div><div class="big out" id="offAmt"></div><button class="btn ad" id="offDouble"></button><button class="btn" id="offTake" data-t="collect"></button></div></div>
-<div class="modal" id="nightM"><div class="card"><h2 class="out" id="nmTitle"></h2><div id="nmStars" class="out"></div><div id="nmSum" class="out"></div><div id="nmPick"></div><div id="nmCards"></div><button class="btn ad" id="nmReroll"></button><button class="btn" id="nmRetry"></button></div></div>
+<div class="modal" id="menu"><div class="card"><div id="mnTitle" class="out">Dungeon Tavern</div>
+  <div id="mnNightRow"><button class="rb" id="mnPrev">◀</button><span id="mnNight" class="out"></span><button class="rb" id="mnNext">▶</button></div>
+  <button class="btn" id="mnPlay" data-t="play"></button>
+  <div id="mnGold" class="out"></div><div id="mnRows"></div></div></div>
+<div class="modal" id="lvlM"><div class="card"><h2 class="out" id="lvTitle"></h2><div id="nmPick" data-t="pickOne"></div><div id="lvCards" style="display:flex;gap:8px;justify-content:center"></div><button class="btn ad" id="lvReroll"></button></div></div>
+<div class="modal" id="endM"><div class="card"><h2 class="out" id="enTitle"></h2><div id="enStats"></div><div id="enGold" class="out"></div><button class="btn ad" id="enRevive"></button><button class="btn ad" id="enDouble"></button><button class="btn" id="enOk"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
