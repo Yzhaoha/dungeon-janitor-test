@@ -135,7 +135,7 @@ var Snd = (function(){
 // ---------------- canvas ----------------
 if (!CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h){ this.rect(x,y,w,h); };
 var cv=$('c'), cx=cv.getContext('2d'), VW=0, VH=0, DPR=1, bgCache=null;
-var COL=['#f04848','#4a8cf7','#59d86a','#ffe14a','#8b5cf6','#ff9a3c','#22c7c7','#f472d0','#a16b3f','#f3efe2','#1f7a4d','#2b3a8f'];
+var COL=['#f04848','#4a8cf7','#59d86a','#ff9a3c','#ffe14a','#8b5cf6','#a16b3f','#22c7c7','#2b3a8f','#f472d0','#f3efe2','#1f7a4d'];
 var COL_HI=COL.map(function(c){ return shade(c, 0.28); }), COL_LO=COL.map(function(c){ return shade(c, -0.22); });
 function shade(hex, k){ var n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, b=n&255, f=function(v){ return Math.round(k>0? v+(255-v)*k : v*(1+k)); }; return 'rgb('+f(r)+','+f(g)+','+f(b)+')'; }
 var CAP=DJ.CAP;
@@ -159,7 +159,7 @@ function loadLevel(n, keepExtra){
   VS={hHp:F.hHp, mHp:F.mHp, hBar:1, mBar:1, hLag:1, mLag:1, shield:0, poison:0, hAtk:0, hHurt:0, hDrink:0, hDead:0, hGlow:0, dc:0, shPop:0, shBreak:0, mAtk:0, mHurt:0, mDead:0, mIn:0.7, landed:0, poofed:0, dizzy:0, cd:F.cd, cdPop:0, cdSeq:cdSeq, kind:monsterKind(n), tier:tierOf(n)}; fx=[]; shk=0;
   layout(); syncAll(); updHud();
   $('winM').classList.remove('show'); $('loseM').classList.remove('show');
-  if (L.king) banner(tl('bossF'), '', 2200); else if (n===3) banner(tl('r_stun'), '', 3600); else if (n===6) banner(tl('r_psn'), '', 3600); else if (L.hidden && n<=11) banner(tl('mystery'), '', 3000);
+  if (L.king) banner(tl('bossF'), '', 2200); else if (n===6) banner(tl('r_stun'), '', 3600); else if (n===11) banner(tl('r_psn'), '', 3600); else if (L.hidden && n<=11) banner(tl('mystery'), '', 3000);
   setTut(n===1? tl('tutA2') : (n===2? tl('tutB2') : ''));
 }
 function dispOf(i){ return B[i].map(function(c,k){ return {c:c, a:1, k:KN[i][k]}; }); }

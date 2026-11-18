@@ -69,12 +69,13 @@ function gen(level){
 }
 // ---------- fight ----------
 // what a full bottle of each colour does (same order as the palette in game.js)
-var ROLE=['atk','shd','heal','stun','psn','atk','shd','heal','atk','stun','psn','atk'];
+// ordered so that from 4 colours on there are always at least two attack potions (a fight is never one hit long)
+var ROLE=['atk','shd','heal','atk','stun','psn','atk','shd','atk','heal','stun','psn'];
 function fight(L){
   var na=0, i; for (i=0;i<L.colors;i++) if (ROLE[i]==='atk'||ROLE[i]==='psn') na++;
   var ATK=25, interval=L.level<5?6:5, hits=Math.ceil(L.steps*1.4/interval)+1;
   return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0,
-    mMax:Math.max(20, Math.round(ATK*na*0.8/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.ceil(100/hits*(L.king?1.2:1))};
+    mMax:Math.max(20, Math.round(ATK*na/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.ceil(100/hits*(L.king?1.2:1))};
 }
 // a completed bottle of colour c is drunk
 function drink(F, c){
