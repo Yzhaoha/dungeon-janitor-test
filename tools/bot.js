@@ -1,24 +1,13 @@
-// Bot playthrough of the brawl sim: node tools/bot.js [night] [metaLevel 0..5] [runs]
-// The bot kites: runs away from nearby monsters, drifts toward coins, picks random upgrades.
+// Checks the potion-sort level generator: node tools/bot.js [levels]
+// Every level must generate, be solvable, and generate fast enough for a phone.
 const DJ=require('../src/sim.js');
-function run(seed, night, ml){
-  const meta={hp:ml,power:ml,speed:ml,magnet:ml,gold:ml};
-  const G=DJ.newRun(meta, night, seed), dt=1/30, P=G.player; let rs=seed*7+1;
-  const rnd=()=>{ rs=(rs*1103515245+12345)&0x7fffffff; return rs/0x7fffffff; };
-  for (let i=0;i<(DJ.RUN+180)/dt;i++){
-    G.ev.length=0;
-    if (G.phase==='levelup'){ const smart=process.argv[5]==='smart', o=G.offer, w=o.filter(k=>DJ.WEAP.includes(k)); DJ.choose(G, smart&&w.length? w[Math.floor(rnd()*w.length)] : o[Math.floor(rnd()*o.length)]); continue; }
-    if (G.phase!=='play') break;
-    let ix=0, iz=0;
-    for (const e of G.enemies){ const dx=P.x-e.x, dz=P.z-e.z, d=Math.hypot(dx,dz)-e.r; if (d<5){ const w=1/Math.max(0.3,d)**2; ix+=dx*w; iz+=dz*w; } }
-    for (const g of G.gems){ const dx=g.x-P.x, dz=g.z-P.z, d=Math.hypot(dx,dz); if (d<6){ ix+=dx/d*0.15; iz+=dz/d*0.15; } }
-    ix+=-P.x*0.02; iz+=(-DJ.D/2-P.z)*0.02;
-    const m=Math.hypot(ix,iz); if (m>0){ ix/=m; iz/=m; }
-    DJ.step(G,dt,ix,iz);
-  }
-  return {end:G.phase, t:Math.round(G.t), lvl:G.lvl, kills:G.kills, hp:Math.round(P.hp), gold:DJ.goldEarned(G), w:Object.entries(G.w).map(a=>a[0][0]+a[0][1]+a[1]).join(' ')};
+const N=+process.argv[2]||150; let worst=0, bad=0, rows=[];
+for (let l=1;l<=N;l++){
+  const t0=process.hrtime.bigint(); const L=DJ.gen(l); const ms=Number(process.hrtime.bigint()-t0)/1e6; worst=Math.max(worst,ms);
+  if (!L){ bad++; console.log('level',l,'FAILED to generate'); continue; }
+  // replay the solver's answer to prove it
+  const B=L.bottles.map(b=>b.slice()); const s=DJ.solve(B); let ok=!!s; if (s){ for (const [i,j] of s){ if(!DJ.canPour(B,i,j)){ ok=false; break; } DJ.pour(B,i,j); } ok=ok&&DJ.solved(B); }
+  if (!ok){ bad++; console.log('level',l,'NOT solvable'); }
+  if (l<=12 || l%10===0) rows.push(`L${l}: ${L.colors} colours, ${L.bottles.length} bottles, ${L.steps} steps${L.king?' KING':''}${L.hidden?' hidden':''} ${ms.toFixed(0)}ms`);
 }
-const night=+process.argv[2]||1, ml=+process.argv[3]||0, runs=+process.argv[4]||8;
-let wins=0, tt=0;
-for (let s=1;s<=runs;s++){ const r=run(s,night,ml); if(r.end==='win') wins++; tt+=r.t; console.log(JSON.stringify(r)); }
-console.log('night',night,'meta',ml,'wins',wins+'/'+runs,'avg t',Math.round(tt/runs));
+console.log(rows.join('\n')); console.log('levels',N,'bad',bad,'slowest',worst.toFixed(0)+'ms');

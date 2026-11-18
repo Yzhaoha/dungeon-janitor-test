@@ -11,152 +11,51 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1a1220;font-family:"T
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .out{text-shadow:0 2px 0 #2a1a2e,0 0 4px #2a1a2e,1px 1px 0 #2a1a2e,-1px -1px 0 #2a1a2e,1px -1px 0 #2a1a2e,-1px 1px 0 #2a1a2e}
 #hud{position:fixed;inset:0;pointer-events:none}
-#coinBox{position:absolute;left:12px;top:10px;display:flex;align-items:center;gap:6px;background:rgba(40,24,48,.72);border:2px solid #f5c542;border-radius:22px;padding:4px 14px 4px 6px;font-size:24px;font-weight:900}
-#coinBox .ico,.coinfly{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6b0,#f8c630 45%,#c98a10);box-shadow:inset 0 -2px 0 #9a6608,0 1px 2px #0006;display:inline-block}
-#coinBox.bump{animation:bump .25s}
-@keyframes bump{50%{transform:scale(1.15)}}
-#wave{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(40,24,48,.72);border-radius:16px;padding:5px 14px;font-size:17px;font-weight:800;white-space:nowrap;text-align:center}
-#wave .bar{height:5px;background:#ffffff22;border-radius:3px;margin-top:4px;overflow:hidden}
-#wave .bar i{display:block;height:100%;background:#7ee06a;width:0}
-#wave.soon .bar i{background:#ff7a59}
-#wave.soon{animation:bump .5s infinite}
-#wave.done .bar i{background:#ffd84a}
-#comboWrap{position:absolute;left:50%;top:58px;transform:translateX(-50%);text-align:center}
-#combo{display:inline-block;font-size:26px;font-weight:900;color:#ffb347}
-#combo.hit{animation:bump .3s}
-#comboWrap .bar{width:110px;height:5px;background:#ffffff22;border-radius:3px;margin:2px auto 0;overflow:hidden}
-#comboWrap .bar i{display:block;height:100%;background:#ff9a3c}
-#combo[style*="none"]+.bar{display:none}
-#nmStars{font-size:44px;color:#ffd84a;letter-spacing:4px;line-height:1.1}
-#nmSum{font-size:20px;font-weight:900;margin:2px 0 8px}
-#nmPick{font-size:16px;font-weight:800;opacity:.9;margin-bottom:6px}
-#nmCards{display:flex;gap:8px;justify-content:center}
-.pcard{flex:1;min-width:0;max-width:150px;border:3px solid #ffd84a;border-radius:16px;background:linear-gradient(#fff7e0,#f3dca6);color:#3a2440;font:inherit;padding:10px 6px;cursor:pointer;box-shadow:0 5px 0 #0006;display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .12s}
-.pcard:hover{transform:translateY(-4px) scale(1.04)}
-.pcard .em{font-size:38px;line-height:1.1}
-.pcard b{font-size:15px;line-height:1.15}
-.pcard .ds{font-size:15px;font-weight:900;color:#a0461a;white-space:nowrap}
-.pcard .lv{font-size:11px;letter-spacing:2px;color:#8a6a3a;min-height:13px}
-#rep{position:absolute;right:12px;top:10px;background:rgba(40,24,48,.72);border-radius:16px;padding:5px 12px;font-size:20px;letter-spacing:1px;color:#ffd84a;display:flex;align-items:center;gap:8px}
-#rep small{color:#fff;font-size:13px;letter-spacing:0}
-#topBtns{position:absolute;right:12px;top:52px;display:flex;gap:6px;pointer-events:auto}
-.rb{pointer-events:auto;border:none;border-radius:12px;background:rgba(40,24,48,.8);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:6px 10px;cursor:pointer}
-#boostBtn{position:absolute;right:12px;bottom:18px;pointer-events:auto;border:3px solid #fff;border-radius:18px;background:linear-gradient(#9b6bff,#6a3fd6);color:#fff;font:inherit;font-weight:900;font-size:16px;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #3d2380;text-align:center;line-height:1.1}
-#boostBtn small{display:block;font-size:11px;opacity:.9}
-#boostBtn.on{background:linear-gradient(#ffcf4a,#f29a1a);box-shadow:0 4px 0 #9a5a08}
-#banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:36px;font-weight:900;white-space:nowrap}
+#pref{position:absolute;left:10px;top:10px;display:flex;gap:6px;pointer-events:auto}
+.rb{pointer-events:auto;border:none;border-radius:12px;background:rgba(40,24,48,.8);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:7px 10px;cursor:pointer}
+#langSel{pointer-events:auto;background:rgba(40,24,48,.8);color:#fff;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;padding:6px 4px;max-width:104px}
+#lvl{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(40,24,48,.78);border:2px solid #f5c542;border-radius:20px;padding:5px 18px;font-size:22px;font-weight:900;white-space:nowrap}
+#banner{position:absolute;left:50%;top:17%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:all .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:30px;font-weight:900;white-space:nowrap}
 #banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
 #banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#tut{white-space:pre-line;position:absolute;left:50%;bottom:16%;transform:translateX(-50%);width:max-content;background:#fff;color:#3a2440;border-radius:18px;padding:10px 18px;font-size:19px;font-weight:800;max-width:88vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
-#tut.show{display:block;animation:pop .3s}
-@keyframes pop{0%{transform:translateX(-50%) scale(.7)}100%{transform:translateX(-50%) scale(1)}}
-.float{position:absolute;font-weight:900;font-size:20px;color:#ffe45c;pointer-events:none;transition:transform 1s ease-out,opacity 1s;white-space:nowrap}
-.coinfly{position:absolute;width:20px;height:20px;transition:left .55s cubic-bezier(.5,-0.3,.7,1),top .55s cubic-bezier(.3,0,.2,1),transform .55s;pointer-events:none}
-.modal{position:fixed;inset:0;background:#120a18aa;display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:10}
+#tut{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);width:max-content;background:#fff;color:#3a2440;border-radius:18px;padding:9px 16px;font-size:18px;font-weight:800;max-width:90vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
+#tut.show{display:block}
+#btns{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:12px;pointer-events:auto}
+#btns button{position:relative;width:62px;height:62px;border-radius:20px;border:3px solid #fff;background:linear-gradient(#7a5a8c,#4a3256);box-shadow:0 5px 0 #2a1a2e;color:#fff;font:inherit;font-size:27px;cursor:pointer;padding:0;transition:transform .08s}
+#btns button:active{transform:translateY(4px);box-shadow:0 1px 0 #2a1a2e}
+#btns button i{position:absolute;right:-7px;top:-9px;min-width:24px;height:24px;border-radius:12px;background:#ff5a4a;border:2px solid #fff;font-style:normal;font-size:13px;font-weight:900;line-height:20px;padding:0 4px}
+#btns button i.ad{background:#8b5cf6;font-size:12px}
+#btns.nudge #bUndo,#btns.nudge #bAdd{animation:nud .5s 3}
+@keyframes nud{50%{transform:translateY(-8px) scale(1.08)}}
+.modal{position:fixed;inset:0;background:#120a1855;display:none;align-items:flex-end;justify-content:center;pointer-events:auto;z-index:10;padding-bottom:9vh}
 .modal.show{display:flex}
-.card{background:linear-gradient(#4a3256,#33213d);border:3px solid #f5c542;border-radius:22px;padding:18px 20px;min-width:280px;max-width:92vw;text-align:center;box-shadow:0 8px 0 #0006}
-.card h2{margin:0 0 8px;font-size:26px}
-.card .big{font-size:34px;font-weight:900;color:#ffe45c;margin:6px 0}
-.btn{border:none;border-radius:16px;font:inherit;font-weight:900;font-size:19px;padding:11px 18px;margin:6px 4px 0;cursor:pointer;color:#fff;background:linear-gradient(#5fd068,#33a144);box-shadow:0 4px 0 #1f6b2b}
-.btn.ad{background:linear-gradient(#9b6bff,#6a3fd6);box-shadow:0 4px 0 #3d2380}
-.btn.gray{background:#6b5a75;box-shadow:0 4px 0 #3a2f40}
-.btn:disabled{filter:grayscale(1);opacity:.6}
-#bench .row{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:7px 10px;margin:7px 0;text-align:left}
-#bench .row .em{font-size:28px;width:36px;text-align:center}
-#bench .row .tx{flex:1;font-size:15px}
-#bench .row .tx b{font-size:17px}
-#bench .row .lv{color:#ffd84a;letter-spacing:2px;font-size:13px}
-#bench .row .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
-#joy{position:fixed;width:120px;height:120px;border-radius:50%;border:3px solid #ffffff55;background:#ffffff14;display:none;pointer-events:none;transform:translate(-50%,-50%)}
-#joy i{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px;border-radius:50%;background:#ffffffaa}
+.card{background:linear-gradient(#4a3256,#33213d);border:3px solid #f5c542;border-radius:24px;padding:14px 30px 18px;min-width:250px;max-width:92vw;text-align:center;box-shadow:0 8px 0 #0006;animation:cardIn .4s cubic-bezier(.3,1.5,.5,1)}
+@keyframes cardIn{0%{transform:translateY(60px) scale(.8);opacity:0}}
+.card h2{margin:0 0 2px;font-size:30px}
+#wnIc{font-size:46px;line-height:1.1}
+#wnSub{font-size:17px;font-weight:800;opacity:.85;margin-bottom:8px}
+.btn{border:none;border-radius:18px;font:inherit;font-weight:900;font-size:24px;padding:12px 40px;margin:6px 4px 0;cursor:pointer;color:#fff;background:linear-gradient(#5fd068,#33a144);box-shadow:0 5px 0 #1f6b2b}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #1f6b2b}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
-#langSel{pointer-events:auto;background:rgba(40,24,48,.8);color:#fff;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;padding:6px 4px}
-#pref{position:absolute;left:12px;top:54px;display:flex;gap:6px;pointer-events:auto}
-@media (max-width:600px){
-  #coinBox{font-size:20px;top:8px;left:8px}
-  #wave{font-size:14px;padding:4px 10px}
-  #comboWrap{top:124px}
-  #combo{font-size:22px}
-  #rep{font-size:16px;right:8px;top:8px}
-  #rep small{display:none}
-  #topBtns{top:46px;right:8px}
-  #pref{top:48px;left:8px}
-  #banner{font-size:28px}
-  #tut{font-size:16px;bottom:20%}
-  #boostBtn{font-size:14px;padding:6px 10px}
-}
-@media (max-height:480px){
-  #tut{bottom:8%;font-size:15px}
-  #banner{top:28%}
-}
-#taskBtn{position:relative}
-#taskDot{display:none;position:absolute;right:-3px;top:-3px;width:12px;height:12px;border-radius:50%;background:#ff4a4a;border:2px solid #fff}
-#taskDot.on{display:block}
-#dlDays{display:flex;gap:5px;justify-content:center;margin:6px 0;flex-wrap:wrap}
-#dlDays div{width:46px;border-radius:10px;background:#00000040;padding:4px 0;font-size:11px;font-weight:800;opacity:.6}
-#dlDays div b{display:block;font-size:20px}
-#dlDays div.got{opacity:.45;text-decoration:line-through}
-#dlDays div.now{opacity:1;background:linear-gradient(#ffcf4a,#f29a1a);color:#3a2440;transform:scale(1.08)}
-#dlDays div.big b{font-size:26px}
-#taskRows .row{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:8px 10px;margin:7px 0;text-align:left}
-#taskRows .tx{flex:1;font-size:15px}
-#taskRows .pb{height:7px;background:#ffffff22;border-radius:4px;margin-top:4px;overflow:hidden}
-#taskRows .pb i{display:block;height:100%;background:#7ee06a}
-#taskRows .btn{font-size:15px;padding:8px 10px;margin:0;min-width:92px}
-#xpBar{position:absolute;left:0;right:0;top:0;height:9px;background:#00000066}
-#xpFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd84a,#ff9a3c);transition:width .15s}
-#lvlTx{position:absolute;right:12px;top:14px;background:rgba(40,24,48,.72);border-radius:14px;padding:4px 12px;font-size:19px;font-weight:900;color:#ffd84a}
-#coinBox{top:14px} #pref{top:58px} #wave{top:14px}
-#hpBar{position:absolute;width:54px;height:8px;background:#000a;border:1.5px solid #2a1a2e;border-radius:5px;overflow:hidden;display:none}
-#hpFill{display:block;height:100%;background:#ff4d4d}
-#wbar{position:absolute;left:10px;bottom:12px;display:none;flex-wrap:wrap;gap:4px;max-width:60vw}
-#wbar span{background:rgba(40,24,48,.72);border-radius:10px;padding:3px 6px;font-size:19px}
-#wbar i{font-style:normal;font-size:12px;font-weight:900;color:#ffd84a;margin-left:2px}
-body.run #hpBar{display:block} body.run #wbar{display:flex} body.run #langSel{display:none}
-#hurt{position:fixed;inset:0;pointer-events:none;opacity:0;box-shadow:inset 0 0 120px 40px #ff2020}
-#menu .card{max-height:96vh;overflow:auto}
-#mnTitle{font-size:34px;font-weight:900;margin:0 0 2px}
-#mnNightRow{display:flex;align-items:center;justify-content:center;gap:10px;font-size:22px;font-weight:900;margin:6px 0}
-#mnNightRow .rb{font-size:20px;padding:4px 12px} #mnNightRow .rb:disabled{opacity:.3}
-#mnPlay{font-size:26px;padding:13px 44px;margin:4px 0 10px}
-#mnGold{font-size:20px;font-weight:900;color:#ffe45c;margin-top:4px}
-.srow{display:flex;align-items:center;gap:10px;background:#00000030;border-radius:14px;padding:6px 10px;margin:6px 0;text-align:left}
-.srow .em{font-size:26px;width:34px;text-align:center} .srow .tx{flex:1;font-size:15px} .srow .tx b{font-size:16px}
-.srow .lv{color:#ffd84a;letter-spacing:2px;font-size:12px} .srow .btn{font-size:15px;padding:8px 10px;margin:0;min-width:86px}
-.pcard .ds.w{white-space:normal;font-size:13px;font-weight:700;color:#5a3a20;line-height:1.2}
-.pcard .lv u{text-decoration:none;background:#ff5a4a;color:#fff;border-radius:6px;padding:1px 5px;letter-spacing:0;font-weight:900}
-#lvTitle{color:#ffd84a}
-#enGold{font-size:38px;font-weight:900;color:#ffe45c;margin:6px 0}
-#enStats{font-size:16px;font-weight:800;opacity:.9}
-@media (max-width:600px){ #wave{top:52px} #lvlTx{font-size:16px;top:12px;right:8px} #coinBox{top:12px} #mnTitle{font-size:28px} #wbar span{font-size:16px} }
-@media (pointer:coarse),(max-width:900px),(max-height:500px){ body.pf-poki #wave{top:62px} }
-@media (max-width:600px){ body.pf-poki #wave{top:92px} }
+@media (max-width:600px){ #lvl{font-size:19px;top:54px} #banner{font-size:24px;top:21%} #tut{font-size:16px} #btns button{width:56px;height:56px;font-size:24px} }
+/* Poki pill sits at top centre: keep the level chip clear of it */
+body.pf-poki #lvl{top:70px}
+@media (max-width:600px){ body.pf-poki #lvl{top:100px} }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="hurt"></div>
 <div id="hud">
-  <div id="xpBar"><i id="xpFill"></i></div>
-  <div id="coinBox" class="out"><span class="ico"></span><span id="coins">0</span></div>
   <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
-  <div id="wave" class="out"><span id="waveTx"></span><div class="bar"><i id="waveBar"></i></div></div>
-  <div id="lvlTx" class="out"></div>
-  <div id="hpBar"><i id="hpFill"></i></div>
-  <div id="wbar"></div>
+  <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
+  <div id="btns"><button id="bUndo">↩️<i id="undoN">5</i></button><button id="bRestart">🔄</button><button id="bAdd">🧪<i class="ad">📺</i></button><button id="bHint">💡<i class="ad">📺</i></button></div>
 </div>
-<div id="joy"><i></i></div>
-<div class="modal" id="menu"><div class="card"><div id="mnTitle" class="out">Dungeon Tavern</div>
-  <div id="mnNightRow"><button class="rb" id="mnPrev">◀</button><span id="mnNight" class="out"></span><button class="rb" id="mnNext">▶</button></div>
-  <button class="btn" id="mnPlay" data-t="play"></button>
-  <div id="mnGold" class="out"></div><div id="mnRows"></div></div></div>
-<div class="modal" id="lvlM"><div class="card"><h2 class="out" id="lvTitle"></h2><div id="nmPick" data-t="pickOne"></div><div id="lvCards" style="display:flex;gap:8px;justify-content:center"></div><button class="btn ad" id="lvReroll"></button></div></div>
-<div class="modal" id="endM"><div class="card"><h2 class="out" id="enTitle"></h2><div id="enStats"></div><div id="enGold" class="out"></div><button class="btn ad" id="enRevive"></button><button class="btn ad" id="enDouble"></button><button class="btn" id="enOk"></button></div></div>
+<div class="modal" id="winM"><div class="card"><div id="wnIc">🍻</div><h2 class="out" data-t="cheers"></h2><div id="wnSub"></div><button class="btn" id="wnNext" data-t="next"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
