@@ -1,5 +1,6 @@
 // ===== SIM START =====
-// v0.7 — Potion Sort: pour potions between bottles until every bottle holds one colour.
+// v0.8 — Potion Brawl: sort potions; every bottle you complete is drunk by the hero and becomes a move
+// (attack / shield / heal / stun / poison) against the monster, which strikes back every few pours.
 // Pure logic (node can run it): level generator (always solvable), move rules, solver for hints.
 var DJ = (function(){
 'use strict';
@@ -61,13 +62,38 @@ function gen(level){
     if (B.some(function(b){ return b.length && uniform(b); })) continue;        // nothing pre-sorted
     var sol=solve(B, 40000); if (!sol) continue;
     if (level>3 && sol.length<nc*2) continue;                                   // too easy, reshuffle
-    return {level:level, colors:nc, king:isKing(level), hidden:hiddenFor(level), bottles:B, steps:sol.length};
+    var L={level:level, colors:nc, king:isKing(level), hidden:hiddenFor(level), bottles:B, steps:sol.length};
+    L.fight=fight(L); L.fight.mHp=L.fight.mMax; return L;
   }
   return null;
 }
+// ---------- fight ----------
+// what a full bottle of each colour does (same order as the palette in game.js)
+var ROLE=['atk','shd','heal','stun','psn','atk','shd','heal','atk','stun','psn','atk'];
+function fight(L){
+  var na=0, i; for (i=0;i<L.colors;i++) if (ROLE[i]==='atk'||ROLE[i]==='psn') na++;
+  var ATK=25, interval=L.level<5?6:5, hits=Math.ceil(L.steps*1.4/interval)+1;
+  return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0,
+    mMax:Math.max(20, Math.round(ATK*na*0.8/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.ceil(100/hits*(L.king?1.2:1))};
+}
+// a completed bottle of colour c is drunk
+function drink(F, c){
+  var r=ROLE[c], ev={role:r, c:c};
+  if (r==='atk'){ F.mHp-=F.atk; ev.v=F.atk; } else if (r==='psn'){ F.poison+=F.psn; } else if (r==='shd'){ F.shield++; }
+  else if (r==='heal'){ ev.v=Math.min(F.heal, F.heroMax-F.hHp); F.hHp+=ev.v; } else if (r==='stun'){ F.cd+=F.stun; }
+  return ev;
+}
+// after every pour: poison ticks, the countdown drops, the monster may strike
+function monsterTurn(F){
+  var ev={};
+  if (F.mHp<=0) return ev;
+  if (F.poison>0){ F.mHp-=F.poison; ev.psn=F.poison; if (F.mHp<=0) return ev; }
+  F.cd--; if (F.cd<=0){ F.cd=F.interval; if (F.shield>0){ F.shield--; ev.blocked=true; } else { F.hHp-=F.mDmg; ev.hit=F.mDmg; } }
+  return ev;
+}
 function hint(B){ var s=solve(B, 40000); return s && s.length ? s[0] : null; }
 function stuck(B){ if (solved(B)) return false; for (var i=0;i<B.length;i++) for (var j=0;j<B.length;j++) if (canPour(B,i,j)) return false; return true; }
-return {CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
+return {ROLE:ROLE, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
   colorsFor:colorsFor, isKing:isKing, hiddenFor:hiddenFor};
 })();
 if (typeof module!=='undefined') module.exports=DJ;

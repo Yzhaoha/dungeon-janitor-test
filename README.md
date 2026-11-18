@@ -1,4 +1,4 @@
-# 地牢酒馆·调酒分色解谜（暂名 Dungeon Tavern，仓库沿用 dungeon-janitor）
+# 地牢·倒药水打怪（暂名 Dungeon Tavern，仓库沿用 dungeon-janitor）
 
 玩法：勇者入座点啤酒/烤肉，你端过去、捡钱、擦桌子，攒钱加桌子、开烤架、雇哥布林。详见 docs/云端交接.md。
 
