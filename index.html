@@ -600,7 +600,7 @@ function layout(){
   var top=STG.top+STG.h+50, bot=92, availH=VH-top-bot, availW=VW-20, best=0, bestRows=1;
   for (var rows=1; rows<=4; rows++){ var per=Math.ceil(n/rows), w=Math.min(availW/(per*1.8), (availH-0)/(rows*(3.15+1.55)));
     if (w>best+0.5){ best=w; bestRows=rows; } }
-  bw=Math.max(18, Math.min(62, best)); bh=bw*3.15; uh=bh*0.8/CAP;
+  bw=Math.max(18, Math.min(62, best)); bh=bw*3.15; uh=bh*0.91/CAP;
   var per2=Math.ceil(n/bestRows), cellH=bh+bw*1.55, totalH=bestRows*cellH, y0=top+Math.max(0,(availH-totalH)/2)+bw*1.55;
   for (var i=0;i<n;i++){ var r=Math.floor(i/per2), inRow=(r===bestRows-1)? n-per2*(bestRows-1) : per2, k=i-r*per2;
     V[i].x=VW/2+(k-(inRow-1)/2)*bw*1.8; V[i].y=y0+r*cellH+bh; V[i].row=r; }
