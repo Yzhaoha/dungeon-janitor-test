@@ -39,6 +39,32 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .btn:disabled{filter:grayscale(1);opacity:.6}
 #loseM .btn{display:block;margin:8px auto 0;min-width:220px}
 .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #1f6b2b}
+#coinBox{position:absolute;right:10px;top:10px;pointer-events:auto}
+#shopBtn{position:relative;font-size:16px;padding:7px 12px;border:2px solid #f5c542}
+#shopBtn b{display:none;position:absolute;right:-6px;top:-8px;width:22px;height:22px;border-radius:11px;background:#5fd068;border:2px solid #fff;font-size:13px;line-height:18px;animation:nud .8s infinite}
+#shopBtn.can b{display:block}
+.coin{display:inline-block;width:1em;height:1em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c2,#f5b82e 70%);border:2px solid #a8700f;vertical-align:-0.16em}
+#stars{display:flex;justify-content:center;gap:6px;margin:-40px 0 0}
+#stars i{width:56px;height:56px;background:#2a1a2e;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+#stars i:nth-child(2){transform:translateY(-10px) scale(1.18)}
+#stars i.on{background:linear-gradient(#fff3a0,#f5b82e);animation:starIn .45s cubic-bezier(.3,1.8,.5,1) backwards}
+#stars i.on:nth-child(2){animation-delay:.22s} #stars i.on:nth-child(3){animation-delay:.44s}
+@keyframes starIn{0%{transform:scale(0) rotate(-120deg)}}
+#wnPath{display:flex;justify-content:center;align-items:center;gap:5px;margin:6px 0 4px}
+#wnPath i{width:22px;height:22px;border-radius:11px;background:#2a1a2e;border:2px solid #7a5a8c;font-style:normal;font-size:12px;font-weight:900;line-height:18px;color:#2a1a2e}
+#wnPath i.d{background:#f5c542;border-color:#fff}
+#wnPath i.b{width:30px;height:30px;border-radius:15px;font-size:17px;line-height:25px;border-color:#ff7a5a}
+#wnPath u{width:10px;height:3px;background:#7a5a8c;border-radius:2px}
+#wnCoin{font-size:26px;font-weight:900;color:#ffe98a;margin:2px 0 4px}
+#wnBtns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+#wnBtns .btn{margin-top:6px}
+.srow{display:flex;align-items:center;gap:10px;text-align:left;background:#2a1a2e88;border-radius:16px;padding:8px 10px;margin:8px 0}
+.srow canvas{width:44px;height:44px;flex:none}
+.srow .si{flex:1;min-width:112px;font-size:16px;font-weight:900;line-height:1.25}
+.srow .si small{display:block;font-size:14px;color:#ffe98a}
+.srow .btn{font-size:18px;padding:9px 12px;margin:0;min-width:88px;white-space:nowrap}
+#shopM .card{padding:14px 16px 16px}
+#shopM{align-items:center;padding-bottom:0}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
@@ -54,12 +80,14 @@ body.pf-poki #lvl{top:70px}
 <canvas id="c"></canvas>
 <div id="hud">
   <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
+  <div id="coinBox"><button class="rb" id="shopBtn"><span class="coin"></span> <span id="coinN">0</span><b>⬆</b></button></div>
   <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
   <div id="btns"><button id="bUndo">↩️<i id="undoN">5</i></button><button id="bRestart">🔄</button><button id="bAdd">🧪<i class="ad">📺</i></button><button id="bHint">💡<i class="ad">📺</i></button></div>
 </div>
-<div class="modal" id="winM"><div class="card"><div id="wnIc">🏆</div><h2 class="out" data-t="victory"></h2><div id="wnSub"></div><button class="btn" id="wnNext" data-t="next"></button></div></div>
+<div class="modal" id="winM"><div class="card"><div id="stars"><i></i><i></i><i></i></div><h2 class="out" data-t="victory"></h2><div id="wnSub"></div><div id="wnPath"></div><div id="wnCoin" class="out">+<span id="wnCoinN">0</span> <span class="coin"></span></div><div id="wnBtns"><button class="btn ad" id="wnDbl">📺 ×2</button><button class="btn" id="wnNext" data-t="next"></button></div></div></div>
+<div class="modal" id="shopM"><div class="card"><h2 class="out" data-t="gear"></h2><div id="shopRows"></div><button class="btn" id="shopX">OK</button></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div id="adfake"></div>
 <div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>

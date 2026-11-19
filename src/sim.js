@@ -75,7 +75,7 @@ function fight(L){
   var na=0, i; for (i=0;i<L.colors;i++) if (ROLE[i]==='atk'||ROLE[i]==='psn') na++;
   var ATK=25, interval=L.level<5?6:5, hits=Math.ceil(L.steps*1.4/interval)+1;
   return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0,
-    mMax:Math.max(20, Math.round(ATK*na/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.ceil(100/hits*(L.king?1.2:1))};
+    mMax:Math.max(20, Math.round(ATK*na*Math.min(2,1+0.02*(L.level-1))/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.ceil(100/hits*(L.king?1.2:1))};
 }
 // a completed bottle of colour c is drunk
 function drink(F, c){
