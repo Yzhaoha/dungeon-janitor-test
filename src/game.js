@@ -259,7 +259,7 @@ function checkEnd(dieAt){
   if (won){ magic=false; later(dieAt, function(){ VS.mHp=0; VS.mDead=0.001; Snd.thud(); Snd.squish(); }); }
 }
 // ---------------- fight (rules live in sim.js, this is the show) ----------------
-var doorHits=[], walkGate=null, padKey='x', OL='#221528', FNT='"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif', HA=0.46, MA=0.5, cdSeq=0, shk=0, hitStop=0, hurtFlash=0, fx=[], stageCache=null, stageKey='', torches=[];
+var heroRun=false, doorHits=[], walkGate=null, padKey='x', OL='#221528', FNT='"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif', HA=0.46, MA=0.5, cdSeq=0, shk=0, hitStop=0, hurtFlash=0, fx=[], stageCache=null, stageKey='', torches=[];
 var THEMES=[{w0:'#5a4582',w1:'#2b1e3e',fl:'#7d6c93',fd:'#4a3c5c',gl:'255,170,80'},{w0:'#3a6a5d',w1:'#1a2e2b',fl:'#73917f',fd:'#42594e',gl:'200,255,120'},{w0:'#3f6298',w1:'#1b2a48',fl:'#829cc2',fd:'#4c6288',gl:'130,225,255'},{w0:'#84403a',w1:'#3a1a1c',fl:'#a3725f',fd:'#643e36',gl:'255,130,60'}];
 var MCOL={slime:['#6fd16a','#5ab8f0','#f0914a','#b684f5'], gob:['#86d95a','#55c9a8','#d9b04a','#c77ae0'], skel:['#f1ecdc','#cfe6ee','#ecdcae','#e6cdea'], bat:['#8a55c4','#4a7cc4','#c4556a','#4f9a78'], orc:['#5f9447','#4a8f8a','#a8823c','#8a5aa8'], ogre:['#6a9a4a','#4a86a8','#b8683c','#8a4ab0'], dragon:['#d0483a','#3a9a6a','#4a78d0','#8a4ac8']};
 var MD={slime:{h:48,w:60,s:1}, gob:{h:70,w:50,s:1}, skel:{h:72,w:44,s:1}, bat:{h:76,w:70,s:1}, orc:{h:84,w:62,s:1.08}, ogre:{h:100,w:72,s:1.22}, dragon:{h:106,w:84,s:1.3}};
@@ -301,7 +301,7 @@ function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.3
   for (var i=0;i<12;i++) parts.push({x:g.mx,y:y,vx:(Math.random()-0.2)*320,vy:-80-Math.random()*240,t:0.5,c:i%3?'#ffe9a8':'#fff',r:2+Math.random()*3,g:700}); }
 function doDrink(c, bv){
   var ev=DJ.drink(F, c), g=stg(), k=g.k, hpAfter=F.hHp, mAfter=F.mHp, cdA=F.cd, sq=++cdSeq, T=0.62; hist=[];
-  orbs.push({x0:bv.x, y0:bv.y-bh-bw*0.3, x1:g.hx+16*k, y1:g.gy-58*k, t:0, d:0.36, c:c});
+  orbs.push({x0:bv.x, y0:bv.y-bh-bw*0.3, x1:g.hx+12*k, y1:g.gy-86*k, t:0, d:0.36, c:c});
   later(0.36, function(){ VS.hDrink=0.3; VS.dc=c; Snd.fill(); });
   later(0.58, function(){ fx.push({ty:'ring', x:g.hx, y:g.gy-40*k, t:0, d:0.4, c:COL_HI[c], r:50*k}); });
   if (ev.role==='atk'){ later(T, function(){ VS.hAtk=HA; Snd.swing(); }); later(T+HA*0.42, function(){ VS.mHp=Math.max(0,Math.min(VS.mHp,mAfter)); hitMonster(ev.v, true, c, ev.crit); }); }
@@ -333,11 +333,26 @@ function heroArt(c, t){
   var br=Math.sin(t*3.2), sway=Math.sin(t*2.1)*3+(a>=0?8:0);
   var sw= a>=0? 0.5-swingA(a)*0.7 : (cheer? -0.5+Math.sin(t*9)*0.12 : (drink? 1.5 : 0.5+br*0.04));
   var lean= a>=0? (a<0.25? -0.14 : (a<0.6? 0.24 : 0.24*(1-(a-0.6)/0.4))) : (drink? -0.18 : 0);
-  c.save(); c.rotate(lean); c.translate(0, br*0.8);
+  // the horse: chestnut, short legs that gallop when the knight charges or walks to a door
+  var hcol='#c98a4a', hdk='#8a5630', mane='#5a361c', gal=heroRun? Math.sin(t*20) : 0, hb=heroRun? Math.abs(Math.sin(t*20))*-2.5 : br*0.5, hm= down||VS.hHurt>0? 2 : (cheer? 3 : ((t%4.3)<0.12? 1 : 0));
+  c.save(); c.translate(4,hb); c.scale(1.12,1.12);
+  c.beginPath(); c.moveTo(-27,-36); c.quadraticCurveTo(-46-sway,-34,-40-sway*1.2,-10); c.quadraticCurveTo(-34,-22,-26,-27); c.closePath(); fs(c,mane);
+  [[-21,-0.5,hdk],[15,0.5,hdk],[-12,0.5,hcol],[24,-0.5,hcol]].forEach(function(l){ c.save(); c.translate(l[0],-18-hb); c.rotate(gal*l[1]); rr(c,-4.5,0,9,18-0,3.5); fs(c,l[2]); rr(c,-5,13,10,5.5,2.5); fs(c,'#3a2416',2.5); c.restore(); });
+  el(c,1,-29,30,15.5); fs(c,hcol); c.fillStyle='rgba(255,255,255,0.18)'; el(c,-6,-36,16,5); c.fill();
+  poly(c,[14,-40,27,-62,41,-56,31,-24,18,-22]); fs(c,hcol); c.fillStyle=hcol; el(c,20,-30,10,10); c.fill();
+  c.beginPath(); c.moveTo(15,-42); c.quadraticCurveTo(14,-58,27,-68); c.lineTo(33,-62); c.quadraticCurveTo(24,-54,22,-40); c.closePath(); fs(c,mane,2.5);
+  poly(c,[30,-66,32,-78,38,-67]); fs(c,hcol,2.5);
+  el(c,40,-59,12,9,0.45); fs(c,hcol); el(c,48,-52,7.5,6,0.3); fs(c,'#e9c9a0'); c.fillStyle=mane; el(c,51,-52,1.1,1.5); c.fill();
+  poly(c,[31,-66,40,-70,37,-62]); c.fillStyle=mane; c.fill();
+  eye(c,41,-61,2.8,hm); c.lineWidth=2; c.strokeStyle=OL; c.beginPath(); c.moveTo(45,-48.5); c.quadraticCurveTo(48,-47,51,-48.5); c.stroke();
+  rr(c,-15,-44,27,17,6); fs(c,'#d9484e'); c.fillStyle='#ffd84a'; c.fillRect(-13.5,-31.5,24,3); rr(c,-11,-47,19,6,3); fs(c,'#6e4224',2.5);
+  c.strokeStyle='#6e4224'; c.lineWidth=2.2; c.beginPath(); c.moveTo(46,-49); c.quadraticCurveTo(28,-40,14,-58); c.stroke();
+  c.restore();
+  c.save(); c.translate(-5,-31+hb); c.scale(0.84,0.84); c.rotate(lean); c.translate(0, br*0.6);
   c.beginPath(); c.moveTo(-8,-48); c.quadraticCurveTo(-30-sway,-36,-27-sway*1.5,-9); c.lineTo(-12,-13); c.closePath(); fs(c,'#d9484e');
   el(c,-17,-31,11,13); fs(c,'#5b8fe6'); el(c,-17,-31,5,6); fs(c,'#ffd84a',2);
   var G0=SAVE.gear, lgC= G0.pnt>=0? ['#9a9fb0','#2f8f5a','#3a5fb8','#7a3fb0'][G0.pnt] : '#3b3350', btC= G0.sho>=0? ['#c9c9d4','#3fb87a','#5a9cff','#b97aff'][G0.sho] : null;
-  rr(c,-12,-17,10,17,4); fs(c,lgC); rr(c,2,-17,10,17,4); fs(c,lgC); if (btC){ rr(c,-13,-7,12,7,3); fs(c,btC,2.5); rr(c,1,-7,12,7,3); fs(c,btC,2.5); }
+  c.save(); c.translate(1,-16); c.rotate(-0.35); rr(c,-5,0,10,19,4); fs(c,lgC); rr(c,-6,12,13,7.5,3); fs(c,btC||'#3a2416',2.5); c.restore();
   var G=SAVE.gear, arC= G.top>=0? ['#dfe6ee','#3fb87a','#4f8fe8','#a05ae0'][G.top] : ['#4f8fe8','#3f9fd8','#5a7ae8','#6a6ae8'][Math.min(3,Math.floor(SAVE.up.a/3))], swC=['#eef3fa','#ffe9a0','#a8f2ff','#ffb09a'][Math.min(3,Math.floor(SAVE.up.s/3))];
   rr(c,-15,-47,30,33,10); fs(c,arC);
   c.fillStyle='rgba(255,255,255,0.32)'; rr(c,-11,-44,9,13,4.5); c.fill();
@@ -581,7 +596,7 @@ function drawStage(dt, t){
   if (RT && RT.at>=0){ if (choosing && walk<=0){ var here=nodeAt(RT.at); options().forEach(function(id){ var rm=nodeAt(id); drawGate(c,g,t,rm.x-here.x,rm.y-here.y,id,true); }); }
     else if (walk>0 && walkGate) drawGate(c,g,t,walkGate.dx,walkGate.dy,nextRoom,false); }
   // ----- monster -----
-  var big=md.s*(L.elite?1.18:1), alive=!(VS.mDead>0), ma=VS.mAtk>0? 1-VS.mAtk/MA : -1, ha=VS.hAtk>0? 1-VS.hAtk/HA : -1, D=(g.mx-g.hx)-(54+md.w*0.5*big)*k;
+  var big=md.s*(L.elite?1.18:1), alive=!(VS.mDead>0), ma=VS.mAtk>0? 1-VS.mAtk/MA : -1, ha=VS.hAtk>0? 1-VS.hAtk/HA : -1, D=(g.mx-g.hx)-(80+md.w*0.5*big)*k;
   var hot=alive && !won && VS.cd<=1, mcy=mCY(g);
   if (L.elite && alive && !hot){ var eg=c.createRadialGradient(g.mx,mcy,4,g.mx,mcy,(58+Math.sin(t*4)*5)*k*big); eg.addColorStop(0,'rgba(190,90,255,0.5)'); eg.addColorStop(1,'rgba(190,90,255,0)'); c.fillStyle=eg; c.fillRect(g.mx-80*k*big,mcy-80*k*big,160*k*big,160*k*big); }
   if (hot){ var ag=c.createRadialGradient(g.mx,mcy,4,g.mx,mcy,(60+Math.sin(t*9)*6)*k*big); ag.addColorStop(0,'rgba(255,50,50,0.5)'); ag.addColorStop(1,'rgba(255,50,50,0)'); c.fillStyle=ag; c.fillRect(g.mx-80*k*big,mcy-80*k*big,160*k*big,160*k*big); }
@@ -602,13 +617,14 @@ function drawStage(dt, t){
   // ----- hero -----
   var hdp=Math.min(1,VS.hDead/0.4), wk=walk>0? Math.min(1,walk/0.9) : 0, cheer=won && VS.mDead>0.3 && !wk && !choosing && !VS.empty, hxx=g.hx+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).x-g.hx)*ease(wk) : 0)+(VS.fadeIn>0? -VS.fadeIn/0.45*60*k : 0)+dashP(ha)*D-(VS.hHurt>0? Math.sin(Math.min(1,VS.hHurt/0.4)*Math.PI)*14*k : 0), hyy=g.gy+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).y-g.gy)*ease(wk) : 0)-(cheer? Math.abs(Math.sin(t*6.5))*16*k : 0)-(wk||VS.fadeIn>0? Math.abs(Math.sin(t*16))*7*k : 0);
   if (wk && Math.random()<dt*30) parts.push({x:hxx,y:hyy,vx:-40-Math.random()*40,vy:-20-Math.random()*30,t:0.4,c:'rgba(230,220,240,0.6)',r:2+Math.random()*3,g:60});
-  c.fillStyle='rgba(0,0,0,0.34)'; el(c,hxx,g.gy+3*k,24*k,6*k); c.fill();
-  if (VS.hGlow>0){ c.fillStyle='rgba(140,240,120,'+(VS.hGlow*0.7)+')'; el(c,hxx,g.gy-40*k,44*k,52*k); c.fill(); }
+  c.fillStyle='rgba(0,0,0,0.34)'; el(c,hxx+4*k,g.gy+3*k,40*k,7*k); c.fill();
+  if (VS.hGlow>0){ c.fillStyle='rgba(140,240,120,'+(VS.hGlow*0.7)+')'; el(c,hxx,g.gy-50*k,56*k,62*k); c.fill(); }
+  heroRun=(ha>=0.18 && ha<0.96) || wk>0 || VS.fadeIn>0;
   sprite(function(s){ heroArt(s,t); }, hxx-hdp*8*k, hyy-hdp*6*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1), rot:-easeOut(hdp)*1.5, tint: VS.hHurt>0.25? '#fff' : '#ff3030', ta: VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0)});
   if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',g.hx-36*k+Math.cos(sa)*16*k, g.gy-34*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
-  if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(46+sp*8+Math.sin(t*3)*1.5)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45;
-    var sg=c.createRadialGradient(hxx,hyy-42*k,sr*0.5,hxx,hyy-42*k,sr); sg.addColorStop(0,'rgba(120,180,255,0)'); sg.addColorStop(1,'rgba(120,190,255,'+(0.42*sa2+sp*0.3)+')'); c.fillStyle=sg; el(c,hxx,hyy-42*k,sr,sr*1.12); c.fill();
-    c.strokeStyle='rgba(200,230,255,'+(0.85*sa2)+')'; c.lineWidth=2.5*k; c.stroke(); c.strokeStyle='rgba(255,255,255,'+(0.8*sa2)+')'; c.lineWidth=3*k; c.beginPath(); c.ellipse(hxx,hyy-42*k,sr*0.78,sr*0.9,0,-2.2,-1.3); c.stroke(); }
+  if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(60+sp*8+Math.sin(t*3)*1.5)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45;
+    var sg=c.createRadialGradient(hxx,hyy-52*k,sr*0.5,hxx,hyy-52*k,sr); sg.addColorStop(0,'rgba(120,180,255,0)'); sg.addColorStop(1,'rgba(120,190,255,'+(0.42*sa2+sp*0.3)+')'); c.fillStyle=sg; el(c,hxx,hyy-52*k,sr,sr*1.12); c.fill();
+    c.strokeStyle='rgba(200,230,255,'+(0.85*sa2)+')'; c.lineWidth=2.5*k; c.stroke(); c.strokeStyle='rgba(255,255,255,'+(0.8*sa2)+')'; c.lineWidth=3*k; c.beginPath(); c.ellipse(hxx,hyy-52*k,sr*0.78,sr*0.9,0,-2.2,-1.3); c.stroke(); }
   // ----- effects -----
   for (i=fx.length-1;i>=0;i--){ var f=fx[i]; f.t+=dt; var p=Math.min(1,f.t/f.d);
     if (f.ty==='slash'){ c.save(); c.translate(f.x,f.y); c.scale(f.flip?-1:1,1); c.rotate(-0.5+p*0.5); var R=f.r*(0.75+p*0.5), A=1.25; c.globalAlpha=1-p*p;
@@ -643,7 +659,7 @@ function drawStage(dt, t){
   if (VS.poison>0 && alive){ icon(c,'psn',CX2-bx1+8*k,sy2,7*k,'#c79aff',2.5); txt(c,''+VS.poison,CX2-bx1+18*k,sy2+0.5,12*k,'#e0c8ff','left'); }
   // the monster's next move: how many pours are left, and how hard it hits
   if (alive && !won && !lost){ var cd=Math.max(0,VS.cd), pop=VS.cdPop>0? 1+Math.sin((VS.cdPop/0.4)*Math.PI)*0.35 : 1, pu=(hot? 1+Math.sin(t*10)*0.07 : 1)*pop, ib=Math.max(0.82,k);
-    var ix=Math.max(g.hx+44*k, g.mx-(md.w*0.5*big+(L.king||L.elite?62:48))*k)+(hot? Math.sin(t*38)*1.5 : 0), iy=Math.max(sy2+20*ib, g.gy-(kd==='bat'?52:md.h*0.8)*big*k), col=hot?'#f04848':(cd<=2?'#ff9a3c':'#7a4fa0');
+    var ix=Math.max(g.hx+62*k, g.mx-(md.w*0.5*big+(L.king||L.elite?62:48))*k)+(hot? Math.sin(t*38)*1.5 : 0), iy=Math.max(sy2+20*ib, g.gy-(kd==='bat'?52:md.h*0.8)*big*k), col=hot?'#f04848':(cd<=2?'#ff9a3c':'#7a4fa0');
     c.save(); c.translate(ix,iy); c.scale(pu*ib,pu*ib);
     poly(c,[36,-5,45,0,36,5]); c.fillStyle='rgba(30,18,38,0.92)'; c.fill();
     rr(c,-30,-13,68,26,13); c.fillStyle='rgba(30,18,38,0.92)'; c.fill(); c.lineWidth=2; c.strokeStyle=col; c.stroke();
