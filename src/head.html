@@ -88,7 +88,13 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #lootM{align-items:center;padding-bottom:0}
 #lootIc{width:110px;height:110px;display:block;margin:4px auto;animation:starIn .5s cubic-bezier(.3,1.6,.5,1) backwards}
 #lootNm{font-size:22px;font-weight:900} #lootSt{font-size:16px;font-weight:800;margin:2px 0 6px} #lootRs{font-size:15px;font-weight:800;color:#ffe98a;margin-bottom:4px}
-#mini{position:absolute;right:10px;top:52px;pointer-events:auto;cursor:pointer;background:rgba(40,24,48,.8);border:2px solid #7a5a8c;border-radius:12px;display:block}
+#mini{position:absolute;right:8px;top:8px;pointer-events:auto;cursor:pointer;background:linear-gradient(#3a2a46,#241830);border:2px solid #c79a52;border-radius:12px;display:block;box-shadow:0 3px 0 #0006}
+#dpad{position:absolute;left:50%;transform:translateX(-50%);width:204px;height:204px;display:none;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:6px;padding:8px;border-radius:50%;background:radial-gradient(rgba(20,12,28,.9) 55%,rgba(20,12,28,0) 72%);pointer-events:auto}
+#dpad.on{display:grid}
+#dpad button{border:3px solid #fff;border-radius:16px;background:linear-gradient(#ffe98a,#f5b82e);box-shadow:0 4px 0 #8a5a10;color:#3a2440;font-size:26px;font-weight:900;cursor:pointer;padding:0;animation:rdy 1s infinite}
+#dpad button:disabled{background:#3a2c44;border-color:#5a4a66;box-shadow:none;color:#5a4a66;animation:none;cursor:default}
+#dpad button:active{transform:translateY(3px)}
+#dpad button:nth-child(1){grid-area:1/2} #dpad button:nth-child(2){grid-area:2/1} #dpad button:nth-child(3){grid-area:2/3} #dpad button:nth-child(4){grid-area:3/2}
 #mapM{align-items:center;padding-bottom:0}
 #mapM .card{padding:12px 12px 14px}
 #mapC{display:block;margin:6px auto 4px;max-width:100%;cursor:pointer}
@@ -114,10 +120,10 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
-@media (max-width:600px){ #lvl{font-size:18px;top:54px;left:10px;transform:none;padding:4px 12px} #mini{top:55px} #banner{font-size:19px} #tut{font-size:16px} #btns button{width:56px;height:56px;font-size:24px} }
+@media (max-width:600px){ #lvl{font-size:18px;top:54px;left:10px;transform:none;padding:4px 12px} #banner{font-size:19px} #tut{font-size:16px} #btns button{width:56px;height:56px;font-size:24px} }
 /* Poki pill sits at top centre: keep the level chip clear of it */
 body.pf-poki #lvl{top:70px}
-@media (max-width:600px){ body.pf-poki #lvl{top:100px} body.pf-poki #mini{top:101px} }
+@media (max-width:600px){ body.pf-poki #lvl{top:100px} }
 </style>
 </head>
 <body>
@@ -127,6 +133,7 @@ body.pf-poki #lvl{top:70px}
   <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
   <div id="skills"><button id="sk1"><canvas width="56" height="56"></canvas><i>60</i></button><div id="ebar"><b></b><u></u></div><button id="sk2"><canvas width="56" height="56"></canvas><i>100</i></button></div>
   <canvas id="mini" width="10" height="10"></canvas>
+  <div id="dpad"><button data-d="0,-1">▲</button><button data-d="-1,0">◀</button><button data-d="1,0">▶</button><button data-d="0,1">▼</button></div>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
   <div id="btns"><button id="bUndo">↩️<i id="undoN">5</i></button><button id="bRestart">🔄</button><button id="bAdd">🧪<i class="ad">📺</i></button><button id="bHint">💡<i class="ad">📺</i></button></div>
