@@ -88,15 +88,21 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #lootM{align-items:center;padding-bottom:0}
 #lootIc{width:110px;height:110px;display:block;margin:4px auto;animation:starIn .5s cubic-bezier(.3,1.6,.5,1) backwards}
 #lootNm{font-size:22px;font-weight:900} #lootSt{font-size:16px;font-weight:800;margin:2px 0 6px} #lootRs{font-size:15px;font-weight:800;color:#ffe98a;margin-bottom:4px}
+#mini{position:absolute;right:10px;top:52px;pointer-events:auto;cursor:pointer;background:rgba(40,24,48,.8);border:2px solid #7a5a8c;border-radius:12px;display:block}
+#mapM{align-items:center;padding-bottom:0}
+#mapM .card{padding:12px 12px 14px}
+#mapC{display:block;margin:6px auto 4px;max-width:100%;cursor:pointer}
+#mapLg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:13px;font-weight:800;max-width:330px;margin:0 auto 4px}
+#mapLg span{white-space:nowrap} #mapLg i{display:inline-block;width:11px;height:11px;border-radius:6px;margin-right:4px;vertical-align:-1px;border:1.5px solid #fff}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
-@media (max-width:600px){ #lvl{font-size:19px;top:54px} #banner{font-size:19px} #tut{font-size:16px} #btns button{width:56px;height:56px;font-size:24px} }
+@media (max-width:600px){ #lvl{font-size:18px;top:54px;left:10px;transform:none;padding:4px 12px} #mini{top:55px} #banner{font-size:19px} #tut{font-size:16px} #btns button{width:56px;height:56px;font-size:24px} }
 /* Poki pill sits at top centre: keep the level chip clear of it */
 body.pf-poki #lvl{top:70px}
-@media (max-width:600px){ body.pf-poki #lvl{top:100px} }
+@media (max-width:600px){ body.pf-poki #lvl{top:100px} body.pf-poki #mini{top:101px} }
 </style>
 </head>
 <body>
@@ -105,6 +111,7 @@ body.pf-poki #lvl{top:70px}
   <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
   <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
   <div id="skills"><button id="sk1"><canvas width="56" height="56"></canvas><i>60</i></button><div id="ebar"><b></b><u></u></div><button id="sk2"><canvas width="56" height="56"></canvas><i>100</i></button></div>
+  <canvas id="mini" width="10" height="10"></canvas>
   <div id="banner" class="out"></div>
   <div id="tut"></div>
   <div id="btns"><button id="bUndo">↩️<i id="undoN">5</i></button><button id="bRestart">🔄</button><button id="bAdd">🧪<i class="ad">📺</i></button><button id="bHint">💡<i class="ad">📺</i></button></div>
@@ -112,6 +119,7 @@ body.pf-poki #lvl{top:70px}
 <div id="coinBox"><button class="rb" id="shopBtn"><span class="coin"></span> <span id="coinN">0</span><b>⬆</b></button></div>
 <div class="modal" id="winM"><div class="card"><div id="stars"><i></i><i></i><i></i></div><h2 class="out" data-t="victory"></h2><div id="wnSub"></div><div id="wnPath"></div><div id="wnCoin" class="out">+<span id="wnCoinN">0</span> <span class="coin"></span></div><div id="wnBtns"><button class="btn ad" id="wnDbl">📺 ×2</button><button class="btn" id="wnNext" data-t="next"></button></div></div></div>
 <div class="modal" id="shopM"><div class="card"><h2 class="out" data-t="gear"></h2><div id="shopRows"></div><h3 data-t="bag"></h3><div id="gearGrid"></div><div id="gearInfo"></div><button class="btn" id="shopX">OK</button></div></div>
+<div class="modal" id="mapM"><div class="card"><h2 class="out" data-t="route"></h2><canvas id="mapC" width="10" height="10"></canvas><div id="mapLg"></div><button class="btn" id="mapX">OK</button></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><canvas id="lootIc" width="220" height="220"></canvas><div id="lootNm" class="out"></div><div id="lootSt"></div><div id="lootRs"></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div id="adfake"></div>

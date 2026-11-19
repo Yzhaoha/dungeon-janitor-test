@@ -10,17 +10,32 @@ function rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>
 // Only the last room of a boss floor holds the boss; the hero's health carries from room to room.
 function kindOf(l){ return l%24===0 ? 'big' : (l%6===0 ? 'boss' : 'n'); }
 function stagesOf(l){ return {n:3, boss:5, big:7}[kindOf(l)]; }
-function roleOf(l,s){ return s<stagesOf(l)-1 || kindOf(l)==='n' ? 'min' : kindOf(l); }
+// who waits in a room: t is the room type from the floor map ('f' fight, 'e' elite); the last room is always the floor's boss
+// (a mini boss on a normal floor, the boss or the great boss on boss floors)
+function roleOf(l,s,t){ return s>=stagesOf(l)-1 ? (kindOf(l)==='n' ? 'mini' : kindOf(l)) : (t==='e' ? 'mini' : 'min'); }
 function isKing(l){ return kindOf(l)!=='n'; }
-function colorsFor(l,s){
+function colorsFor(l,s,t){
   if (l===1) return s===0 ? 2 : 3;
-  var steps=[[1,3],[2,4],[3,5],[6,6],[11,7],[17,8],[27,9],[41,10],[61,11]], c=3, r=roleOf(l,s||0);
+  var steps=[[1,3],[2,4],[3,5],[6,6],[11,7],[17,8],[27,9],[41,10],[61,11]], c=3, r=roleOf(l,s||0,t), fin=(s||0)>=stagesOf(l)-1;
   steps.forEach(function(q){ if (l>=q[0]) c=q[1]; });
-  if (r==='boss') c+=1; else if (r==='big') c+=2; else if (kindOf(l)!=='n') c-=2;   // the rooms before a boss are quick ones
+  if (r==='boss') c+=1; else if (r==='big') c+=2; else if (r==='mini' && fin && l>=3) c+=1; else if (kindOf(l)!=='n') c-=2;   // the rooms before a boss are quick ones
   return Math.max(3, Math.min(MAXC, c));
 }
 // mystery layers: only the top of each bottle is known until it is uncovered
-function hiddenFor(l,s){ return l>=10 && roleOf(l,s||0)==='min' && (l+(s||0))%3===2; }
+function hiddenFor(l,s,t){ return l>=10 && roleOf(l,s||0,t)==='min' && (l+(s||0))%3===2; }
+// The floor map: two lanes of rooms leading to the boss room. Each step you may stay in your lane, and sometimes cross over.
+// One lane of every step is a plain fight; the other may be an elite (tougher, pays more), a rest (heal) or a chest (coins).
+function mapOf(l){
+  var n=stagesOf(l)-1, r=rnd(l*4513+99), cols=[], nonF=0, lastNon=-9;
+  for (var i=0;i<n;i++){ var lane=r()<0.5?0:1, x=r(), t='f', cap=Math.ceil(n/2);
+    if (l>1){ if (x<0.3) t='e'; else if (x<0.52 && i>0 && nonF<cap && lastNon<i-1) t='r'; else if (x<0.72 && nonF<cap && lastNon<i-1) t='c'; }
+    if (t==='r'||t==='c'){ nonF++; lastNon=i; }
+    var col=[{t:'f',to:[0]},{t:'f',to:[1]}]; col[lane].t=t;
+    if (r()<0.5) col[0].to.push(1); if (r()<0.5) col[1].to.push(0);
+    if (l===1){ col[1]=null; col[0].to=[0]; }
+    cols.push(col); }
+  return {n:n, cols:cols};
+}
 
 function top(b){ return b[b.length-1]; }
 function uniform(b){ for (var i=1;i<b.length;i++) if (b[i]!==b[0]) return false; return true; }
@@ -66,10 +81,10 @@ function trapRate(B0, steps, r){
   return fails/N;
 }
 // Several shuffles are tried and the trickier ones are kept: early floors take a middling one, later floors the nastiest.
-function gen(level, stage){
-  stage=stage||0; var nc=colorsFor(level,stage), cands=[], want= level<3 ? 1 : 7;
+function gen(level, stage, lane, type){
+  stage=stage||0; lane=lane||0; var nc=colorsFor(level,stage,type), cands=[], want= level<3 ? 1 : 7;
   for (var att=0; att<90 && cands.length<want; att++){
-    var r=rnd(level*7919+stage*15485863+att*104729+17), units=[], i, c;
+    var r=rnd(level*7919+stage*15485863+lane*31337+att*104729+17), units=[], i, c;
     for (c=0;c<nc;c++) for (i=0;i<CAP;i++) units.push(c);
     for (i=units.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)), t=units[i]; units[i]=units[j]; units[j]=t; }
     var B=[]; for (c=0;c<nc;c++) B.push(units.slice(c*CAP,(c+1)*CAP));
@@ -82,8 +97,8 @@ function gen(level, stage){
   if (!cands.length) return null;
   cands.sort(function(x,y){ return (x.trap-y.trap) || (x.steps-y.steps); });
   var pick=cands[Math.min(cands.length-1, Math.floor((cands.length-1)*Math.min(1, 0.35+level/30)+0.5))];
-  var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage), colors:nc, hidden:hiddenFor(level,stage), bottles:pick.B, steps:pick.steps, trap:pick.trap};
-  L.king=L.role!=='min';
+  var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage,type), final:stage>=stagesOf(level)-1, colors:nc, hidden:hiddenFor(level,stage,type), bottles:pick.B, steps:pick.steps, trap:pick.trap};
+  L.king=L.role==='boss'||L.role==='big'; L.elite=L.role==='mini';
   L.fight=fight(L); L.fight.mHp=L.fight.mMax; return L;
 }
 // ---------- fight ----------
@@ -95,8 +110,9 @@ var ROLE=['atk','shd','heal','atk','stun','psn','atk','shd','atk','heal','stun',
 function fight(L){
   var na=0, i; for (i=0;i<L.colors;i++) if (ROLE[i]==='atk'||ROLE[i]==='psn') na++;
   var ATK=25, interval=L.level<4?6:5, hits=Math.ceil(L.steps*1.4/interval)+1;
-  var w= L.kind==='n' ? 0.75 : (L.kind==='boss' ? (L.role==='boss'?1.05:0.3) : (L.role==='big'?1.1:0.22));
-  var hpK=1.3*Math.min(2,1+0.01*(L.level-1))*(L.role==='big'?1.3:(L.role==='boss'?1.1:1));
+  var w= L.kind==='n' ? (L.final? 0.85 : 0.55) : (L.kind==='boss' ? (L.role==='boss'?1.05:0.3) : (L.role==='big'?1.1:0.22));
+  if (L.elite && !L.final) w*=1.4;
+  var hpK=1.3*Math.min(2,1+0.01*(L.level-1))*(L.role==='big'?1.3:(L.role==='boss'?1.1:(L.role==='mini'?1.15:1)));
   return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0, par:L.steps, moves:0,
     mMax:Math.max(20, Math.round(ATK*na*hpK/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.max(4, Math.ceil(100*w/hits))};
 }
@@ -121,7 +137,7 @@ function monsterTurn(F){
 function hint(B){ var s=solve(B, 40000); return s && s.length ? s[0] : null; }
 function stuck(B){ if (solved(B)) return false; for (var i=0;i<B.length;i++) for (var j=0;j<B.length;j++) if (canPour(B,i,j)) return false; return true; }
 return {ROLE:ROLE, power:power, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
-  colorsFor:colorsFor, isKing:isKing, hiddenFor:hiddenFor, kindOf:kindOf, stagesOf:stagesOf, roleOf:roleOf};
+  colorsFor:colorsFor, isKing:isKing, hiddenFor:hiddenFor, kindOf:kindOf, stagesOf:stagesOf, roleOf:roleOf, mapOf:mapOf};
 })();
 if (typeof module!=='undefined') module.exports=DJ;
 // ===== SIM END =====
