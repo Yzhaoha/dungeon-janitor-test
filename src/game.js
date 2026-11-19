@@ -211,7 +211,9 @@ function layout(){
   if (skRow){ skE.style.left=Math.round(VW/2-rowW/2+150*u)+'px'; skE.style.top=Math.round(VH-(14+31+21)*u)+'px'; skE.style.width='300px'; $('btns').style.left=Math.round(VW/2+rowW/2-142*u)+'px'; }
   else { skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px'; $('btns').style.left=cxp; if (wide) BA.top+=44*u; }
   bn.style.left=cxp; bn.style.top=Math.round(wide? BA.top+40*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
-  $('tut').style.left=cxp; $('tut').style.maxWidth=Math.round((BA.x1-BA.x0-8)/u)+'px'; $('tut').style.bottom=Math.round(96*u)+'px'; $('btns').style.bottom=Math.round(14*u)+'px';
+  // the tutorial line sits in its own strip right under the fight panel; on tutorial rooms the bottles move down to make room for it
+  var tutTop=STG.top+STG.h+6*u; if (L && L.tut) BA.top=Math.max(BA.top, tutTop+(small? 58 : 38)*u);
+  $('tut').style.left=Math.round(small? STG.x+STG.w/2 : VW/2)+'px'; $('tut').style.maxWidth=Math.round((small? STG.w-8 : VW-24)/u)+'px'; $('tut').style.top=Math.round(tutTop)+'px'; $('btns').style.bottom=Math.round(14*u)+'px';
   var top=BA.top+(side?4:0), bot=BA.bot, availH=VH-top-bot, availW=BA.x1-BA.x0, best=0, bestRows=1;
   var pdS=Math.round(Math.max(140, Math.min(204, (availH-4)/u))), pdE=$('dpad'); pdE.style.width=pdE.style.height=pdS+'px'; pdE.style.left=cxp; pdE.style.top=Math.round(Math.max(top, (top+VH-bot)/2-pdS*u/2))+'px';
   bgCache=null; if (!n) return;
