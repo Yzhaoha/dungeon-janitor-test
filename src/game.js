@@ -754,66 +754,61 @@ $('wnNext').onclick=function(){ if (PF.adBusy || $('shopM').classList.contains('
   var go=function(){ startFloor(SAVE.level); };
   if (performance.now()-lastAdT>75000 && SAVE.level>3){ lastAdT=performance.now(); PF.midgame(go); } else go(); };
 
-// ---------------- the floor map: pick your own way to the boss room ----------------
-function nodeAt(o){ return o.layer>=RT.map.n ? {t:'B'} : RT.map.cols[o.layer][o.lane]; }
-function options(){ var nl=RT.layer+1; if (nl>=RT.map.n) return [{layer:nl, lane:0}];
-  var lanes= RT.layer<0 ? [0,1] : RT.map.cols[RT.layer][RT.lane].to;
-  return lanes.filter(function(a){ return RT.map.cols[nl][a]; }).sort().map(function(a){ return {layer:nl, lane:a}; }); }
-function enterRoom(o, hp){ RT.layer=o.layer; RT.lane=o.lane; RT.path.push(o.layer+':'+o.lane); RT.bg=null; choosing=false; loadLevel(SAVE.level, false, o.layer, hp, o.lane, nodeAt(o).t); }
+// ---------------- the floor map: a grid of rooms joined by doors; walk your own way to the boss room ----------------
+function nodeAt(id){ return RT.map.rooms[id]; }
+function options(){ return RT.at<0 ? [0] : RT.map.rooms[RT.at].links.slice(); }
+function frontier(){ var out=[]; RT.map.rooms.forEach(function(r,i){ if (RT.done[i]) r.links.forEach(function(k){ if (!RT.done[k] && out.indexOf(k)<0) out.push(k); }); }); return out; }
+function known(id){ var r=nodeAt(id); return r.main>=0 || RT.done[id] || id===RT.at || r.links.some(function(k){ return RT.done[k] || k===RT.at; }); }
+function enterRoom(id, hp){ RT.at=id; choosing=false; loadLevel(SAVE.level, false, id, hp, 0, nodeAt(id).t); }
 function startFloor(n, dbg){
-  RT={map:DJ.mapOf(n), layer:-1, lane:0, path:[], bg:null}; carryHp=null; choosing=false;
-  if (dbg>0){ for (var i=0;i<dbg-1 && i<RT.map.n;i++) RT.path.push(i+':0'); RT.layer=dbg-2; enterRoom({layer:dbg-1, lane:0}, null); return; }
-  var op=options(); if (op.length===1){ enterRoom(op[0], null); return; }
-  var first=op.filter(function(o){ return nodeAt(o).t==='f'; })[0]||op[0];
-  loadLevel(n, false, first.layer, null, first.lane, nodeAt(first).t); RT.bg=first; choosing=true; openMap();
+  RT={map:DJ.mapOf(n), at:-1, done:{}}; carryHp=null; choosing=false; var id=0;
+  if (dbg>0) RT.map.rooms.forEach(function(r,i){ if (r.main>=0 && r.main<dbg-1) RT.done[i]=true; else if (r.main===dbg-1) id=i; });
+  enterRoom(id, null);
 }
-// after a room: straight on when there is only one way, otherwise ask
-function advance(){ var op=options(), t=nodeAt(op[0]).t; if (op.length===1 && t!=='r' && t!=='c'){ nextRoom=op[0]; walk=0.001; } else { choosing=true; openMap(); } }
-function pickRoom(o){
-  var nd=nodeAt(o), max=F.heroMax, cur= carryHp==null ? max : Math.min(max, carryHp);
-  if (nd.t==='r' || nd.t==='c'){ RT.layer=o.layer; RT.lane=o.lane; RT.path.push(o.layer+':'+o.lane);
-    if (nd.t==='r'){ carryHp=Math.min(max, cur+Math.round(max*0.35)); if (RT.bg){ F.hHp=carryHp; VS.hHp=carryHp; entryHp=carryHp; } VS.hGlow=0.6; Snd.buy(); mapNote='❤️ +'+Math.round(max*0.35); }
+// after a room: straight on when there is only one door left to try, otherwise open the map
+function advance(){ RT.done[RT.at]=true; var fr=frontier(), nb=options().filter(function(k){ return !RT.done[k]; }), t=nb.length? nodeAt(nb[0]).t : '';
+  if (fr.length===1 && nb.length===1 && t!=='r' && t!=='c'){ nextRoom=nb[0]; walk=0.001; drawMap($('mini'), false); } else { choosing=true; openMap(); } }
+function pickRoom(id){
+  var nd=nodeAt(id), max=F.heroMax, cur= carryHp==null ? max : Math.min(max, carryHp);
+  if (RT.done[id]){ RT.at=id; mapNote=''; Snd.take(); drawMap($('mapC'), true); drawMap($('mini'), false); return; }      // walking back through a cleared room
+  if (nd.t==='r' || nd.t==='c'){ RT.at=id; RT.done[id]=true;
+    if (nd.t==='r'){ carryHp=Math.min(max, cur+Math.round(max*0.35)); F.hHp=carryHp; VS.hHp=carryHp; VS.hGlow=0.6; Snd.buy(); mapNote='❤️ +'+Math.round(max*0.35); }
     else { var gold=15+Math.min(45, SAVE.level); SAVE.coins+=gold; saveNow(); Snd.coin(); Snd.cork(); mapNote='+'+gold+' 🟡'; }
-    updHud(); var op=options(), t=nodeAt(op[0]).t;
-    if (op.length===1 && t!=='r' && t!=='c'){ drawMap($('mapC'), true); setTimeout(function(){ closeMap(); go(op[0]); }, 750); } else drawMap($('mapC'), true);
-    return; }
-  closeMap(); go(o);
+    updHud(); drawMap($('mapC'), true); return; }
+  closeMap(); choosing=false; nextRoom=id; walk=0.001;
 }
-function go(o){ if (RT.bg){ if (RT.bg.layer===o.layer && RT.bg.lane===o.lane){ RT.layer=o.layer; RT.lane=o.lane; RT.path.push(o.layer+':'+o.lane); RT.bg=null; choosing=false; updHud(); } else enterRoom(o, carryHp); }
-  else { choosing=false; nextRoom=o; walk=0.001; } }
-var mapNote='', mapHits=[], mapTimer=0, NCOL={f:'#9a8aaa', e:'#b06af0', r:'#5fd86a', c:'#f5c542', B:'#ff6a5a'};
+var mapNote='', mapHits=[], mapTimer=0, NCOL={f:'#4f4468', e:'#6f3aa8', r:'#2f7d48', c:'#a67c1c', B:'#c0303a'};
 function drawMap(cv2, bigMap){
-  if (!RT) return; var n=RT.map.n, px=bigMap?46:15, py=bigMap?52:13, rad=bigMap?15:4.2, padX=bigMap?26:10, padY=bigMap?(mapNote?46:30):9, W=padX*2+n*px, H=padY+py+(bigMap?30:9), dpr=bigMap?2:Math.min(2,window.devicePixelRatio||1);
+  if (!RT) return; var sm=VW<=600, M=RT.map, cell=bigMap?46:(sm?8:11), gap=bigMap?14:(sm?3:4), pad=bigMap?14:(sm?4:6), top=bigMap?(mapNote?34:8):0, W=pad*2+M.w*cell+(M.w-1)*gap, H=top+pad*2+M.h*cell+(M.h-1)*gap, dpr=bigMap?2:Math.min(2,window.devicePixelRatio||1);
   cv2.width=W*dpr; cv2.height=H*dpr; cv2.style.width=W+'px'; cv2.style.height=H+'px'; var c=cv2.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); c.lineJoin='round';
-  var P=function(o){ return o.layer>=n ? {x:padX+n*px, y:padY+py/2} : {x:padX+o.layer*px, y:padY+o.lane*py}; }, been=function(o){ return RT.path.indexOf(o.layer+':'+o.lane)>=0; };
-  var ops= choosing ? options() : [], isOp=function(o){ return ops.some(function(q){ return q.layer===o.layer && q.lane===o.lane; }); }, nodes=[], i, a;
-  for (i=0;i<n;i++) for (a=0;a<2;a++) if (RT.map.cols[i][a]) nodes.push({layer:i, lane:a}); nodes.push({layer:n, lane:0});
-  // links
-  nodes.forEach(function(o){ if (o.layer>=n) return; var tos= o.layer===n-1 ? [{layer:n, lane:0}] : RT.map.cols[o.layer][o.lane].to.filter(function(b){ return RT.map.cols[o.layer+1][b]; }).map(function(b){ return {layer:o.layer+1, lane:b}; });
-    tos.forEach(function(q){ var p1=P(o), p2=P(q), on=been(o)&&been(q); c.strokeStyle= on? '#ffe98a' : 'rgba(255,255,255,0.28)'; c.lineWidth=bigMap?(on?4:3):1.5; c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke(); }); });
-  mapHits=bigMap? [] : mapHits;
-  nodes.forEach(function(o){ var p=P(o), t=nodeAt(o).t, boss=t==='B', r=rad*(boss?1.35:1), op=isOp(o), bn=been(o), now=RT.layer===o.layer && RT.lane===o.lane && !RT.bg;
-    c.globalAlpha= bn||op||boss||!choosing&&!bigMap ? 1 : (o.layer<=RT.layer ? 0.3 : 0.75);
-    if (op && bigMap){ c.fillStyle='rgba(255,255,255,'+(0.22+Math.sin(performance.now()/160)*0.14)+')'; c.beginPath(); c.arc(p.x,p.y,r+7,0,6.3); c.fill(); }
-    c.beginPath(); c.arc(p.x,p.y,r,0,6.3); c.fillStyle= boss ? (L.kind==='big'?'#e8a020':(L.kind==='boss'?'#d93a3a':'#9a4ae0')) : NCOL[t]; c.fill(); c.lineWidth=bigMap?3:1.5; c.strokeStyle= now||op ? '#fff' : (bn? '#ffe98a' : OL); c.stroke();
-    if (bigMap){ if (boss){ c.font='20px sans-serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText(L.kind==='big'?'🐉':(L.kind==='boss'?'👹':'💀'), p.x, p.y+1); }
-      else if (t==='c'){ c.beginPath(); c.arc(p.x,p.y,r*0.5,0,6.3); c.fillStyle='#fff6c2'; c.fill(); c.lineWidth=2; c.strokeStyle='#a8700f'; c.stroke(); }
-      else icon(c, t==='f'?'atk':(t==='e'?'psn':'heal'), p.x, p.y, r*0.56, '#fff', 2.5);
-      if (bn && !boss){ c.fillStyle='#ffe98a'; c.font='900 13px '+FNT; c.textAlign='center'; c.textBaseline='middle'; c.fillText('✓', p.x+r*0.9, p.y-r*0.9); }
-      mapHits.push({o:o, x:p.x, y:p.y, r:r+9, ok:op}); }
-    else if (now){ c.beginPath(); c.arc(p.x,p.y,r+2.5,0,6.3); c.lineWidth=1.5; c.strokeStyle='#fff'; c.stroke(); }
-    c.globalAlpha=1; });
-  if (bigMap && mapNote){ c.font='900 17px '+FNT; c.textAlign='center'; c.textBaseline='middle'; c.lineWidth=4; c.strokeStyle=OL; c.strokeText(mapNote, W/2, 14); c.fillStyle='#ffe98a'; c.fillText(mapNote, W/2, 14); }
+  var P=function(r){ return {x:pad+r.x*(cell+gap)+cell/2, y:top+pad+r.y*(cell+gap)+cell/2}; }, ops= choosing ? options() : [], bossC= L.kind==='big'?'#d98a10':(L.kind==='boss'?'#c0303a':'#8a3ad0');
+  if (bigMap) mapHits=[];
+  M.rooms.forEach(function(r,i){ r.links.forEach(function(k){ if (k<i) return; var p1=P(r), p2=P(M.rooms[k]), lit=(RT.done[i]||i===RT.at)&&(RT.done[k]||k===RT.at), seen=known(i)&&known(k);
+    c.globalAlpha= seen? 1 : 0.35; c.strokeStyle= lit? '#ffe98a' : '#7a6a92'; c.lineWidth=bigMap?9:3; c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke(); }); });
+  c.globalAlpha=1;
+  M.rooms.forEach(function(r,i){ var p=P(r), kn=known(i), boss=r.t==='B', dn=RT.done[i], now=i===RT.at, op=ops.indexOf(i)>=0, x0=p.x-cell/2, y0=p.y-cell/2;
+    c.beginPath(); c.roundRect(x0,y0,cell,cell,bigMap?9:2.5); c.fillStyle= boss? bossC : (dn? '#8676a4' : (kn? NCOL[r.t] : '#2a2436')); c.fill();
+    c.lineWidth=bigMap?3:1.4; c.strokeStyle= now? '#ffe45c' : (op && bigMap? 'rgba(255,255,255,'+(0.65+Math.sin(performance.now()/150)*0.35)+')' : OL); c.stroke();
+    if (bigMap){ c.textAlign='center'; c.textBaseline='middle';
+      if (boss){ c.font='24px sans-serif'; c.fillText(L.kind==='big'?'🐉':(L.kind==='boss'?'👹':'💀'), p.x, p.y+1); }
+      else if (!kn){ c.font='900 22px '+FNT; c.fillStyle='#6a5a80'; c.fillText('?', p.x, p.y+1); }
+      else if (dn && !now){ c.font='900 20px '+FNT; c.fillStyle='rgba(255,255,255,0.75)'; c.fillText('✓', p.x, p.y+1); }
+      else if (!dn){ if (r.t==='c'){ c.beginPath(); c.arc(p.x,p.y,10,0,6.3); c.fillStyle='#ffe98a'; c.fill(); c.lineWidth=2.5; c.strokeStyle='#6a4a08'; c.stroke(); } else icon(c, r.t==='f'?'atk':(r.t==='e'?'psn':'heal'), p.x, p.y, 12, '#fff', 3); }
+      if (now){ c.beginPath(); c.arc(p.x,p.y+1,11,0,6.3); c.fillStyle='#4f8fe8'; c.fill(); c.lineWidth=3; c.strokeStyle='#fff'; c.stroke(); c.beginPath(); c.arc(p.x,p.y-1,11,Math.PI,0); c.closePath(); c.fillStyle='#cfd8e6'; c.fill(); c.lineWidth=2; c.strokeStyle=OL; c.stroke(); }
+      mapHits.push({id:i, x:p.x, y:p.y, r:cell/2+gap/2, ok:op}); }
+    else { if (boss){ c.fillStyle='#fff'; c.beginPath(); c.arc(p.x,p.y,2.2,0,6.3); c.fill(); }
+      if (now){ c.beginPath(); c.arc(p.x,p.y,3.6,0,6.3); c.fillStyle='#6ab0ff'; c.fill(); c.lineWidth=1.3; c.strokeStyle='#fff'; c.stroke(); } } });
+  if (bigMap && mapNote){ c.font='900 18px '+FNT; c.textAlign='center'; c.textBaseline='middle'; c.lineWidth=4; c.strokeStyle=OL; c.strokeText(mapNote, W/2, 18); c.fillStyle='#ffe98a'; c.fillText(mapNote, W/2, 18); }
 }
 function openMap(){
-  mapNote=''; var lg=$('mapLg'); lg.innerHTML=''; var kinds=['f','e','r','c','B'].filter(function(t){ return t==='f'||t==='B'||RT.map.cols.some(function(col){ return col.some(function(nd){ return nd && nd.t===t; }); }); });
-  kinds.forEach(function(t){ var sp=document.createElement('span'), dot=document.createElement('i'); dot.style.background= t==='B'? (L.kind==='big'?'#e8a020':(L.kind==='boss'?'#d93a3a':'#9a4ae0')) : NCOL[t]; sp.appendChild(dot); sp.appendChild(document.createTextNode(tl(t==='B'?'rm_b':'rm_'+t))); lg.appendChild(sp); });
+  mapNote=''; var lg=$('mapLg'); lg.innerHTML=''; var kinds=['f','e','r','c','B'].filter(function(t){ return t==='f'||t==='B'||RT.map.rooms.some(function(r,i){ return r.t===t && known(i); }); });
+  kinds.forEach(function(t){ var sp=document.createElement('span'), dot=document.createElement('i'); dot.style.background= t==='B'? (L.kind==='big'?'#d98a10':(L.kind==='boss'?'#c0303a':'#8a3ad0')) : NCOL[t]; sp.appendChild(dot); sp.appendChild(document.createTextNode(tl(t==='B'?'rm_b':'rm_'+t))); lg.appendChild(sp); });
   $('mapX').style.display= choosing ? 'none' : ''; drawMap($('mapC'), true); $('mapM').classList.add('show');
   clearInterval(mapTimer); mapTimer=setInterval(function(){ if ($('mapM').classList.contains('show')) drawMap($('mapC'), true); else clearInterval(mapTimer); }, 90);
 }
 function closeMap(){ $('mapM').classList.remove('show'); clearInterval(mapTimer); }
 $('mapC').addEventListener('pointerdown', function(e){ if (!choosing) return; var rc=this.getBoundingClientRect(), x=e.clientX-rc.left, y=e.clientY-rc.top, hit=null;
-  mapHits.forEach(function(h){ if (h.ok && Math.hypot(h.x-x,h.y-y)<=h.r) hit=h; }); if (hit){ Snd.unlock(); Snd.pop(); pickRoom(hit.o); } });
+  mapHits.forEach(function(h){ if (h.ok && Math.abs(h.x-x)<=h.r && Math.abs(h.y-y)<=h.r) hit=h; }); if (hit){ Snd.unlock(); Snd.pop(); pickRoom(hit.id); } });
 $('mapX').onclick=closeMap;
 $('mini').addEventListener('pointerdown', function(){ Snd.unlock(); if (!$('mapM').classList.contains('show') && !won && !lost && walk<=0) openMap(); });
 

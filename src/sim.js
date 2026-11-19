@@ -10,31 +10,42 @@ function rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>
 // Only the last room of a boss floor holds the boss; the hero's health carries from room to room.
 function kindOf(l){ return l%24===0 ? 'big' : (l%6===0 ? 'boss' : 'n'); }
 function stagesOf(l){ return {n:3, boss:5, big:7}[kindOf(l)]; }
-// who waits in a room: t is the room type from the floor map ('f' fight, 'e' elite); the last room is always the floor's boss
-// (a mini boss on a normal floor, the boss or the great boss on boss floors)
-function roleOf(l,s,t){ return s>=stagesOf(l)-1 ? (kindOf(l)==='n' ? 'mini' : kindOf(l)) : (t==='e' ? 'mini' : 'min'); }
+// who waits in a room: t is the room type from the floor map ('f' fight, 'e' elite, 'B' the floor's boss room:
+// a mini boss on a normal floor, the boss or the great boss on boss floors)
+function roleOf(l,s,t){ return t==='B' ? (kindOf(l)==='n' ? 'mini' : kindOf(l)) : (t==='e' ? 'mini' : 'min'); }
 function isKing(l){ return kindOf(l)!=='n'; }
 function colorsFor(l,s,t){
   if (l===1) return s===0 ? 2 : 3;
-  var steps=[[1,3],[2,4],[3,5],[6,6],[11,7],[17,8],[27,9],[41,10],[61,11]], c=3, r=roleOf(l,s||0,t), fin=(s||0)>=stagesOf(l)-1;
+  var steps=[[1,3],[2,4],[3,5],[6,6],[11,7],[17,8],[27,9],[41,10],[61,11]], c=3, r=roleOf(l,s||0,t);
   steps.forEach(function(q){ if (l>=q[0]) c=q[1]; });
-  if (r==='boss') c+=1; else if (r==='big') c+=2; else if (r==='mini' && fin && l>=3) c+=1; else if (kindOf(l)!=='n') c-=2;   // the rooms before a boss are quick ones
+  if (r==='boss') c+=1; else if (r==='big') c+=2; else if (t==='B' && l>=3) c+=1; else if (kindOf(l)!=='n') c-=2;   // the rooms before a boss are quick ones
   return Math.max(3, Math.min(MAXC, c));
 }
 // mystery layers: only the top of each bottle is known until it is uncovered
 function hiddenFor(l,s,t){ return l>=10 && roleOf(l,s||0,t)==='min' && (l+(s||0))%3===2; }
-// The floor map: two lanes of rooms leading to the boss room. Each step you may stay in your lane, and sometimes cross over.
-// One lane of every step is a plain fight; the other may be an elite (tougher, pays more), a rest (heal) or a chest (coins).
+// The floor map is a small grid of rooms joined by doors, like a dungeon crawler's minimap. A winding main corridor of
+// stagesOf(l) rooms runs from the entrance to the boss room (no shortcuts); side rooms hang off it: an elite, or a plain
+// fight guarding a chest or a resting place. Rooms: {x,y,t,links,main}.
 function mapOf(l){
-  var n=stagesOf(l)-1, r=rnd(l*4513+99), cols=[], nonF=0, lastNon=-9;
-  for (var i=0;i<n;i++){ var lane=r()<0.5?0:1, x=r(), t='f', cap=Math.ceil(n/2);
-    if (l>1){ if (x<0.3) t='e'; else if (x<0.52 && i>0 && nonF<cap && lastNon<i-1) t='r'; else if (x<0.72 && nonF<cap && lastNon<i-1) t='c'; }
-    if (t==='r'||t==='c'){ nonF++; lastNon=i; }
-    var col=[{t:'f',to:[0]},{t:'f',to:[1]}]; col[lane].t=t;
-    if (r()<0.5) col[0].to.push(1); if (r()<0.5) col[1].to.push(0);
-    if (l===1){ col[1]=null; col[0].to=[0]; }
-    cols.push(col); }
-  return {n:n, cols:cols};
+  var n=stagesOf(l), W= n<=3 ? 3 : (n<=5 ? 4 : 5), H= l===1 ? 1 : (n<=3 ? 2 : 3), r, rooms, grid, path, at;
+  var D=[[1,0],[0,1],[0,-1],[-1,0]], free=function(x,y){ return x>=0 && y>=0 && x<W && y<H && grid[y*W+x]==null; };
+  for (var tries=0; tries<200; tries++){ r=rnd(l*4513+tries*7717+99); grid=[]; path=[];
+    var walk=function(x,y){ grid[y*W+x]=path.length; path.push([x,y]);
+      if (path.length===n){ if (x===W-1) return true; }
+      else { var ds=D.slice(0,3).sort(function(){ return r()-0.5; }); if (r()<0.75){ ds.sort(function(p,q){ return q[0]-p[0]; }); }
+        for (var i=0;i<ds.length;i++) if (free(x+ds[i][0],y+ds[i][1]) && walk(x+ds[i][0],y+ds[i][1])) return true; }
+      path.pop(); grid[y*W+x]=null; return false; };
+    if (walk(0, Math.floor(r()*H))) break; }
+  rooms=path.map(function(p,i){ return {x:p[0], y:p[1], t:i===n-1?'B':'f', main:i, links:[]}; });
+  for (at=0; at<n-1; at++){ rooms[at].links.push(at+1); rooms[at+1].links.push(at); }
+  var add=function(from,x,y,t){ var id=rooms.length; grid[y*W+x]=id; rooms.push({x:x, y:y, t:t, main:-1, links:[from]}); rooms[from].links.push(id); return id; };
+  var spots=function(id){ return D.map(function(d){ return [rooms[id].x+d[0], rooms[id].y+d[1]]; }).filter(function(q){ return free(q[0],q[1]); }); };
+  for (var k=0, sides= l===1 ? 0 : (n<=3 ? 1 : (n<=5 ? 2 : 3)); k<sides; k++){
+    var cand=[]; for (at=0; at<n-1; at++) if (spots(at).length) cand.push(at);
+    if (!cand.length) break; var from=cand[Math.floor(r()*cand.length)], sp=spots(from), q=sp[Math.floor(r()*sp.length)];
+    if (r()<0.5) add(from,q[0],q[1],'e');
+    else { var g=add(from,q[0],q[1],'f'), sp2=spots(g); if (sp2.length){ var q2=sp2[Math.floor(r()*sp2.length)]; add(g,q2[0],q2[1], r()<0.5?'c':'r'); } else rooms[g].t='e'; } }
+  return {w:W, h:H, n:n, rooms:rooms};
 }
 
 function top(b){ return b[b.length-1]; }
@@ -97,7 +108,7 @@ function gen(level, stage, lane, type){
   if (!cands.length) return null;
   cands.sort(function(x,y){ return (x.trap-y.trap) || (x.steps-y.steps); });
   var pick=cands[Math.min(cands.length-1, Math.floor((cands.length-1)*Math.min(1, 0.35+level/30)+0.5))];
-  var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage,type), final:stage>=stagesOf(level)-1, colors:nc, hidden:hiddenFor(level,stage,type), bottles:pick.B, steps:pick.steps, trap:pick.trap};
+  var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage,type), final:type==='B', colors:nc, hidden:hiddenFor(level,stage,type), bottles:pick.B, steps:pick.steps, trap:pick.trap};
   L.king=L.role==='boss'||L.role==='big'; L.elite=L.role==='mini';
   L.fight=fight(L); L.fight.mHp=L.fight.mMax; return L;
 }
