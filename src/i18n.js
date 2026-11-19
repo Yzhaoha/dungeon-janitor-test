@@ -161,6 +161,7 @@ var TL={
   wearHint:['Better than yours!','Mieux que le tien !','Meglio del tuo!','Besser als deins!','¡Mejor que el tuyo!','Seninkinden iyi!','比身上的好！','今の装備より強い！','지금 것보다 좋아요!','Melhor que o seu!','Лучше твоего!'],
   worseHint:['Not better than yours','Pas mieux que le tien','Non migliore del tuo','Nicht besser als deins','No mejor que el tuyo','Seninkinden iyi değil','不如身上的','今の装備ほどではない','지금 것보다 못해요','Não é melhor','Не лучше твоего'],
   ftMini:['💀 A mini boss waits at the end','💀 Un mini-boss attend au bout','💀 Un mini boss attende alla fine','💀 Am Ende wartet ein Mini-Boss','💀 Un minijefe espera al final','💀 Sonda bir mini boss bekliyor','💀 终点有小 Boss','💀 最後にミニボス','💀 끝에 미니 보스가 있어요','💀 Um minichefe espera no fim','💀 В конце ждёт мини-босс'],
+  missed:['missed','raté','perso','verpasst','perdido','kaçırıldı','错过了','逃した','놓침','perdido','упущено'],
   victory:['Victory!','Victoire !','Vittoria!','Sieg!','¡Victoria!','Zafer!','打赢了！','勝利！','승리!','Vitória!','Победа!'],
   blocked:['Blocked!','Bloqué !','Parato!','Geblockt!','¡Bloqueado!','Engellendi!','挡住了！','ガード！','막았다!','Bloqueado!','Блок!'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],

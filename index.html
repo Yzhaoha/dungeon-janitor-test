@@ -99,20 +99,36 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #mapC{display:block;margin:6px auto 4px;max-width:100%;cursor:pointer}
 #mapLg{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;font-size:13px;font-weight:800;max-width:330px;margin:0 auto 4px}
 #mapLg span{white-space:nowrap} #mapLg i{display:inline-block;width:11px;height:11px;border-radius:6px;margin-right:4px;vertical-align:-1px;border:1.5px solid #fff}
-#cardM{align-items:center;padding-bottom:0}
-#cardM .card{padding:14px 14px 16px}
-#cards{display:flex;justify-content:center;gap:10px;margin:10px 0 8px}
-.fc{width:90px;height:128px;border-radius:14px;border:3px solid #f5c542;background:repeating-linear-gradient(45deg,#6a3fd6,#6a3fd6 8px,#5a33c0 8px,#5a33c0 16px);color:#fff;font:inherit;font-weight:900;font-size:42px;cursor:pointer;padding:4px;box-shadow:0 5px 0 #2a1a2e}
-.fc.back{animation:rdy 1.1s infinite} .fc.back:nth-child(2){animation-delay:.18s} .fc.back:nth-child(3){animation-delay:.36s}
-.fc.up{background:#3a2c44;font-size:13px;line-height:1.25;animation:flip .35s;cursor:default}
-.fc.pick{border-color:#fff;box-shadow:0 5px 0 #2a1a2e,0 0 16px #ffe45c}
-.fc.dim{opacity:.6}
-.fc canvas{width:54px;height:54px;display:block;margin:2px auto 4px}
-.fc .coin{font-size:34px;display:block;margin:10px auto 8px}
-.fc b{display:block;font-size:19px;color:#ffe98a}
-@keyframes flip{0%{transform:scaleX(0)}100%{transform:scaleX(1)}}
-#cardRs{min-height:22px;font-size:15px;font-weight:800;color:#ffe98a;margin-bottom:2px}
-#cardBtns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;visibility:hidden} #cardBtns.on{visibility:visible}
+#cardM{align-items:center;justify-content:center;padding:0;background:radial-gradient(rgba(40,14,24,.82),rgba(6,3,8,.94) 70%)}
+#cardM .card{background:none;border:none;box-shadow:none;padding:0;min-width:0;animation:none;transform:none;max-width:100vw}
+#cardTop{display:flex;align-items:center;justify-content:center;gap:12px;transform:scale(var(--u,1))}
+#cardTop h2{font-size:30px;margin:0;color:#ffe98a;letter-spacing:2px}
+#cardTimer{width:46px;height:46px;border-radius:50%;border:3px solid #ffcf3a;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;background:#2a1018;box-shadow:0 0 12px #ff8a3a88}
+#cardTimer.hide{visibility:hidden}
+#cards{display:flex;justify-content:center;gap:12px;margin:18px 0 10px;transform:scale(var(--u,1));perspective:900px}
+.fc{position:relative;width:82px;height:120px;cursor:pointer;animation:deal .55s cubic-bezier(.25,1.4,.5,1) backwards}
+.fc:nth-child(1){--dx:120px;animation-delay:.05s} .fc:nth-child(2){--dx:40px;animation-delay:.18s} .fc:nth-child(3){--dx:-40px;animation-delay:.31s} .fc:nth-child(4){--dx:-120px;animation-delay:.44s}
+@keyframes deal{0%{transform:translate(var(--dx),-70vh) rotate(-35deg) scale(.4);opacity:0}70%{opacity:1}}
+.fci{position:absolute;inset:0;transition:transform .7s cubic-bezier(.3,1.3,.5,1);transform-style:preserve-3d}
+.fc.up .fci{transform:rotateY(180deg)}
+.fc.pick{z-index:2} .fc.pick .fci{transform:rotateY(180deg) scale(1.14)}
+.fc:not(.up):hover .fci,.fc:not(.up):active .fci{transform:translateY(-8px)}
+.fcb{position:absolute;inset:0;border-radius:12px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.fcb.bk{background:#5a1420 center/cover no-repeat;border:3px solid #e8b44a;box-shadow:0 6px 0 #1a0a10,0 0 14px #ffb04a55}
+.fcb.bk:after{content:'';position:absolute;top:-20%;bottom:-20%;width:40%;left:-60%;background:linear-gradient(90deg,transparent,rgba(255,240,200,.45),transparent);transform:skewX(-20deg);animation:shine 2.4s infinite}
+.fc:nth-child(2) .fcb.bk:after{animation-delay:.3s} .fc:nth-child(3) .fcb.bk:after{animation-delay:.6s} .fc:nth-child(4) .fcb.bk:after{animation-delay:.9s}
+@keyframes shine{0%{left:-60%}45%,100%{left:130%}}
+.fcb.fr{transform:rotateY(180deg);background:linear-gradient(#3a2c44,#1e1428);border:3px solid var(--rc,#e9e9f0);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:900;line-height:1.25;color:#fff;text-align:center;padding:2px;box-shadow:0 0 18px var(--rc,#fff)}
+.fcb.fr:before{content:'';position:absolute;left:50%;top:42%;width:260%;height:260%;margin:-130% 0 0 -130%;background:repeating-conic-gradient(var(--rc,#fff) 0 8deg,transparent 8deg 22deg);opacity:var(--ra,.15);animation:rays 6s linear infinite}
+@keyframes rays{to{transform:rotate(360deg)}}
+.fcb.fr > *{position:relative}
+.fcb.fr canvas{width:52px;height:52px;margin:2px auto 4px}
+.fcb.fr .coin{font-size:34px;margin:8px auto 8px}
+.fcb.fr b{font-size:19px;color:#ffe98a}
+.fc.miss{opacity:.55;filter:saturate(.5)} .fc.miss .fcb.fr{box-shadow:none}
+.fc.miss:after{content:attr(data-miss);position:absolute;left:0;right:0;bottom:-20px;font-size:11px;font-weight:800;color:#c8b8d4;text-align:center}
+#cardRs{min-height:24px;font-size:15px;font-weight:800;color:#ffe98a;margin:28px 0 4px;transform:scale(var(--u,1))}
+#cardBtns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;visibility:hidden;transform:scale(var(--u,1))} #cardBtns.on{visibility:visible}
 #cardBtns .btn{margin-top:6px;font-size:20px;padding:11px 20px}
 #gearBtn{padding:3px 6px;border:2px solid #c79a52;line-height:0}
 #gearBtn canvas{width:26px;height:26px}
@@ -168,7 +184,7 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="winM"><div class="card"><div id="stars"><i></i><i></i><i></i></div><h2 class="out" data-t="victory"></h2><div id="wnSub"></div><div id="wnPath"></div><div id="wnCoin" class="out">+<span id="wnCoinN">0</span> <span class="coin"></span></div><div id="wnBtns"><button class="btn ad" id="wnDbl">📺 ×2</button><button class="btn" id="wnNext" data-t="next"></button></div></div></div>
 <div class="modal" id="shopM"><div class="card"><h2 class="out" data-t="gear"></h2><div id="shopRows"></div><button class="btn" id="shopX">OK</button></div></div>
 <div class="modal" id="mapM"><div class="card"><h2 class="out" data-t="route"></h2><canvas id="mapC" width="10" height="10"></canvas><div id="mapLg"></div><button class="btn" id="mapX">OK</button></div></div>
-<div class="modal" id="cardM"><div class="card"><h2 class="out" data-t="pickCard"></h2><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
+<div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
@@ -494,6 +510,7 @@ var TL={
   wearHint:['Better than yours!','Mieux que le tien !','Meglio del tuo!','Besser als deins!','¡Mejor que el tuyo!','Seninkinden iyi!','比身上的好！','今の装備より強い！','지금 것보다 좋아요!','Melhor que o seu!','Лучше твоего!'],
   worseHint:['Not better than yours','Pas mieux que le tien','Non migliore del tuo','Nicht besser als deins','No mejor que el tuyo','Seninkinden iyi değil','不如身上的','今の装備ほどではない','지금 것보다 못해요','Não é melhor','Не лучше твоего'],
   ftMini:['💀 A mini boss waits at the end','💀 Un mini-boss attend au bout','💀 Un mini boss attende alla fine','💀 Am Ende wartet ein Mini-Boss','💀 Un minijefe espera al final','💀 Sonda bir mini boss bekliyor','💀 终点有小 Boss','💀 最後にミニボス','💀 끝에 미니 보스가 있어요','💀 Um minichefe espera no fim','💀 В конце ждёт мини-босс'],
+  missed:['missed','raté','perso','verpasst','perdido','kaçırıldı','错过了','逃した','놓침','perdido','упущено'],
   victory:['Victory!','Victoire !','Vittoria!','Sieg!','¡Victoria!','Zafer!','打赢了！','勝利！','승리!','Vitória!','Победа!'],
   blocked:['Blocked!','Bloqué !','Parato!','Geblockt!','¡Bloqueado!','Engellendi!','挡住了！','ガード！','막았다!','Bloqueado!','Блок!'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
@@ -1577,26 +1594,45 @@ function afterKill(){
   later(fin? 0.9 : 0.55, function(){ if (L.king) showCards(cont); else if (it) showLoot(it, cont); else cont(); });
 }
 function applyItem(it){ it.old=SAVE.gear[it.slot]; if (it.r>it.old) SAVE.gear[it.slot]=it.r; else { it.sold=[10,25,60,150][it.r]; SAVE.coins+=it.sold; } }
-// boss reward: three face-down cards, flip one (the flipped card is a real roll of the drop table; no gear means coins)
-var cardCont=null, cardLeft=0;
+// boss reward, dungeon-crawler style: four face-down cards are dealt, a 10 second countdown runs, the picked card flips with
+// a burst of light in its rarity colour; when you leave, the other cards turn over to show what you missed.
+// Every card holds a real roll of the drop table (no gear = coins).
+var cardCont=null, cardLeft=0, cardDeck=[], cardTimer=0, cardBack=null;
+function cardBackImg(){ if (cardBack) return cardBack; var cv=document.createElement('canvas'), W=164, H=240; cv.width=W; cv.height=H; var c=cv.getContext('2d');
+  var g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#6a1a26'); g.addColorStop(1,'#2a0810'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.strokeStyle='rgba(232,180,74,0.35)'; c.lineWidth=2; for (var i=-H;i<W+H;i+=18){ c.beginPath(); c.moveTo(i,0); c.lineTo(i+H*0.6,H); c.stroke(); c.beginPath(); c.moveTo(i,H); c.lineTo(i+H*0.6,0); c.stroke(); }
+  c.strokeStyle='#e8b44a'; c.lineWidth=4; c.beginPath(); c.roundRect(10,10,W-20,H-20,10); c.stroke(); c.lineWidth=2; c.beginPath(); c.roundRect(18,18,W-36,H-36,8); c.stroke();
+  var rg=c.createRadialGradient(W/2,H/2,4,W/2,H/2,60); rg.addColorStop(0,'rgba(255,200,90,0.55)'); rg.addColorStop(1,'rgba(255,200,90,0)'); c.fillStyle=rg; c.fillRect(0,0,W,H);
+  c.fillStyle='#2a0810'; c.beginPath(); c.moveTo(W/2,H/2-46); c.lineTo(W/2+38,H/2); c.lineTo(W/2,H/2+46); c.lineTo(W/2-38,H/2); c.closePath(); c.fill(); c.strokeStyle='#e8b44a'; c.lineWidth=3; c.stroke();
+  bossMark(c,W/2,H/2+4,24,'n'); cardBack='url('+cv.toDataURL()+')'; return cardBack; }
 function showCards(cont){
-  cardCont=cont; cardLeft=1; var box=$('cards'); box.innerHTML=''; $('cardRs').textContent=''; $('cardBtns').className=''; $('cardAgain').style.display=''; $('cardAgain').disabled=false;
-  for (var i=0;i<3;i++){ var bt=document.createElement('button'); bt.className='fc back'; bt.textContent='?'; bt.onclick=flipCard; box.appendChild(bt); }
-  $('cardM').classList.add('show'); Snd.horn();
+  cardCont=cont; cardLeft=1; cardDeck=[]; var box=$('cards'); box.innerHTML=''; $('cardRs').textContent=''; $('cardBtns').className=''; $('cardAgain').style.display=''; $('cardAgain').disabled=false;
+  for (var i=0;i<4;i++){ var it=rollDrop(), gold=(L.kind==='big'? 40 : 15)+5*Math.floor(Math.random()*4); cardDeck.push({it:it, gold:gold, open:false});
+    var fc=document.createElement('div'); fc.className='fc'; fc.dataset.i=i; fc.innerHTML='<div class="fci"><div class="fcb bk"></div><div class="fcb fr"></div></div>'; fc.firstChild.firstChild.style.backgroundImage=cardBackImg(); fc.onclick=pickCard; box.appendChild(fc); }
+  $('cardM').classList.add('show'); Snd.boss(); [0,1,2,3].forEach(function(k){ setTimeout(Snd.swing, 60+k*130); });
+  var left=10, tm=$('cardTimer'); tm.className=''; tm.textContent=left; clearInterval(cardTimer);
+  cardTimer=setInterval(function(){ if (!$('cardM').classList.contains('show')){ clearInterval(cardTimer); return; } if ($('lootM').classList.contains('show') || cardLeft<=0) return;
+    left--; tm.textContent=left; Snd.pay(); if (left<=0){ var rest=[].filter.call($('cards').children, function(o){ return !cardDeck[o.dataset.i].open; }); if (rest.length) pickCard.call(rest[Math.floor(Math.random()*rest.length)]); } }, 1000);
 }
-function flipCard(){
-  var bt=this; if (cardLeft<=0 || bt.className.indexOf('back')<0) return; cardLeft--;
-  var it=rollDrop(), rs=$('cardRs'); bt.className='fc up pick'; bt.textContent=''; rs.textContent='';
-  if (it){ var cv3=document.createElement('canvas'); cv3.width=cv3.height=108; gearTile(cv3, it.slot, it.r); bt.appendChild(cv3);
-    var nm=document.createElement('div'); nm.textContent=tl('r'+it.r)+' · '+tl('g_'+it.slot); nm.style.color=RAR[it.r]; bt.appendChild(nm);
-    var st2=document.createElement('div'); st2.textContent=gearVal(it.slot,it.r); bt.appendChild(st2);
-    Snd.cork(); }
-  else { var gold=(L.kind==='big'? 40 : 15)+5*Math.floor(Math.random()*4); SAVE.coins+=gold; var co=document.createElement('span'); co.className='coin'; bt.appendChild(co); var gb=document.createElement('b'); gb.textContent='+'+gold; bt.appendChild(gb); Snd.coin(); Snd.cork(); }
-  saveNow(); updHud(); if (it) setTimeout(function(){ showLoot(it, function(){ rs.textContent=it.msg||''; $('cardBtns').className='on'; }); }, 650); else $('cardBtns').className='on';
-  [].forEach.call($('cards').children, function(o){ if (o.className.indexOf('back')>=0) o.className='fc back'+(cardLeft>0?'':' dim'); });
+function cardFace(fc, d){ var fr=fc.querySelector('.fr'), it=d.it; fr.innerHTML='';
+  if (it){ fr.style.setProperty('--rc',RAR[it.r]); fr.style.setProperty('--ra',[0.12,0.22,0.3,0.42][it.r]); var cv3=document.createElement('canvas'); cv3.width=cv3.height=104; gearTile(cv3, it.slot, it.r); fr.appendChild(cv3);
+    var nm=document.createElement('div'); nm.textContent=tl('r'+it.r)+' · '+tl('g_'+it.slot); nm.style.color=RAR[it.r]; fr.appendChild(nm); var st2=document.createElement('div'); st2.textContent=gearVal(it.slot,it.r); fr.appendChild(st2); }
+  else { fr.style.setProperty('--rc','#ffcf3a'); fr.style.setProperty('--ra',0.18); var co=document.createElement('span'); co.className='coin'; fr.appendChild(co); var gb=document.createElement('b'); gb.textContent='+'+d.gold; fr.appendChild(gb); } }
+function pickCard(){
+  var fc=this, d=cardDeck[fc.dataset.i]; if (cardLeft<=0 || d.open) return; cardLeft--; d.open=true; $('cardTimer').className='hide';
+  cardFace(fc, d); fc.className='fc up pick'; Snd.cork(); var it=d.it, rs=$('cardRs'); rs.textContent='';
+  [].forEach.call($('cards').children, function(o){ if (o!==fc && o.className.indexOf('pick')>=0) o.className='fc up'; });
+  setTimeout(function(){ var r=fc.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+    for (var k=0;k<(it? 14+it.r*10 : 12);k++){ var an=Math.random()*6.28, sp=120+Math.random()*260; parts.push({x:x,y:y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-60,t:0.8+Math.random()*0.5,c: it? RAR[it.r] : '#ffd84a',r:2+Math.random()*3,g:300}); }
+    if (it && it.r>=2){ Snd.win(); shk=0.6; } else if (it) Snd.buy(); else Snd.coin(); }, 380);
+  if (!it){ SAVE.coins+=d.gold; saveNow(); updHud(); setTimeout(function(){ rs.textContent='+'+d.gold+' '; var co=document.createElement('span'); co.className='coin'; rs.appendChild(co); $('cardBtns').className='on'; }, 700); }
+  else setTimeout(function(){ showLoot(it, function(){ rs.textContent=it.msg||''; $('cardBtns').className='on'; }); }, 1100);
 }
-$('cardAgain').onclick=function(){ var b2=this; if (PF.adBusy) return; b2.disabled=true; PF.rewarded(function(ok){ if (!ok){ b2.disabled=false; return; } cardLeft=1; b2.style.display='none'; $('cardRs').textContent=''; [].forEach.call($('cards').children, function(o){ if (o.className.indexOf('back')>=0) o.className='fc back'; }); }); };
-$('cardOk').onclick=function(){ $('cardM').classList.remove('show'); var f=cardCont; cardCont=null; if (f) f(); };
+$('cardAgain').onclick=function(){ var b2=this; if (PF.adBusy) return; b2.disabled=true; PF.rewarded(function(ok){ if (!ok){ b2.disabled=false; return; } cardLeft=1; b2.style.display='none'; $('cardBtns').className=''; $('cardRs').textContent=''; }); };
+$('cardOk').onclick=function(){ var b3=this; if (b3.dataset.busy) return; b3.dataset.busy=1; var any=false;
+  [].forEach.call($('cards').children, function(o){ var d=cardDeck[o.dataset.i]; if (!d.open){ any=true; cardFace(o,d); o.dataset.miss=tl('missed'); o.className='fc up miss'; } });
+  if (any){ Snd.cork(); $('cardBtns').className=''; }
+  setTimeout(function(){ delete b3.dataset.busy; $('cardM').classList.remove('show'); var f=cardCont; cardCont=null; if (f) f(); }, any? 1300 : 0); };
 // gear only drops on boss floors, never every time; the odds and the quality rise with the floor.
 // blue needs a great boss, purple needs the last great bosses (floor 72 and up).
 function rollDrop(){

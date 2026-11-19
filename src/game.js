@@ -1040,26 +1040,45 @@ function afterKill(){
   later(fin? 0.9 : 0.55, function(){ if (L.king) showCards(cont); else if (it) showLoot(it, cont); else cont(); });
 }
 function applyItem(it){ it.old=SAVE.gear[it.slot]; if (it.r>it.old) SAVE.gear[it.slot]=it.r; else { it.sold=[10,25,60,150][it.r]; SAVE.coins+=it.sold; } }
-// boss reward: three face-down cards, flip one (the flipped card is a real roll of the drop table; no gear means coins)
-var cardCont=null, cardLeft=0;
+// boss reward, dungeon-crawler style: four face-down cards are dealt, a 10 second countdown runs, the picked card flips with
+// a burst of light in its rarity colour; when you leave, the other cards turn over to show what you missed.
+// Every card holds a real roll of the drop table (no gear = coins).
+var cardCont=null, cardLeft=0, cardDeck=[], cardTimer=0, cardBack=null;
+function cardBackImg(){ if (cardBack) return cardBack; var cv=document.createElement('canvas'), W=164, H=240; cv.width=W; cv.height=H; var c=cv.getContext('2d');
+  var g=c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#6a1a26'); g.addColorStop(1,'#2a0810'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.strokeStyle='rgba(232,180,74,0.35)'; c.lineWidth=2; for (var i=-H;i<W+H;i+=18){ c.beginPath(); c.moveTo(i,0); c.lineTo(i+H*0.6,H); c.stroke(); c.beginPath(); c.moveTo(i,H); c.lineTo(i+H*0.6,0); c.stroke(); }
+  c.strokeStyle='#e8b44a'; c.lineWidth=4; c.beginPath(); c.roundRect(10,10,W-20,H-20,10); c.stroke(); c.lineWidth=2; c.beginPath(); c.roundRect(18,18,W-36,H-36,8); c.stroke();
+  var rg=c.createRadialGradient(W/2,H/2,4,W/2,H/2,60); rg.addColorStop(0,'rgba(255,200,90,0.55)'); rg.addColorStop(1,'rgba(255,200,90,0)'); c.fillStyle=rg; c.fillRect(0,0,W,H);
+  c.fillStyle='#2a0810'; c.beginPath(); c.moveTo(W/2,H/2-46); c.lineTo(W/2+38,H/2); c.lineTo(W/2,H/2+46); c.lineTo(W/2-38,H/2); c.closePath(); c.fill(); c.strokeStyle='#e8b44a'; c.lineWidth=3; c.stroke();
+  bossMark(c,W/2,H/2+4,24,'n'); cardBack='url('+cv.toDataURL()+')'; return cardBack; }
 function showCards(cont){
-  cardCont=cont; cardLeft=1; var box=$('cards'); box.innerHTML=''; $('cardRs').textContent=''; $('cardBtns').className=''; $('cardAgain').style.display=''; $('cardAgain').disabled=false;
-  for (var i=0;i<3;i++){ var bt=document.createElement('button'); bt.className='fc back'; bt.textContent='?'; bt.onclick=flipCard; box.appendChild(bt); }
-  $('cardM').classList.add('show'); Snd.horn();
+  cardCont=cont; cardLeft=1; cardDeck=[]; var box=$('cards'); box.innerHTML=''; $('cardRs').textContent=''; $('cardBtns').className=''; $('cardAgain').style.display=''; $('cardAgain').disabled=false;
+  for (var i=0;i<4;i++){ var it=rollDrop(), gold=(L.kind==='big'? 40 : 15)+5*Math.floor(Math.random()*4); cardDeck.push({it:it, gold:gold, open:false});
+    var fc=document.createElement('div'); fc.className='fc'; fc.dataset.i=i; fc.innerHTML='<div class="fci"><div class="fcb bk"></div><div class="fcb fr"></div></div>'; fc.firstChild.firstChild.style.backgroundImage=cardBackImg(); fc.onclick=pickCard; box.appendChild(fc); }
+  $('cardM').classList.add('show'); Snd.boss(); [0,1,2,3].forEach(function(k){ setTimeout(Snd.swing, 60+k*130); });
+  var left=10, tm=$('cardTimer'); tm.className=''; tm.textContent=left; clearInterval(cardTimer);
+  cardTimer=setInterval(function(){ if (!$('cardM').classList.contains('show')){ clearInterval(cardTimer); return; } if ($('lootM').classList.contains('show') || cardLeft<=0) return;
+    left--; tm.textContent=left; Snd.pay(); if (left<=0){ var rest=[].filter.call($('cards').children, function(o){ return !cardDeck[o.dataset.i].open; }); if (rest.length) pickCard.call(rest[Math.floor(Math.random()*rest.length)]); } }, 1000);
 }
-function flipCard(){
-  var bt=this; if (cardLeft<=0 || bt.className.indexOf('back')<0) return; cardLeft--;
-  var it=rollDrop(), rs=$('cardRs'); bt.className='fc up pick'; bt.textContent=''; rs.textContent='';
-  if (it){ var cv3=document.createElement('canvas'); cv3.width=cv3.height=108; gearTile(cv3, it.slot, it.r); bt.appendChild(cv3);
-    var nm=document.createElement('div'); nm.textContent=tl('r'+it.r)+' · '+tl('g_'+it.slot); nm.style.color=RAR[it.r]; bt.appendChild(nm);
-    var st2=document.createElement('div'); st2.textContent=gearVal(it.slot,it.r); bt.appendChild(st2);
-    Snd.cork(); }
-  else { var gold=(L.kind==='big'? 40 : 15)+5*Math.floor(Math.random()*4); SAVE.coins+=gold; var co=document.createElement('span'); co.className='coin'; bt.appendChild(co); var gb=document.createElement('b'); gb.textContent='+'+gold; bt.appendChild(gb); Snd.coin(); Snd.cork(); }
-  saveNow(); updHud(); if (it) setTimeout(function(){ showLoot(it, function(){ rs.textContent=it.msg||''; $('cardBtns').className='on'; }); }, 650); else $('cardBtns').className='on';
-  [].forEach.call($('cards').children, function(o){ if (o.className.indexOf('back')>=0) o.className='fc back'+(cardLeft>0?'':' dim'); });
+function cardFace(fc, d){ var fr=fc.querySelector('.fr'), it=d.it; fr.innerHTML='';
+  if (it){ fr.style.setProperty('--rc',RAR[it.r]); fr.style.setProperty('--ra',[0.12,0.22,0.3,0.42][it.r]); var cv3=document.createElement('canvas'); cv3.width=cv3.height=104; gearTile(cv3, it.slot, it.r); fr.appendChild(cv3);
+    var nm=document.createElement('div'); nm.textContent=tl('r'+it.r)+' · '+tl('g_'+it.slot); nm.style.color=RAR[it.r]; fr.appendChild(nm); var st2=document.createElement('div'); st2.textContent=gearVal(it.slot,it.r); fr.appendChild(st2); }
+  else { fr.style.setProperty('--rc','#ffcf3a'); fr.style.setProperty('--ra',0.18); var co=document.createElement('span'); co.className='coin'; fr.appendChild(co); var gb=document.createElement('b'); gb.textContent='+'+d.gold; fr.appendChild(gb); } }
+function pickCard(){
+  var fc=this, d=cardDeck[fc.dataset.i]; if (cardLeft<=0 || d.open) return; cardLeft--; d.open=true; $('cardTimer').className='hide';
+  cardFace(fc, d); fc.className='fc up pick'; Snd.cork(); var it=d.it, rs=$('cardRs'); rs.textContent='';
+  [].forEach.call($('cards').children, function(o){ if (o!==fc && o.className.indexOf('pick')>=0) o.className='fc up'; });
+  setTimeout(function(){ var r=fc.getBoundingClientRect(), x=r.left+r.width/2, y=r.top+r.height/2;
+    for (var k=0;k<(it? 14+it.r*10 : 12);k++){ var an=Math.random()*6.28, sp=120+Math.random()*260; parts.push({x:x,y:y,vx:Math.cos(an)*sp,vy:Math.sin(an)*sp-60,t:0.8+Math.random()*0.5,c: it? RAR[it.r] : '#ffd84a',r:2+Math.random()*3,g:300}); }
+    if (it && it.r>=2){ Snd.win(); shk=0.6; } else if (it) Snd.buy(); else Snd.coin(); }, 380);
+  if (!it){ SAVE.coins+=d.gold; saveNow(); updHud(); setTimeout(function(){ rs.textContent='+'+d.gold+' '; var co=document.createElement('span'); co.className='coin'; rs.appendChild(co); $('cardBtns').className='on'; }, 700); }
+  else setTimeout(function(){ showLoot(it, function(){ rs.textContent=it.msg||''; $('cardBtns').className='on'; }); }, 1100);
 }
-$('cardAgain').onclick=function(){ var b2=this; if (PF.adBusy) return; b2.disabled=true; PF.rewarded(function(ok){ if (!ok){ b2.disabled=false; return; } cardLeft=1; b2.style.display='none'; $('cardRs').textContent=''; [].forEach.call($('cards').children, function(o){ if (o.className.indexOf('back')>=0) o.className='fc back'; }); }); };
-$('cardOk').onclick=function(){ $('cardM').classList.remove('show'); var f=cardCont; cardCont=null; if (f) f(); };
+$('cardAgain').onclick=function(){ var b2=this; if (PF.adBusy) return; b2.disabled=true; PF.rewarded(function(ok){ if (!ok){ b2.disabled=false; return; } cardLeft=1; b2.style.display='none'; $('cardBtns').className=''; $('cardRs').textContent=''; }); };
+$('cardOk').onclick=function(){ var b3=this; if (b3.dataset.busy) return; b3.dataset.busy=1; var any=false;
+  [].forEach.call($('cards').children, function(o){ var d=cardDeck[o.dataset.i]; if (!d.open){ any=true; cardFace(o,d); o.dataset.miss=tl('missed'); o.className='fc up miss'; } });
+  if (any){ Snd.cork(); $('cardBtns').className=''; }
+  setTimeout(function(){ delete b3.dataset.busy; $('cardM').classList.remove('show'); var f=cardCont; cardCont=null; if (f) f(); }, any? 1300 : 0); };
 // gear only drops on boss floors, never every time; the odds and the quality rise with the floor.
 // blue needs a great boss, purple needs the last great bosses (floor 72 and up).
 function rollDrop(){
