@@ -193,13 +193,14 @@ function layout(){
   if (small){ cb.style.right='auto'; cb.style.left=($('lvl').offsetWidth+18)+'px'; cb.style.top=(poki? 98 : 52)+'px'; } else { cb.style.left='auto'; cb.style.right=Math.round(mnW+16+8*u)+'px'; cb.style.top='10px'; }
   STG.sd=side;
   if (side){
-    STG.x=10; STG.w=Math.round(VW*0.5-16); STG.h=Math.round(Math.max(118, Math.min(STG.w/1.8, VH-top0-62*u))); STG.top=top0+Math.round(Math.max(0, VH-top0-62*u-STG.h)*0.35);
-    BA={x0:VW*0.5+6, x1:VW-10, top:Math.max(top0, mnW? 8+mnH+12 : 0), bot:92*u};
+    STG.x=10; STG.w=Math.round(VW*0.56-16-(mnW? mnW+8 : 0)); STG.h=Math.round(Math.max(118, Math.min(STG.w/1.8, VH-top0-62*u))); STG.top=top0+Math.round(Math.max(0, VH-top0-62*u-STG.h)*0.35);
+    BA={x0:VW*0.56+6, x1:VW-10, top:top0, bot:92*u}; cb.style.right='10px';
   } else {
     STG.top=top0; STG.h=Math.round(Math.max(118, Math.min(300, VH*(VW>VH?0.3:0.255)))); STG.w=Math.min(VW-12, STG.h*3.4); STG.x=(VW-STG.w)/2;
     if (mnW && STG.x+STG.w > VW-mnW-16) STG.top=Math.max(STG.top, 8+mnH+12);
     BA={x0:10, x1:VW-10, top:STG.top+STG.h+50*u, bot:92*u};
   }
+  var mn=$('mini'); if (side){ mn.style.right='auto'; mn.style.left=Math.round(STG.x+STG.w+8)+'px'; mn.style.top=Math.round(STG.top)+'px'; } else { mn.style.left='auto'; mn.style.right='8px'; mn.style.top='8px'; }
   BA.cx=(BA.x0+BA.x1)/2;
   var skE=$('skills'), bn=$('banner'), cxp=Math.round(BA.cx)+'px'; skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px';
   bn.style.left=cxp; bn.style.top=Math.round(side? BA.top+36*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
