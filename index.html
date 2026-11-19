@@ -131,7 +131,7 @@ function roleOf(l,s){ return s<stagesOf(l)-1 || kindOf(l)==='n' ? 'min' : kindOf
 function isKing(l){ return kindOf(l)!=='n'; }
 function colorsFor(l,s){
   if (l===1) return s===0 ? 2 : 3;
-  var steps=[[1,3],[3,4],[9,5],[19,6],[31,7],[49,8],[73,9]], c=3, r=roleOf(l,s||0);
+  var steps=[[1,3],[2,4],[3,5],[6,6],[11,7],[17,8],[27,9],[41,10],[61,11]], c=3, r=roleOf(l,s||0);
   steps.forEach(function(q){ if (l>=q[0]) c=q[1]; });
   if (r==='boss') c+=1; else if (r==='big') c+=2; else if (kindOf(l)!=='n') c-=2;   // the rooms before a boss are quick ones
   return Math.max(3, Math.min(MAXC, c));
@@ -174,9 +174,18 @@ function solve(B0, budget){
   }
   return dfs() ? path : null;
 }
+// how often a careless player (random sensible pours) fails to finish this layout: 0 = can't go wrong, 1 = a real trap
+function trapRate(B0, steps, r){
+  var fails=0, N=16;
+  for (var t=0;t<N;t++){ var B=B0.map(function(b){ return b.slice(); }), ok=false;
+    for (var m=0;m<steps*3+10;m++){ if (solved(B)){ ok=true; break; } var ms=moves(B); if (!ms.length) break; var mv=ms[Math.floor(r()*ms.length)]; pour(B,mv[0],mv[1]); }
+    if (!ok) fails++; }
+  return fails/N;
+}
+// Several shuffles are tried and the trickier ones are kept: early floors take a middling one, later floors the nastiest.
 function gen(level, stage){
-  stage=stage||0; var nc=colorsFor(level,stage);
-  for (var att=0; att<80; att++){
+  stage=stage||0; var nc=colorsFor(level,stage), cands=[], want= level<3 ? 1 : 7;
+  for (var att=0; att<90 && cands.length<want; att++){
     var r=rnd(level*7919+stage*15485863+att*104729+17), units=[], i, c;
     for (c=0;c<nc;c++) for (i=0;i<CAP;i++) units.push(c);
     for (i=units.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)), t=units[i]; units[i]=units[j]; units[j]=t; }
@@ -185,11 +194,14 @@ function gen(level, stage){
     if (B.some(function(b){ return b.length && uniform(b); })) continue;        // nothing pre-sorted
     var sol=solve(B, 40000); if (!sol) continue;
     if (level>1 && sol.length<nc*2) continue;                                   // too easy, reshuffle
-    var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage), colors:nc, hidden:hiddenFor(level,stage), bottles:B, steps:sol.length};
-    L.king=L.role!=='min';
-    L.fight=fight(L); L.fight.mHp=L.fight.mMax; return L;
+    cands.push({B:B, steps:sol.length, trap: want>1 ? trapRate(B, sol.length, r) : 0});
   }
-  return null;
+  if (!cands.length) return null;
+  cands.sort(function(x,y){ return (x.trap-y.trap) || (x.steps-y.steps); });
+  var pick=cands[Math.min(cands.length-1, Math.floor((cands.length-1)*Math.min(1, 0.35+level/30)+0.5))];
+  var L={level:level, stage:stage, stages:stagesOf(level), kind:kindOf(level), role:roleOf(level,stage), colors:nc, hidden:hiddenFor(level,stage), bottles:pick.B, steps:pick.steps, trap:pick.trap};
+  L.king=L.role!=='min';
+  L.fight=fight(L); L.fight.mHp=L.fight.mMax; return L;
 }
 // ---------- fight ----------
 // what a full bottle of each colour does (same order as the palette in game.js)
@@ -200,21 +212,24 @@ var ROLE=['atk','shd','heal','atk','stun','psn','atk','shd','atk','heal','stun',
 function fight(L){
   var na=0, i; for (i=0;i<L.colors;i++) if (ROLE[i]==='atk'||ROLE[i]==='psn') na++;
   var ATK=25, interval=L.level<4?6:5, hits=Math.ceil(L.steps*1.4/interval)+1;
-  var w= L.kind==='n' ? 0.5 : (L.kind==='boss' ? (L.role==='boss'?0.8:0.2) : (L.role==='big'?0.88:0.15));
-  var hpK=Math.min(2,1+0.01*(L.level-1))*(L.role==='big'?1.3:(L.role==='boss'?1.1:1));
-  return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0,
+  var w= L.kind==='n' ? 0.75 : (L.kind==='boss' ? (L.role==='boss'?1.05:0.3) : (L.role==='big'?1.1:0.22));
+  var hpK=1.3*Math.min(2,1+0.01*(L.level-1))*(L.role==='big'?1.3:(L.role==='boss'?1.1:1));
+  return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0, par:L.steps, moves:0,
     mMax:Math.max(20, Math.round(ATK*na*hpK/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.max(4, Math.ceil(100*w/hits))};
 }
+// Fewer pours = harder hits: every room starts at double power and slides to normal by the time the solver's own
+// number of pours is used up.
+function power(F){ return Math.max(1, Math.min(2, 2-F.moves/F.par)); }
 // a completed bottle of colour c is drunk
 function drink(F, c){
   var r=ROLE[c], ev={role:r, c:c};
-  if (r==='atk'){ ev.v=F.atk; if (F.crit>0 && Math.random()<F.crit){ ev.v*=2; ev.crit=true; } F.mHp-=ev.v; } else if (r==='psn'){ F.poison+=F.psn; } else if (r==='shd'){ F.shield++; }
+  if (r==='atk'){ ev.v=Math.round(F.atk*power(F)); if (F.crit>0 && Math.random()<F.crit){ ev.v*=2; ev.crit=true; } F.mHp-=ev.v; } else if (r==='psn'){ F.poison+=F.psn; } else if (r==='shd'){ F.shield++; }
   else if (r==='heal'){ ev.v=Math.min(F.heal, F.heroMax-F.hHp); F.hHp+=ev.v; } else if (r==='stun'){ F.cd+=F.stun; }
   return ev;
 }
 // after every pour: poison ticks, the countdown drops, the monster may strike
 function monsterTurn(F){
-  var ev={};
+  var ev={}; F.moves++;
   if (F.mHp<=0) return ev;
   if (F.poison>0){ F.mHp-=F.poison; ev.psn=F.poison; if (F.mHp<=0) return ev; }
   F.cd--; if (F.cd<=0){ F.cd=F.interval; if (F.shield>0){ F.shield--; ev.blocked=true; } else { ev.hit=Math.max(1,F.mDmg-(F.def||0)); F.hHp-=ev.hit; } }
@@ -222,7 +237,7 @@ function monsterTurn(F){
 }
 function hint(B){ var s=solve(B, 40000); return s && s.length ? s[0] : null; }
 function stuck(B){ if (solved(B)) return false; for (var i=0;i<B.length;i++) for (var j=0;j<B.length;j++) if (canPour(B,i,j)) return false; return true; }
-return {ROLE:ROLE, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
+return {ROLE:ROLE, power:power, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
   colorsFor:colorsFor, isKing:isKing, hiddenFor:hiddenFor, kindOf:kindOf, stagesOf:stagesOf, roleOf:roleOf};
 })();
 
@@ -372,6 +387,7 @@ var TL={
   sk1:['⚔️ New skill — Blade Storm: hits harder for every sword potion showing at the top of a bottle','⚔️ Nouvelle compétence — Tempête de lames : plus forte pour chaque potion épée visible en haut d\'une bouteille','⚔️ Nuova abilità — Tempesta di lame: più forte per ogni pozione spada in cima a una bottiglia','⚔️ Neue Fähigkeit — Klingensturm: stärker für jeden Schwerttrank oben in einer Flasche','⚔️ Nueva habilidad — Tormenta de espadas: más fuerte por cada poción de espada en lo alto de una botella','⚔️ Yeni yetenek — Kılıç Fırtınası: şişelerin üstünde görünen her kılıç iksiri için daha güçlü','⚔️ 新技能「剑刃风暴」：瓶口露出的攻击药水越多，砍得越疼','⚔️ 新スキル「剣の嵐」：瓶の一番上に見える剣の薬が多いほど強い','⚔️ 새 스킬 「칼날 폭풍」: 병 맨 위에 보이는 검 물약이 많을수록 강해져요','⚔️ Nova habilidade — Tempestade de lâminas: mais forte para cada poção de espada no topo de um frasco','⚔️ Новый навык — Буря клинков: сильнее за каждое зелье меча наверху бутылки'],
   sk2:['✨ Magic Hand: your next pour can go into any bottle that has room','✨ Main magique : ton prochain versement peut aller dans n\'importe quelle bouteille non pleine','✨ Mano magica: il prossimo travaso può andare in qualsiasi bottiglia non piena','✨ Magische Hand: Der nächste Guss darf in jede nicht volle Flasche','✨ Mano mágica: tu próximo vertido puede ir a cualquier botella con hueco','✨ Sihirli El: sıradaki döküş yeri olan her şişeye olabilir','✨ 魔法手：下一次可以倒进任何没满的瓶子，不管颜色','✨ マジックハンド：次の一回は色に関係なく、空きのある瓶に注げる','✨ 마법의 손: 다음 한 번은 색과 상관없이 빈 자리가 있는 병에 부을 수 있어요','✨ Mão mágica: o próximo despejo pode ir para qualquer frasco com espaço','✨ Волшебная рука: следующий перелив можно сделать в любую неполную бутылку'],
   needE:['Not enough energy — pour and drink potions to charge','Pas assez d\'énergie — verse et bois pour charger','Energia insufficiente — versa e bevi per caricare','Zu wenig Energie — gieße und trinke zum Aufladen','Falta energía — vierte y bebe para cargar','Enerji yetersiz — dök ve iç, dolsun','能量不够：多倒药水、喝药水来攒','エネルギー不足 — 注いで飲んでチャージ','에너지 부족 — 붓고 마셔서 충전하세요','Energia insuficiente — despeje e beba para carregar','Мало энергии — переливай и пей, чтобы зарядить'],
+  pwTip:['⚔️ Fewer pours = harder hits! Power starts at ×2 in every room and drops with each pour','⚔️ Moins de versements = coups plus forts ! La puissance démarre à ×2 dans chaque salle et baisse à chaque versement','⚔️ Meno travasi = colpi più forti! La potenza parte da ×2 in ogni stanza e cala a ogni travaso','⚔️ Weniger Güsse = härtere Treffer! Die Kraft startet in jedem Raum bei ×2 und sinkt mit jedem Guss','⚔️ ¡Menos vertidos = golpes más fuertes! La potencia empieza en ×2 en cada sala y baja con cada vertido','⚔️ Az döküş = sert vuruş! Güç her odada ×2 başlar, her döküşte düşer','⚔️ 倒得越少，砍得越疼！每个房间威力从 ×2 开始，每倒一次往下掉','⚔️ 注ぐ回数が少ないほど強い！威力は各部屋 ×2 から始まり、注ぐたびに下がる','⚔️ 적게 부을수록 강해져요! 위력은 방마다 ×2에서 시작해 부을 때마다 내려가요','⚔️ Menos despejos = golpes mais fortes! O poder começa em ×2 em cada sala e cai a cada despejo','⚔️ Меньше переливаний — сильнее удар! Сила начинается с ×2 в каждой комнате и падает с каждым переливом'],
   victory:['Victory!','Victoire !','Vittoria!','Sieg!','¡Victoria!','Zafer!','打赢了！','勝利！','승리!','Vitória!','Победа!'],
   blocked:['Blocked!','Bloqué !','Parato!','Geblockt!','¡Bloqueado!','Engellendi!','挡住了！','ガード！','막았다!','Bloqueado!','Блок!'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
@@ -580,6 +596,7 @@ function loadLevel(n, keepExtra, st, hp){
   var seen=function(k){ if (SAVE[k]) return false; SAVE[k]=1; saveNow(); return true; };
   if (curStage===0 && L.kind!=='n') banner(tl(L.kind==='big'?'bigF':'bossF'), '', 2400);
   else if (L.role!=='min') banner((L.role==='big'?'🐉 ':'👹 ')+tl('m_'+VS.kind), '', 2400);
+  else if (n===1 && curStage===2 && seen('pT')) banner(tl('pwTip'), '', 6000);
   else if (n>=2 && seen('k1')) banner(tl('sk1'), '', 5200);
   else if (n>=4 && seen('k2')) banner(tl('sk2'), '', 5200);
   else if (L.colors>=5 && seen('sS')) banner(tl('r_stun'), '', 3600);
@@ -975,7 +992,9 @@ function drawStage(dt, t){
   el(c,g.x+g.w-pad-mr,STG.top+pad+mr,mr); fs(c,L.role==='big'?'#e8a020':(L.king?'#c0303a':'#7a3f9a'),2.5); c.strokeStyle='#fff'; c.lineWidth=1.5; el(c,g.x+g.w-pad-mr,STG.top+pad+mr,mr-3); c.stroke(); icon(c,'psn',g.x+g.w-pad-mr,STG.top+pad+mr,mr*0.52,'#fff',0);
   var sy2=by+bh2+11*k;
   if (L.king && alive){ var bt=L.role==='big'?'BIG BOSS':'BOSS', bf=Math.max(9.5,10.5*k); c.font='900 '+Math.round(bf)+'px '+FNT; var btw=c.measureText(bt).width+12; rr(c,VW-bx0-btw,sy2-bf*0.8,btw,bf*1.6,bf*0.8); c.fillStyle=L.role==='big'?'#e8a020':'#d93a3a'; c.fill(); c.lineWidth=2; c.strokeStyle=OL; c.stroke(); txt(c,bt,VW-bx0-btw/2,sy2+0.5,bf,'#fff','center',2.5); }
-  if (VS.shield>0){ icon(c,'shd',bx0+8*k,sy2,7.5*k,'#6aa8ff',2.5); txt(c,'×'+VS.shield,bx0+18*k,sy2+0.5,12*k,'#cfe4ff','left'); }
+  var pw=DJ.power(F), pk=Math.max(0.9,k); if (VS.pw!==pw){ if (VS.pw!=null) VS.pwPop=0.25; VS.pw=pw; } if (VS.pwPop>0) VS.pwPop=Math.max(0,VS.pwPop-dt);
+  if (!won && !lost){ var ps=1+(VS.pwPop>0? Math.sin(VS.pwPop/0.25*Math.PI)*0.25 : 0), pc= pw>=1.5? '#ffd84a' : (pw>1? '#ffe9c0' : '#b8a8c4'); icon(c,'atk',bx0+8*pk,sy2,7.5*pk*ps,pc,2.5); txt(c,'×'+pw.toFixed(1),bx0+17*pk,sy2+0.5,13*pk*ps,pc,'left'); }
+  if (VS.shield>0){ icon(c,'shd',bx0+62*pk,sy2,7.5*k,'#6aa8ff',2.5); txt(c,'×'+VS.shield,bx0+62*pk+10*k,sy2+0.5,12*k,'#cfe4ff','left'); }
   if (VS.poison>0 && alive){ icon(c,'psn',VW-bx1+8*k,sy2,7*k,'#c79aff',2.5); txt(c,''+VS.poison,VW-bx1+18*k,sy2+0.5,12*k,'#e0c8ff','left'); }
   // the monster's next move: how many pours are left, and how hard it hits
   if (alive && !won && !lost){ var cd=Math.max(0,VS.cd), pop=VS.cdPop>0? 1+Math.sin((VS.cdPop/0.4)*Math.PI)*0.35 : 1, pu=(hot? 1+Math.sin(t*10)*0.07 : 1)*pop, ib=Math.max(0.82,k);
@@ -1219,7 +1238,7 @@ function busyNow(){ return won || lost || walk>0 || PF.adBusy; }
 // Blade Storm: a free hit that grows with every attack potion sitting at the top of a bottle
 $('sk1').onclick=function(){ Snd.unlock(); if (busyNow() || anims.length) return; if (energy<SK1){ toast(tl('needE')); Snd.nope(); return; }
   var n=0; B.forEach(function(b,i){ if (b.length && !DJ.done(b) && KN[i][b.length-1] && DJ.ROLE[DJ.top(b)]==='atk'){ var q=knownRun(i); n+=q; V[i].pop=1; sparkle(V[i].x, V[i].y-bh*0.3-(b.length-0.5)*uh, DJ.top(b), 8); } });
-  var dmg=Math.round(F.atk*0.4)+6*n; energy-=SK1; magic=false; F.mHp-=dmg; var mAfter=F.mHp; VS.hAtk=HA; Snd.swing(); Snd.horn(); updSkills();
+  var dmg=Math.round((F.atk*0.4+6*n)*DJ.power(F)); energy-=SK1; magic=false; F.mHp-=dmg; var mAfter=F.mHp; VS.hAtk=HA; Snd.swing(); Snd.horn(); updSkills();
   later(HA*0.42, function(){ VS.mHp=Math.max(0,Math.min(VS.mHp,mAfter)); hitMonster(dmg, true, 3, n>=3); });
   checkEnd(0.5); };
 // Magic Hand: the next pour ignores colours

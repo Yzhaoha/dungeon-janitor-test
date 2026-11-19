@@ -165,6 +165,7 @@ function loadLevel(n, keepExtra, st, hp){
   var seen=function(k){ if (SAVE[k]) return false; SAVE[k]=1; saveNow(); return true; };
   if (curStage===0 && L.kind!=='n') banner(tl(L.kind==='big'?'bigF':'bossF'), '', 2400);
   else if (L.role!=='min') banner((L.role==='big'?'🐉 ':'👹 ')+tl('m_'+VS.kind), '', 2400);
+  else if (n===1 && curStage===2 && seen('pT')) banner(tl('pwTip'), '', 6000);
   else if (n>=2 && seen('k1')) banner(tl('sk1'), '', 5200);
   else if (n>=4 && seen('k2')) banner(tl('sk2'), '', 5200);
   else if (L.colors>=5 && seen('sS')) banner(tl('r_stun'), '', 3600);
@@ -560,7 +561,9 @@ function drawStage(dt, t){
   el(c,g.x+g.w-pad-mr,STG.top+pad+mr,mr); fs(c,L.role==='big'?'#e8a020':(L.king?'#c0303a':'#7a3f9a'),2.5); c.strokeStyle='#fff'; c.lineWidth=1.5; el(c,g.x+g.w-pad-mr,STG.top+pad+mr,mr-3); c.stroke(); icon(c,'psn',g.x+g.w-pad-mr,STG.top+pad+mr,mr*0.52,'#fff',0);
   var sy2=by+bh2+11*k;
   if (L.king && alive){ var bt=L.role==='big'?'BIG BOSS':'BOSS', bf=Math.max(9.5,10.5*k); c.font='900 '+Math.round(bf)+'px '+FNT; var btw=c.measureText(bt).width+12; rr(c,VW-bx0-btw,sy2-bf*0.8,btw,bf*1.6,bf*0.8); c.fillStyle=L.role==='big'?'#e8a020':'#d93a3a'; c.fill(); c.lineWidth=2; c.strokeStyle=OL; c.stroke(); txt(c,bt,VW-bx0-btw/2,sy2+0.5,bf,'#fff','center',2.5); }
-  if (VS.shield>0){ icon(c,'shd',bx0+8*k,sy2,7.5*k,'#6aa8ff',2.5); txt(c,'×'+VS.shield,bx0+18*k,sy2+0.5,12*k,'#cfe4ff','left'); }
+  var pw=DJ.power(F), pk=Math.max(0.9,k); if (VS.pw!==pw){ if (VS.pw!=null) VS.pwPop=0.25; VS.pw=pw; } if (VS.pwPop>0) VS.pwPop=Math.max(0,VS.pwPop-dt);
+  if (!won && !lost){ var ps=1+(VS.pwPop>0? Math.sin(VS.pwPop/0.25*Math.PI)*0.25 : 0), pc= pw>=1.5? '#ffd84a' : (pw>1? '#ffe9c0' : '#b8a8c4'); icon(c,'atk',bx0+8*pk,sy2,7.5*pk*ps,pc,2.5); txt(c,'×'+pw.toFixed(1),bx0+17*pk,sy2+0.5,13*pk*ps,pc,'left'); }
+  if (VS.shield>0){ icon(c,'shd',bx0+62*pk,sy2,7.5*k,'#6aa8ff',2.5); txt(c,'×'+VS.shield,bx0+62*pk+10*k,sy2+0.5,12*k,'#cfe4ff','left'); }
   if (VS.poison>0 && alive){ icon(c,'psn',VW-bx1+8*k,sy2,7*k,'#c79aff',2.5); txt(c,''+VS.poison,VW-bx1+18*k,sy2+0.5,12*k,'#e0c8ff','left'); }
   // the monster's next move: how many pours are left, and how hard it hits
   if (alive && !won && !lost){ var cd=Math.max(0,VS.cd), pop=VS.cdPop>0? 1+Math.sin((VS.cdPop/0.4)*Math.PI)*0.35 : 1, pu=(hot? 1+Math.sin(t*10)*0.07 : 1)*pop, ib=Math.max(0.82,k);
@@ -804,7 +807,7 @@ function busyNow(){ return won || lost || walk>0 || PF.adBusy; }
 // Blade Storm: a free hit that grows with every attack potion sitting at the top of a bottle
 $('sk1').onclick=function(){ Snd.unlock(); if (busyNow() || anims.length) return; if (energy<SK1){ toast(tl('needE')); Snd.nope(); return; }
   var n=0; B.forEach(function(b,i){ if (b.length && !DJ.done(b) && KN[i][b.length-1] && DJ.ROLE[DJ.top(b)]==='atk'){ var q=knownRun(i); n+=q; V[i].pop=1; sparkle(V[i].x, V[i].y-bh*0.3-(b.length-0.5)*uh, DJ.top(b), 8); } });
-  var dmg=Math.round(F.atk*0.4)+6*n; energy-=SK1; magic=false; F.mHp-=dmg; var mAfter=F.mHp; VS.hAtk=HA; Snd.swing(); Snd.horn(); updSkills();
+  var dmg=Math.round((F.atk*0.4+6*n)*DJ.power(F)); energy-=SK1; magic=false; F.mHp-=dmg; var mAfter=F.mHp; VS.hAtk=HA; Snd.swing(); Snd.horn(); updSkills();
   later(HA*0.42, function(){ VS.mHp=Math.max(0,Math.min(VS.mHp,mAfter)); hitMonster(dmg, true, 3, n>=3); });
   checkEnd(0.5); };
 // Magic Hand: the next pour ignores colours
