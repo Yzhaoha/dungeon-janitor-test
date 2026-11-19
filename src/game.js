@@ -250,7 +250,7 @@ function finishAnim(a){
   var drank=false;
   if (DJ.done(B[a.j]) && B[a.j].length){ dj.pop=1; Snd.cork(); sparkle(dj.x, dj.y-bh*0.5, a.c, 16); drank=true; doDrink(a.c, dj); }
   doMonsterTurn(drank? 1.15 : 0.05);
-  energy=Math.min(100, energy+(drank? 22 : 5)); updSkills();
+  energy=Math.min(100, energy+(drank? 8 : 2)); updSkills();
   checkEnd(drank? 1.0 : 0.3);
 }
 function checkEnd(dieAt){
@@ -1147,7 +1147,7 @@ function drawGear(){
   if (gearSel){ var b1=document.createElement('div'); b1.textContent=tl('g_'+gearSel)+(r>=0? ' · '+tl('r'+r) : ''); b1.style.color= r>=0? RAR[r] : '#a898b4'; inf.appendChild(b1);
     var b2=document.createElement('div'); b2.textContent=tl('st_'+GSTAT[gearSel].k)+(r>=0? ' '+gearVal(gearSel,r) : ''); inf.appendChild(b2); }
 }
-var SK1=60, SK2=100;
+var SK1=100, SK2=100;
 function updSkills(){
   if (!L) return; var s1=$('sk1'), s2=$('sk2'), u1=SAVE.level>=2||L.level>=2, u2=SAVE.level>=4||L.level>=4;
   $('skills').className= u1? '' : 'none'; $('ebar').firstChild.style.width=energy+'%';

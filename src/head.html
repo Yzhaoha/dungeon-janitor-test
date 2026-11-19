@@ -79,7 +79,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 @keyframes rdy{50%{transform:translateY(-3px)}}
 #ebar{flex:1;height:16px;border-radius:9px;background:#2a1a2e;border:2px solid #1a1020;overflow:hidden;position:relative}
 #ebar b{display:block;height:100%;width:0;background:linear-gradient(#bff3ff,#3fa8e8);transition:width .25s}
-#ebar u{position:absolute;left:60%;top:0;bottom:0;width:2px;background:#fff9}
+#ebar u{display:none}
 #gearGrid{display:flex;justify-content:center;gap:5px;margin:6px 0 4px}
 #gearGrid canvas{width:40px;height:40px;cursor:pointer;border-radius:10px}
 #gearGrid canvas.on{outline:2px solid #fff}
@@ -158,7 +158,7 @@ body.pf-poki #lvl{top:70px}
 <div id="hud">
   <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
   <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
-  <div id="skills"><button id="sk1"><canvas width="56" height="56"></canvas><i>60</i></button><div id="ebar"><b></b><u></u></div><button id="sk2"><canvas width="56" height="56"></canvas><i>100</i></button></div>
+  <div id="skills"><button id="sk1"><canvas width="56" height="56"></canvas><i>100</i></button><div id="ebar"><b></b><u></u></div><button id="sk2"><canvas width="56" height="56"></canvas><i>100</i></button></div>
   <canvas id="mini" width="10" height="10"></canvas>
   <div id="dpad"><button data-d="0,-1">▲</button><button data-d="-1,0">◀</button><button data-d="1,0">▶</button><button data-d="0,1">▼</button></div>
   <div id="banner" class="out"></div>

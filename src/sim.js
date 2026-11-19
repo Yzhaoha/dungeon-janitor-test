@@ -127,9 +127,9 @@ function fight(L){
   return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0, par:L.steps, moves:0,
     mMax:Math.max(20, Math.round(ATK*na*hpK/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.max(4, Math.ceil(100*w/hits))};
 }
-// Fewer pours = harder hits: every room starts at double power and slides to normal by the time the solver's own
+// Fewer pours = harder hits: every room starts at x1.5 power and slides to normal by the time the solver's own
 // number of pours is used up.
-function power(F){ return Math.max(1, Math.min(2, 2-F.moves/F.par)); }
+function power(F){ return Math.max(1, Math.min(1.5, 1.5-0.5*F.moves/F.par)); }
 // a completed bottle of colour c is drunk
 function drink(F, c){
   var r=ROLE[c], ev={role:r, c:c};
