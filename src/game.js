@@ -185,26 +185,33 @@ var BA={x0:10, x1:300, top:300, bot:92, cx:155};
 // on big windows the buttons, chips and the minimap grow with the window instead of staying phone-sized
 function uiScale(){ return VW<=600 ? 1 : Math.max(1, Math.min(2.2, Math.min(VW/960, VH/540))); }
 function layout(){
-  var n=B.length, small=VW<=600, side= VW>=700 && VW>=VH*1.45, poki=PF.kind==='poki', u=uiScale(), top0= poki? (small?140:112*u) : (small?96:58*u); STG.u=u;
+  var n=B.length, small=VW<=600, wide= VW>=700 && VW>=VH*1.45, poki=PF.kind==='poki', u=uiScale(), top0= poki? (small?140:112*u) : (small?96:58*u), side=false; STG.u=u; STG.sd=false;
   document.documentElement.style.setProperty('--u', u); drawMap($('mini'), false);
-  var cb=$('coinBox');
-  if (false){ cb.style.right='auto'; cb.style.left=($('lvl').offsetWidth+18)+'px'; cb.style.top=(poki? 98 : 52)+'px'; } else { cb.style.left='auto'; cb.style.right=Math.round(mnW+16+8*u)+'px'; cb.style.top='10px'; }
-  var mnW=parseFloat($('mini').style.width)||0, mnH=parseFloat($('mini').style.height)||0;
-  if (small){ cb.style.right='auto'; cb.style.left=($('lvl').offsetWidth+18)+'px'; cb.style.top=(poki? 98 : 52)+'px'; } else { cb.style.left='auto'; cb.style.right=Math.round(mnW+16+8*u)+'px'; cb.style.top='10px'; }
-  STG.sd=side;
-  if (side){
-    STG.x=10; STG.w=Math.round(VW*0.56-16-(mnW? mnW+8 : 0)); STG.h=Math.round(Math.max(118, Math.min(STG.w/1.8, VH-top0-62*u))); STG.top=top0+Math.round(Math.max(0, VH-top0-62*u-STG.h)*0.35);
-    BA={x0:VW*0.56+6, x1:VW-10, top:top0, bot:92*u}; cb.style.right='10px';
+  var cb=$('coinBox'), lv=$('lvl'), mn=$('mini'), skE=$('skills'), bn=$('banner'), mnW=parseFloat(mn.style.width)||0, mnH=parseFloat(mn.style.height)||0, skRow=false;
+  if (wide){
+    // fight on top, bottles below (what players of this genre expect), with the chips and the minimap moved beside the
+    // fight panel and the skill bar sharing the bottom row with the buttons, so the height goes to the two things that matter
+    var topW= poki? 112*u : 8, availV=VH-topW-92*u-10*u, colW=Math.max(mnW+18, 186*u);
+    STG.top=topW; STG.h=Math.round(Math.max(118, availV*0.47)); STG.w=Math.round(Math.max(260, Math.min(STG.h*3.3, VW-2*colW-12))); STG.x=Math.round((VW-STG.w)/2);
+    BA={x0:10, x1:VW-10, top:STG.top+STG.h+10*u, bot:92*u};
+    lv.style.left='10px'; lv.style.top=Math.round(10+44*u)+'px'; lv.style.transform='scale('+u+')'; lv.style.transformOrigin='0 0';
+    cb.style.left='auto'; cb.style.right='10px'; cb.style.top='10px';
+    mn.style.right='auto'; mn.style.left=Math.round(STG.x+STG.w+8)+'px'; mn.style.top=Math.round(STG.top)+'px';
+    if (mnW+16 > colW-70*u || true){ cb.style.top=Math.round(Math.min(VH*0.5, STG.top+mnH+12))+'px'; cb.style.right='auto'; cb.style.left=Math.round(STG.x+STG.w+8)+'px'; cb.style.transformOrigin='0 0'; }
+    skRow= (300*u+24*u+284*u) <= VW-20;
   } else {
+    lv.style.left=''; lv.style.top=''; lv.style.transform=''; lv.style.transformOrigin=''; cb.style.transformOrigin='';
+    if (small){ cb.style.right='auto'; cb.style.left=(lv.offsetWidth+18)+'px'; cb.style.top=(poki? 98 : 52)+'px'; } else { cb.style.left='auto'; cb.style.right=Math.round(mnW+16+8*u)+'px'; cb.style.top='10px'; }
     STG.top=top0; STG.h=Math.round(Math.max(118, Math.min(300, VH*(VW>VH?0.3:0.255)))); STG.w=Math.min(VW-12, STG.h*3.4); STG.x=(VW-STG.w)/2;
     if (mnW && STG.x+STG.w > VW-mnW-16) STG.top=Math.max(STG.top, 8+mnH+12);
     BA={x0:10, x1:VW-10, top:STG.top+STG.h+50*u, bot:92*u};
+    mn.style.left='auto'; mn.style.right='8px'; mn.style.top='8px';
   }
-  var mn=$('mini'); if (side){ mn.style.right='auto'; mn.style.left=Math.round(STG.x+STG.w+8)+'px'; mn.style.top=Math.round(STG.top)+'px'; } else { mn.style.left='auto'; mn.style.right='8px'; mn.style.top='8px'; }
-  BA.cx=(BA.x0+BA.x1)/2;
-  var skE=$('skills'), bn=$('banner'), cxp=Math.round(BA.cx)+'px'; skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px';
-  bn.style.left=cxp; bn.style.top=Math.round(side? BA.top+36*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
-  $('btns').style.left=cxp; $('tut').style.left=cxp; $('tut').style.maxWidth=Math.round((BA.x1-BA.x0-8)/u)+'px'; $('tut').style.bottom=Math.round(96*u)+'px'; $('btns').style.bottom=Math.round(14*u)+'px';
+  BA.cx=(BA.x0+BA.x1)/2; var cxp=Math.round(BA.cx)+'px', rowW=608*u;
+  if (skRow){ skE.style.left=Math.round(VW/2-rowW/2+150*u)+'px'; skE.style.top=Math.round(VH-(14+31+21)*u)+'px'; skE.style.width='300px'; $('btns').style.left=Math.round(VW/2+rowW/2-142*u)+'px'; }
+  else { skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px'; $('btns').style.left=cxp; if (wide) BA.top+=44*u; }
+  bn.style.left=cxp; bn.style.top=Math.round(wide? BA.top+40*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
+  $('tut').style.left=cxp; $('tut').style.maxWidth=Math.round((BA.x1-BA.x0-8)/u)+'px'; $('tut').style.bottom=Math.round(96*u)+'px'; $('btns').style.bottom=Math.round(14*u)+'px';
   var top=BA.top+(side?4:0), bot=BA.bot, availH=VH-top-bot, availW=BA.x1-BA.x0, best=0, bestRows=1;
   var pdS=Math.round(Math.max(140, Math.min(204, (availH-4)/u))), pdE=$('dpad'); pdE.style.width=pdE.style.height=pdS+'px'; pdE.style.left=cxp; pdE.style.top=Math.round(Math.max(top, (top+VH-bot)/2-pdS*u/2))+'px';
   bgCache=null; if (!n) return;
