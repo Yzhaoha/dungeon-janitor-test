@@ -157,6 +157,9 @@ var Snd = (function(){
     pmute:function(m){ pmuted=m; plog('platformMute',m); S.bgm&&S.bgm(); },
     toggle:function(){ off=!off; try{localStorage.setItem('dj_snd',off?'0':'1');}catch(e){} bgm(); return !off; },
     bgm:bgm,
+    hoof:function(v){ v=v||1; tone(95, 0.09, 'sine', 0.22*v, 0.5, 0, 0.15); noise(0.05, 0.16*v, 1800, 0, 'bandpass', 600, 1.2, 0.12); noise(0.025, 0.07*v, 4200, 0.004, 'highpass', null, null, 0.1); },
+    rumble:function(){ drum(48, 1.4, 0.32, 0); noise(1.2, 0.08, 220, 0, 'lowpass', 90, null, 0.4); },
+    live:function(){ return !!(ac && ac.state==='running'); },
     isOn:function(){ return !off; }, unlock:function(){ ctx(); if(ac&&ac.state!=='running') ac.resume().then(bgm); else bgm(); }
   };
   return S;
@@ -1507,9 +1510,12 @@ function playEnding(done){
 // ---------------- opening: the knight rides up to the dungeon gate, the title appears; any tap skips ----------------
 function playIntro(done){
   var M=$('introM'), cv2=$('introC'), t0=performance.now(), fin=false, ps=[];
-  $('inLogo').firstChild.textContent='POTION KNIGHT'; $('inLogo').lastChild.textContent=tl('subtitle'); $('inStory').textContent=tl('story'); $('inTap').textContent=tl('tapSkip');
+  $('inLogo').firstChild.textContent=tl('gameName'); $('inLogo').classList.toggle('cjk', LANG==='zh'||LANG==='ja'||LANG==='ko'); $('inLogo').lastChild.textContent=tl('subtitle'); $('inStory').textContent=tl('story'); $('inTap').textContent=tl('tapSkip');
   var end=function(){ if (fin) return; fin=true; Snd.unlock(); M.classList.add('out'); setTimeout(function(){ M.style.display='none'; }, 460); done&&done(); };
-  M.addEventListener('pointerdown', end); addEventListener('keydown', end, {once:true});
+  // browsers only allow sound after the first tap: try anyway (desktop often allows it); a tap while the knight is still riding in turns the sound on instead of skipping
+  var hoofN=[0,0,0,0], horned=false, rumbled=false; Snd.unlock();
+  var tapI=function(){ var e0=(performance.now()-t0)/1000; if (!Snd.live() && e0<2.6){ Snd.unlock(); return; } end(); };
+  M.addEventListener('pointerdown', tapI); addEventListener('keydown', tapI);
   var loop=function(){ if (fin) return; requestAnimationFrame(loop);
     var e=(performance.now()-t0)/1000, W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1); if (cv2.width!==Math.round(W*d)){ cv2.width=Math.round(W*d); cv2.height=Math.round(H*d); }
     var c=cv2.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
@@ -1534,10 +1540,13 @@ function playIntro(done){
     heroRun=keep[0]; won=keep[1]; choosing=keep[2]; if (VS) VS.empty=keep[3];
     if (ride<0.85 && Math.random()<0.5) ps.push({x:hx-20*k,y:fy,vx:-60-Math.random()*60,vy:-30-Math.random()*40,t:0.5});
     for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=q.t; c.fillStyle='#8a7a9a'; c.beginPath(); c.arc(q.x,q.y,4*k,0,6.3); c.fill(); } c.globalAlpha=1;
-    if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').className='out pop'; Snd.horn(); }
+    if (!rumbled && Snd.live()){ rumbled=true; if (e<0.8) Snd.rumble(); }
+    if (ride<1) for (i=0;i<4;i++){ var hn=Math.floor(e*2.3+LEGPH[i]); if (hn>hoofN[i]){ hoofN[i]=hn; if (hn>0) Snd.hoof(0.35+0.65*Math.min(1,(1-ride)*2.6)); } }
+    if (e>1.2 && !horned && Snd.live()){ horned=true; Snd.horn(); }
+    if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').classList.add('pop'); }
     if (e>1.9) $('inStory').style.opacity=1;
     if (e>2.6) $('inTap').className='out on';
-    if (e>6) end();
+    if (e>6.5) end();
   };
   requestAnimationFrame(loop);
 }
@@ -1650,6 +1659,7 @@ function frame(now){
 
 // ---------------- boot ----------------
 function boot(){
+  try{ LANG=detectLang(PF.locale); var lt=document.querySelector('#loading>div'); if (lt) lt.textContent=tl('gameName'); }catch(e){}
   var bar=document.querySelector('#loading .bar i'); if (bar){ bar.style.animation='none'; bar.style.width='4%'; }
   var pct=document.getElementById('ldPct'); artLoad(function(p){ if (bar) bar.style.width=Math.round(4+96*p)+'%'; if (pct) pct.textContent=Math.round(100*p)+'%'; }, function(){ setTimeout(boot2, 120); }, 15000);
 }
@@ -1662,9 +1672,7 @@ function boot2(){
   $('loading').style.display='none'; PF.loaded();
   if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); var tries=0, waitArt=function(){ if ((artOk('knight-2')&&artOk('dragon')&&artOk('room-arch')) || ++tries>60){ SAVE.gear.top=2; drawPoster(); } else setTimeout(waitArt,100); }; waitArt(); return; }
   if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
-  else if (PF.kind==='poki') playIntro(maybeDaily);
-  else { var st=$('startG'); st.querySelector('b').textContent=tl('play'); st.style.display='flex'; var go2=function(){ if (go2.d) return; go2.d=true; Snd.unlock(); st.classList.add('out'); setTimeout(function(){ st.style.display='none'; }, 400); playIntro(maybeDaily); };
-    st.addEventListener('pointerdown', function(e){ e.stopPropagation(); go2(); }); addEventListener('keydown', go2, {once:true}); }
+  else playIntro(maybeDaily);
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }

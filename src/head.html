@@ -187,10 +187,13 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #introM.out{opacity:0;pointer-events:none}
 #introC{position:absolute;inset:0;width:100%;height:100%}
 #introTx{position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none}
-#inLogo{font-size:46px;font-weight:900;letter-spacing:2px;color:#ffe98a;transform:scale(0);transition:transform .5s cubic-bezier(.3,1.7,.5,1);line-height:1.05}
+#inLogo{font-size:52px;font-weight:900;letter-spacing:3px;transform:scale(0);transition:transform .5s cubic-bezier(.3,1.7,.5,1);line-height:1.05;filter:drop-shadow(0 4px 0 #2a0e08) drop-shadow(0 0 14px rgba(255,90,40,.55))}
+#inLogo>span{background:linear-gradient(#fffbe0 8%,#ffe07a 40%,#d08a2a 52%,#ffd56a 70%,#fff0b0);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:1.6px #3a1608;padding:0 6px}
+#inLogo.cjk{font-size:64px;letter-spacing:8px;filter:drop-shadow(2px 0 0 #3a1608) drop-shadow(-2px 0 0 #3a1608) drop-shadow(0 2px 0 #3a1608) drop-shadow(0 -2px 0 #3a1608) drop-shadow(0 5px 0 #2a0e08) drop-shadow(0 0 14px rgba(255,90,40,.55))}
+#inLogo.cjk>span{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC","Noto Sans SC",sans-serif;font-weight:900;-webkit-text-stroke:0}
 #inLogo.pop{transform:scale(var(--u,1))}
-#inLogo small{display:block;font-size:22px;color:#ffb09a;letter-spacing:1px;margin-top:4px}
-#inStory{font-size:16px;font-weight:800;color:#e8dcf4;opacity:0;transition:opacity .6s;margin:14px auto 0;max-width:86vw;transform:scale(var(--u,1))}
+#inLogo small{display:inline-block;font-size:20px;color:#fff0d0;letter-spacing:3px;margin-top:10px;padding:4px 22px;background:linear-gradient(#b8302a,#6e1218);border:2px solid #e2b155;border-radius:4px;clip-path:polygon(0 0,100% 0,94% 50%,100% 100%,0 100%,6% 50%);padding:4px 30px;-webkit-text-stroke:0;filter:none}
+#inStory{font-size:16px;font-weight:800;color:#e8dcf4;opacity:0;transition:opacity .6s;margin:22px auto 0;max-width:86vw;transform:scale(var(--u,1))}
 #inTap{position:absolute;left:0;right:0;bottom:10%;text-align:center;font-size:16px;font-weight:800;color:#fff;opacity:0;transition:opacity .5s;transform:scale(var(--u,1))}
 #inTap.on{opacity:.9;animation:rdy 1.2s infinite}
 #dailyM{align-items:center;padding-bottom:0}
@@ -207,10 +210,6 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate;transition:width .25s}
-#startG{position:fixed;inset:0;z-index:29;background:linear-gradient(#07040acc,#07040a99 50%,#07040add),url(img/gate.webp) center/cover #07040a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px;cursor:pointer;transition:opacity .4s}
-#startG.out{opacity:0;pointer-events:none}
-#startG>div{font-size:40px;font-weight:900;color:#ffd76a;letter-spacing:2px;transform:scale(var(--u,1))}
-#startB{font-size:30px;padding:14px 56px;display:flex;align-items:center;gap:8px;animation:rdy 1.2s infinite;transform:scale(var(--u,1))}
 #ldPct{font-size:14px;color:#c9b8d8;margin-top:8px;font-weight:700}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
@@ -239,12 +238,11 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
-<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo" class="out">POTION KNIGHT<small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
+<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo"><span>POTION KNIGHT</span><br><small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
 <div class="modal" id="dailyM"><div class="card"><h2 class="out" data-t="daily"></h2><div id="days"></div><div id="dailyHint" data-t="dailyHint"></div><div id="wnBtns"><button class="btn ad" id="dailyDbl">📺 ×2</button><button class="btn" id="dailyOk" data-t="claim"></button></div></div></div>
 <div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div class="modal" id="langM"><div class="card"><h2 class="out">🌐</h2><div id="langList"></div></div></div>
-<div id="startG"><div class="out">POTION KNIGHT</div><button class="btn" id="startB">▶ <b></b></button></div>
 <div id="adfake"></div>
 <div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div><div id="ldPct">0%</div></div>
