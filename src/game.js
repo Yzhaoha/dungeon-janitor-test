@@ -420,7 +420,11 @@ function doMonsterTurn(delay){
   var spc= (ev.blocked||ev.hit) ? specOf(VS.kind) : null;
   if (spc==='regen' && F.mHp>0){ var rg=Math.min(F.mMax-F.mHp, Math.round(F.mMax*0.06)); if (rg>0){ F.mHp+=rg; var mA2=F.mHp; later(delay+0.1+MA, function(){ VS.mHp=mA2; floatTx(g.mx, mCY(g)-36*k, '+'+rg, '#8df07a', false, 'heal'); Snd.squish(); }); } }
   if (spc==='lock') later(delay+0.1+MA*0.42, function(){ var cand=[]; B.forEach(function(b,bi){ if (b.length && !DJ.done(b) && !(V[bi].lock>0) && !V[bi].busy && bi!==sel) cand.push(bi); });
-    if (!cand.length) return; var bi=cand[Math.floor(Math.random()*cand.length)]; V[bi].lock=3; V[bi].lkIn=0.5; Snd.clank(); Snd.door(); });
+    if (!cand.length) return;
+    // only lock a bottle that still leaves the player at least 2 pours to make (so a chained bottle never feels like a dead end)
+    var movesIf=function(lk){ var n2=0; for (var a=0;a<B.length;a++) for (var b2=0;b2<B.length;b2++) if (a!==lk && b2!==lk && pourCount(a,b2)>0) n2++; return n2; };
+    cand=cand.filter(function(bi2){ return movesIf(bi2)>=2; }); if (!cand.length) return;
+    var bi=cand[Math.floor(Math.random()*cand.length)]; V[bi].lock=3; V[bi].lkIn=0.5; Snd.clank(); Snd.door(); });
   if (ev.heavy) later(delay+0.1+MA*0.42, function(){ floatTx(g.hx, g.gy-104*k, tl('heavyHit'), '#ff9a3c', true); shk=Math.max(shk,1.4); hitStop=0.14; });
   if (ev.blocked||ev.hit){ later(delay+0.1, function(){ VS.mAtk=MA; Snd.swing(); if (ev.heavy) Snd.boss(); if (VS.kind==='dragon'){ Snd.sizzle(); var d=MD.dragon, x0=g.mx-(artOk('dragon')? 44 : 56)*d.s*k, y0=g.gy-(artOk('dragon')? 48 : 84)*d.s*k, tt=MA*0.42;
       for (var q=0;q<34;q++){ var dl=Math.random()*0.12; parts.push({x:x0,y:y0,vx:(g.hx+20*k-x0)/tt*(0.8+Math.random()*0.3),vy:(g.gy-40*k-y0)/tt+(Math.random()-0.5)*120,t:tt+dl,c:['#ffe14a','#ff9a3c','#f04848'][q%3],r:4+Math.random()*6,g:0}); } } });
@@ -908,15 +912,21 @@ function drawStage(dt, t){
 
 function sparkle(x,y,c,n){ for (var i=0;i<n;i++){ var an=Math.random()*6.28, s=40+Math.random()*120; parts.push({x:x+(Math.random()-0.5)*bw, y:y+(Math.random()-0.5)*bh*0.6, vx:Math.cos(an)*s, vy:Math.sin(an)*s-80, t:0.7+Math.random()*0.4, c:COL_HI[c], r:2+Math.random()*3, g:140}); } }
 function confetti(){ for (var i=0;i<110;i++){ parts.push({x:VW*Math.random(), y:-20-Math.random()*VH*0.3, vx:(Math.random()-0.5)*120, vy:120+Math.random()*220, t:2.2+Math.random()*1.2, c:COL[Math.floor(Math.random()*8)], r:3+Math.random()*4, g:60, rect:1, rot:Math.random()*6, vr:(Math.random()-0.5)*12}); } }
+var nopeN=0;
+// while a bottle is chained, two wrong taps in a row show (for free) a pour that can be made
+function lockHelp(){ if (!V.some(function(w){ return w.lock>0; })) return false; if (++nopeN<2) return false; nopeN=0;
+  var m=nextHint(), a, b2; if (!m) for (a=0;a<B.length && !m;a++) for (b2=0;b2<B.length;b2++) if (pourCount(a,b2)>0 && B[b2].length){ m=[a,b2]; break; }
+  if (!m) for (a=0;a<B.length && !m;a++) for (b2=0;b2<B.length;b2++) if (pourCount(a,b2)>0){ m=[a,b2]; break; }
+  if (m){ hintMv=m; hintUntil=performance.now()+3000; sel=-1; return true; } return false; }
 function tap(i){
   if (won || lost || choosing || !V[i]) return; var v=V[i];
-  if (v.lock>0){ v.shake=0.3; Snd.nope(); toast(tl('locked',{n:v.lock})); return; }
+  if (v.lock>0){ v.shake=0.3; Snd.nope(); toast(tl('locked',{n:v.lock})); lockHelp(); return; }
   if (sel<0){ if (v.busy) return; if (B[i].length && !DJ.done(B[i])){ sel=i; Snd.pop(); } else { v.shake=0.3; } return; }
   if (sel===i){ sel=-1; Snd.take(); return; }
   var n=pourCount(sel,i), mg=false;
   if (!n && magic && B[sel].length && B[i].length<CAP){ n=Math.min(knownRun(sel), CAP-B[i].length); mg=n>0; }
-  if (n>0){ if (V[sel].busy||v.busy) return; if (mg){ magic=false; energy=Math.max(0,energy-100); sparkle(v.x, v.y-bh*0.6, 5, 18); Snd.buy(); updSkills(); } startPour(sel,i,n); sel=-1; return; }
-  if (!v.busy && B[i].length && !DJ.done(B[i])){ sel=i; Snd.pop(); } else { v.shake=0.3; Snd.nope(); }
+  if (n>0){ if (V[sel].busy||v.busy) return; nopeN=0; if (mg){ magic=false; energy=Math.max(0,energy-100); sparkle(v.x, v.y-bh*0.6, 5, 18); Snd.buy(); updSkills(); } startPour(sel,i,n); sel=-1; return; }
+  if (!v.busy && B[i].length && !DJ.done(B[i])){ if (sel>=0 && sel!==i && lockHelp()){ Snd.nope(); return; } sel=i; Snd.pop(); } else { v.shake=0.3; Snd.nope(); lockHelp(); }
 }
 function flush(){ anims.forEach(finishAnim); anims=[]; syncAll(); }
 function undo(){
