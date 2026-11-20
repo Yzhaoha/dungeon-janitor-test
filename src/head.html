@@ -207,6 +207,10 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate;transition:width .25s}
+#startG{position:fixed;inset:0;z-index:29;background:linear-gradient(#07040acc,#07040a99 50%,#07040add),url(img/gate.webp) center/cover #07040a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px;cursor:pointer;transition:opacity .4s}
+#startG.out{opacity:0;pointer-events:none}
+#startG>div{font-size:40px;font-weight:900;color:#ffd76a;letter-spacing:2px;transform:scale(var(--u,1))}
+#startB{font-size:30px;padding:14px 56px;display:flex;align-items:center;gap:8px;animation:rdy 1.2s infinite;transform:scale(var(--u,1))}
 #ldPct{font-size:14px;color:#c9b8d8;margin-top:8px;font-weight:700}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
@@ -241,5 +245,6 @@ body.pf-poki #lvl{top:70px}
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div class="modal" id="langM"><div class="card"><h2 class="out">🌐</h2><div id="langList"></div></div></div>
+<div id="startG"><div class="out">POTION KNIGHT</div><button class="btn" id="startB">▶ <b></b></button></div>
 <div id="adfake"></div>
 <div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div><div id="ldPct">0%</div></div>
