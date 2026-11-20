@@ -124,12 +124,15 @@ function fight(L){
   var w= L.kind==='n' ? (L.final? 0.85 : 0.55) : (L.kind==='boss' ? (L.role==='boss'?1.05:0.3) : (L.role==='big'?1.1:0.22));
   if (L.elite && !L.final) w*=1.4;
   var hpK=1.3*Math.min(2,1+0.01*(L.level-1))*(L.role==='big'?1.3:(L.role==='boss'?1.1:(L.role==='mini'?1.15:1)));
-  return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0, par:L.steps, moves:0,
+  return {atk:ATK, heroMax:100, hHp:100, shield:0, heal:35, stun:4, psn:3, poison:0, def:0, crit:0, par:L.steps, moves:0, strikes:0, heavy:L.role!=='min',
     mMax:Math.max(20, Math.round(ATK*na*hpK/5)*5), mHp:0, interval:interval, cd:interval, mDmg:Math.max(4, Math.ceil(100*w/hits))};
 }
 // Fewer pours = harder hits: every room starts at x1.5 power and slides to normal by the time the solver's own
 // number of pours is used up.
 function power(F){ return Math.max(1, Math.min(1.5, 1.5-0.5*F.moves/F.par)); }
+// bosses, mini bosses and elites wind up a heavy blow on every third strike (a shield still stops it)
+function isHeavy(F, n){ return !!F.heavy && n%3===0; }
+function nextHeavy(F){ return isHeavy(F, (F.strikes||0)+1); }
 // a completed bottle of colour c is drunk
 function drink(F, c){
   var r=ROLE[c], ev={role:r, c:c};
@@ -142,12 +145,13 @@ function monsterTurn(F){
   var ev={}; F.moves++;
   if (F.mHp<=0) return ev;
   if (F.poison>0){ F.mHp-=F.poison; ev.psn=F.poison; if (F.mHp<=0) return ev; }
-  F.cd--; if (F.cd<=0){ F.cd=F.interval; if (F.shield>0){ F.shield--; ev.blocked=true; } else { ev.hit=Math.max(1,F.mDmg-(F.def||0)); F.hHp-=ev.hit; } }
+  F.cd--; if (F.cd<=0){ F.cd=F.interval; F.strikes=(F.strikes||0)+1; ev.heavy=isHeavy(F, F.strikes);
+    if (F.shield>0){ F.shield--; ev.blocked=true; } else { ev.hit=Math.max(1,Math.round((ev.heavy? 1.8 : 1)*F.mDmg)-(F.def||0)); F.hHp-=ev.hit; } }
   return ev;
 }
 function hint(B){ var s=solve(B, 40000); return s && s.length ? s[0] : null; }
 function stuck(B){ if (solved(B)) return false; for (var i=0;i<B.length;i++) for (var j=0;j<B.length;j++) if (canPour(B,i,j)) return false; return true; }
-return {ROLE:ROLE, power:power, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
+return {ROLE:ROLE, power:power, nextHeavy:nextHeavy, drink:drink, monsterTurn:monsterTurn, CAP:CAP, MAXC:MAXC, gen:gen, solve:solve, hint:hint, solved:solved, done:done, canPour:canPour, pourN:pourN, pour:pour, top:top, run:run, uniform:uniform, stuck:stuck,
   colorsFor:colorsFor, isKing:isKing, hiddenFor:hiddenFor, kindOf:kindOf, stagesOf:stagesOf, roleOf:roleOf, mapOf:mapOf};
 })();
 if (typeof module!=='undefined') module.exports=DJ;
