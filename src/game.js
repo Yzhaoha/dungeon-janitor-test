@@ -743,14 +743,15 @@ function buildStage(g){
 }
 function DJ_rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // an open way out: two stone pillars with lit lamps and light pouring through; the lamp colour and the sign say what waits there
-function gatePos(g,dx,dy){ var k=g.k; return dx<0? {x:g.x+46*k, y:g.gy+3*k, s:1} : (dx>0? {x:g.x+g.w-46*k, y:g.gy+3*k, s:1} : (dy<0? {x:g.x+g.w/2, y:g.gy-21*k, s:0.84} : {x:g.x+g.w/2, y:g.gy+21*k, s:0.82})); }
+function gatePos(g,dx,dy){ var k=g.k; return dx<0? {x:g.x+46*k, y:g.gy+3*k, s:1} : (dx>0? {x:g.x+g.w-46*k, y:g.gy+3*k, s:1} : (dy<0? {x:g.x+g.w/2, y:g.gy-21*k, s:0.9} : {x:g.x+g.w/2, y:g.gy+10*k, s:1.04})); }
 function drawGate(c,g,t,dx,dy,id,hit){
   var k=g.k, P=gatePos(g,dx,dy), s=P.s*k, r=nodeAt(id), kn=known(id), dn=RT.done[id], boss=r.t==='B', th=THEMES[VS.scn];
   var col= boss? (L.kind==='big'?'255,170,40':(L.kind==='boss'?'255,80,80':'200,110,255')) : (dn? '170,205,255' : (!kn? '205,205,225' : {f:'255,225,120', e:'200,110,255', r:'120,240,130', c:'255,215,80'}[r.t]));
-  var pu=0.6+Math.sin(t*5+dx+dy*2)*0.4, pw=21*s, ph=(dy>0? 44 : 80)*s;
+  var pu=0.6+Math.sin(t*5+dx+dy*2)*0.4, pw=21*s, ph=80*s;
   c.save(); c.translate(P.x,P.y);
   var gr=c.createLinearGradient(0,-ph,0,0); gr.addColorStop(0,'rgba('+col+','+(0.18+pu*0.2)+')'); gr.addColorStop(1,'rgba('+col+','+(0.7+pu*0.25)+')'); c.fillStyle=gr; c.fillRect(-pw,-ph,pw*2,ph);
   c.fillStyle='rgba(255,255,255,'+(0.2+pu*0.25)+')'; c.fillRect(-pw*0.3,-ph,pw*0.6,ph);
+  if (dy>0){ for (var st2=0;st2<5;st2++){ var sy2=-ph*0.42+st2*ph*0.105, sw2=pw*(0.55+st2*0.09); c.fillStyle='rgba(30,18,40,'+(0.32+st2*0.08)+')'; c.fillRect(-sw2,sy2,sw2*2,ph*0.05); } }
   c.fillStyle='rgba('+col+','+(0.3+pu*0.25)+')'; el(c,0,3*s,pw*2,8*s); c.fill();
   [-1,1].forEach(function(sd){ var x0=sd*(pw+6*s), ly=-ph-20*s;
     rr(c,x0-7*s,-ph-3*s,14*s,ph+5*s,3*s); fs(c,th.fl,2.5*k); c.fillStyle='rgba(0,0,0,0.22)'; c.fillRect(x0+1.5*s,-ph,4*s,ph-2*s); c.fillStyle='rgba(255,255,255,0.18)'; c.fillRect(x0-5*s,-ph,2.5*s,ph-2*s);
