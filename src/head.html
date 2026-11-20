@@ -168,6 +168,27 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #endT3{font-size:17px;font-weight:800;color:#fff;opacity:0;transition:opacity .6s;margin-top:8px;transform:scale(var(--u,1))}
 #endGo{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) scale(var(--u,1));opacity:0;transition:opacity .6s;pointer-events:none}
 #endGo.on{opacity:1;pointer-events:auto}
+#introM{position:fixed;inset:0;z-index:28;background:#07040a;cursor:pointer;transition:opacity .45s}
+#introM.out{opacity:0;pointer-events:none}
+#introC{position:absolute;inset:0;width:100%;height:100%}
+#introTx{position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none}
+#inLogo{font-size:46px;font-weight:900;letter-spacing:2px;color:#ffe98a;transform:scale(0);transition:transform .5s cubic-bezier(.3,1.7,.5,1);line-height:1.05}
+#inLogo.pop{transform:scale(var(--u,1))}
+#inLogo small{display:block;font-size:22px;color:#ffb09a;letter-spacing:1px;margin-top:4px}
+#inStory{font-size:16px;font-weight:800;color:#e8dcf4;opacity:0;transition:opacity .6s;margin:14px auto 0;max-width:86vw;transform:scale(var(--u,1))}
+#inTap{position:absolute;left:0;right:0;bottom:10%;text-align:center;font-size:16px;font-weight:800;color:#fff;opacity:0;transition:opacity .5s;transform:scale(var(--u,1))}
+#inTap.on{opacity:.9;animation:rdy 1.2s infinite}
+#dailyM{align-items:center;padding-bottom:0}
+#dailyM .card{padding:12px 14px 16px}
+#days{display:grid;grid-template-columns:repeat(4,64px);gap:6px;justify-content:center;margin:8px 0}
+.dd{height:76px;border-radius:12px;background:#2a1f33;border:2px solid #4a3a56;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#c8b8d4;position:relative}
+.dd b{font-size:15px;color:#ffe98a;margin-top:2px}
+.dd .coin{font-size:20px;margin:3px 0 1px}
+.dd.got{opacity:.55} .dd.got:after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;color:#8df07a;text-shadow:0 2px 0 #0008}
+.dd.now{border-color:#ffe45c;background:#3a2c44;box-shadow:0 0 12px #ffe45c88;animation:rdy 1.1s infinite;color:#fff}
+.dd.big{grid-column:span 1;background:linear-gradient(#4a2a6a,#2a1a3a);border-color:#b97aff}
+.dd canvas{width:32px;height:32px}
+#dailyHint{font-size:13px;font-weight:800;color:#c8b8d4;margin-bottom:4px}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
@@ -198,6 +219,8 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
+<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo" class="out">POTION KNIGHT<small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
+<div class="modal" id="dailyM"><div class="card"><h2 class="out" data-t="daily"></h2><div id="days"></div><div id="dailyHint" data-t="dailyHint"></div><div id="wnBtns"><button class="btn ad" id="dailyDbl">📺 ×2</button><button class="btn" id="dailyOk" data-t="claim"></button></div></div></div>
 <div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>

@@ -1070,7 +1070,7 @@ function setGate(id){ var h=nodeAt(RT.at), r=nodeAt(id); walkGate={dx:r.x-h.x, d
 function pickRoom(id){ if (walk>0) return; closeMap(); setGate(id); choosing=false; nextRoom=id; walk=0.001; }
 function dirs(){ if (!choosing || walk>0 || !RT || RT.at<0) return []; var h=nodeAt(RT.at); return options().map(function(id){ var r=nodeAt(id); return {id:id, dx:r.x-h.x, dy:r.y-h.y}; }); }
 function goDir(dx,dy){ var d=dirs().filter(function(q){ return q.dx===dx && q.dy===dy; })[0]; if (d){ Snd.unlock(); Snd.pop(); pickRoom(d.id); return true; } return false; }
-function updPad(){ var ds= ($('mapM').classList.contains('show')||$('gearM').classList.contains('show')||$('shopM').classList.contains('show')||$('lootM').classList.contains('show')||$('cardM').classList.contains('show')) ? [] : dirs(), ks=ds.map(function(d){ return d.dx+','+d.dy; }), key=ks.join('|'); if (key===padKey) return; padKey=key;
+function updPad(){ var ds= ($('mapM').classList.contains('show')||$('dailyM').classList.contains('show')||$('gearM').classList.contains('show')||$('shopM').classList.contains('show')||$('lootM').classList.contains('show')||$('cardM').classList.contains('show')) ? [] : dirs(), ks=ds.map(function(d){ return d.dx+','+d.dy; }), key=ks.join('|'); if (key===padKey) return; padKey=key;
   var pd=$('dpad'); pd.className= ds.length? 'on' : ''; [].forEach.call(pd.children, function(b2){ b2.disabled= ks.indexOf(b2.dataset.d)<0; }); }
 [].forEach.call($('dpad').children, function(b2){ b2.onclick=function(){ var q=b2.dataset.d.split(','); goDir(+q[0], +q[1]); }; });
 // walking into a room with nothing to fight: one already cleared, a chest, or a resting place
@@ -1357,6 +1357,58 @@ function playEnding(done){
   requestAnimationFrame(loop);
 }
 
+// ---------------- opening: the knight rides up to the dungeon gate, the title appears; any tap skips ----------------
+function playIntro(done){
+  var M=$('introM'), cv2=$('introC'), t0=performance.now(), fin=false, ps=[];
+  $('inLogo').firstChild.textContent='POTION KNIGHT'; $('inLogo').lastChild.textContent=tl('subtitle'); $('inStory').textContent=tl('story'); $('inTap').textContent=tl('tapSkip');
+  var end=function(){ if (fin) return; fin=true; Snd.unlock(); M.classList.add('out'); setTimeout(function(){ M.style.display='none'; }, 460); done&&done(); };
+  M.addEventListener('pointerdown', end); addEventListener('keydown', end, {once:true});
+  var loop=function(){ if (fin) return; requestAnimationFrame(loop);
+    var e=(performance.now()-t0)/1000, W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1); if (cv2.width!==Math.round(W*d)){ cv2.width=Math.round(W*d); cv2.height=Math.round(H*d); }
+    var c=cv2.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
+    var k=Math.min(W/360, H/420, 2.2), fy=H*0.78, gx=W*0.66, i;
+    var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#0a0614'); g.addColorStop(1,'#2a1a3a'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(255,255,255,0.7)'; for (i=0;i<40;i++){ var sx=(i*137.5)%W, sy=(i*71.3)%(fy*0.6); c.globalAlpha=0.3+0.4*Math.abs(Math.sin(e*1.5+i)); c.fillRect(sx,sy,1.6,1.6); } c.globalAlpha=1;
+    var mx2=W*0.84, my2=H*0.42-150*k; c.fillStyle='#e8e0c8'; c.beginPath(); c.arc(mx2,my2,16*k,0,6.3); c.fill(); c.fillStyle='#0a0614'; c.beginPath(); c.arc(mx2+7*k,my2-4*k,14.5*k,0,6.3); c.fill();
+    // mountain with the dungeon gate cut into it
+    c.fillStyle='#1a1224'; c.beginPath(); c.moveTo(0,fy); c.lineTo(W*0.1,fy-90*k); c.lineTo(W*0.3,fy-60*k); c.lineTo(W*0.5,fy-200*k); c.lineTo(W*0.75,fy-230*k); c.lineTo(W*0.95,fy-120*k); c.lineTo(W,fy-140*k); c.lineTo(W,fy); c.closePath(); c.fill();
+    var aw=46*k, ah=110*k; c.beginPath(); c.moveTo(gx-aw-12*k,fy); c.lineTo(gx-aw-12*k,fy-ah+aw); c.arc(gx,fy-ah+aw,aw+12*k,Math.PI,0); c.lineTo(gx+aw+12*k,fy); c.closePath(); c.fillStyle='#4a3a5c'; c.fill(); c.lineWidth=3; c.strokeStyle=OL; c.stroke();
+    c.beginPath(); c.moveTo(gx-aw,fy); c.lineTo(gx-aw,fy-ah+aw); c.arc(gx,fy-ah+aw,aw,Math.PI,0); c.lineTo(gx+aw,fy); c.closePath(); var gg=c.createLinearGradient(0,fy-ah,0,fy); gg.addColorStop(0,'#000'); gg.addColorStop(1,'#5a1420'); c.fillStyle=gg; c.fill(); c.stroke();
+    var glow=0.5+Math.sin(e*3)*0.15; var rg=c.createRadialGradient(gx,fy,4,gx,fy,aw*2); rg.addColorStop(0,'rgba(255,80,60,'+glow*0.5+')'); rg.addColorStop(1,'rgba(255,80,60,0)'); c.fillStyle=rg; c.fillRect(gx-aw*2,fy-aw*2,aw*4,aw*2);
+    [-1,1].forEach(function(sd){ c.fillStyle='rgba(255,70,50,'+(0.6+Math.sin(e*4+sd)*0.3)+')'; c.beginPath(); c.ellipse(gx+sd*14*k,fy-ah*0.62,5*k,2.6*k,sd*0.3,0,6.3); c.fill(); });
+    bossMark(c,gx,fy-ah-26*k,16*k,'boss');
+    [gx-aw-34*k, gx+aw+34*k].forEach(function(tx,ti){ c.fillStyle='#5a3d24'; c.fillRect(tx-3*k,fy-80*k,6*k,24*k); var fl=0.85+Math.sin(e*11+ti*2)*0.12; c.fillStyle='#ff9a3c'; c.beginPath(); c.ellipse(tx,fy-86*k,6*k,12*k*fl,0,0,6.3); c.fill(); c.fillStyle='#fff3b0'; c.beginPath(); c.ellipse(tx,fy-84*k,3*k,6*k*fl,0,0,6.3); c.fill(); var tg=c.createRadialGradient(tx,fy-86*k,2,tx,fy-86*k,60*k); tg.addColorStop(0,'rgba(255,170,80,0.35)'); tg.addColorStop(1,'rgba(255,170,80,0)'); c.fillStyle=tg; c.fillRect(tx-60*k,fy-146*k,120*k,120*k); });
+    c.fillStyle='#120c18'; c.fillRect(0,fy,W,H-fy); c.fillStyle='#3a2a48'; c.fillRect(0,fy,W,3);
+    var ride=Math.min(1,e/2.0), hx=-70*k+(W*0.34+70*k)*easeOut(ride), keep=[heroRun,won,choosing,VS&&VS.empty];
+    heroRun=ride<1; won=false; choosing=false; if (VS) VS.empty=false;
+    c.save(); c.translate(hx,fy); c.scale(k*1.1,k*1.1); c.fillStyle='rgba(0,0,0,0.4)'; el(c,0,3,44,7); c.fill(); try{ heroArt(c,e); }catch(err){} c.restore();
+    heroRun=keep[0]; won=keep[1]; choosing=keep[2]; if (VS) VS.empty=keep[3];
+    if (ride<1 && Math.random()<0.5) ps.push({x:hx-20*k,y:fy,vx:-60-Math.random()*60,vy:-30-Math.random()*40,t:0.5});
+    for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=q.t; c.fillStyle='#8a7a9a'; c.beginPath(); c.arc(q.x,q.y,4*k,0,6.3); c.fill(); } c.globalAlpha=1;
+    if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').className='out pop'; Snd.horn(); }
+    if (e>1.9) $('inStory').style.opacity=1;
+    if (e>2.6) $('inTap').className='out on';
+    if (e>6) end();
+  };
+  requestAnimationFrame(loop);
+}
+// ---------------- daily reward: a 7-day ladder; missing a day starts it again ----------------
+var DAILY=[20,30,40,60,80,100,0];
+function dayKey(off){ var d=new Date(Date.now()+(off||0)*86400000); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function maybeDaily(){
+  if (SAVE.level<2) return; var dl=SAVE.daily||{last:'', streak:0}; if (dl.last===dayKey(0)) return;
+  var day= dl.last===dayKey(-1) ? (dl.streak%7)+1 : 1, box=$('days'); box.innerHTML='';
+  for (var i=1;i<=7;i++){ var dv=document.createElement('div'); dv.className='dd'+(i<day? ' got' : '')+(i===day? ' now' : '')+(i===7? ' big' : ''); var hd=document.createElement('div'); hd.textContent=tl('dayN',{n:i}); dv.appendChild(hd);
+    if (i<7){ var co=document.createElement('span'); co.className='coin'; dv.appendChild(co); var bb=document.createElement('b'); bb.textContent='+'+DAILY[i-1]; dv.appendChild(bb); }
+    else { var cv3=document.createElement('canvas'); cv3.width=cv3.height=64; gearTile(cv3,'top',1); dv.appendChild(cv3); var b2=document.createElement('b'); b2.textContent='+150'; dv.appendChild(b2); }
+    box.appendChild(dv); }
+  var give=function(mult){ var gold=(day<7? DAILY[day-1] : 150)*mult; SAVE.coins+=gold; SAVE.daily={last:dayKey(0), streak:day}; saveNow(); updHud(); $('dailyM').classList.remove('show'); Snd.buy(); toast('+'+gold);
+    if (day===7){ var r= Math.random()<0.5? 1 : 0, sl=SLOTS[Math.floor(Math.random()*SLOTS.length)]; setTimeout(function(){ showLoot({slot:sl, r:r}, function(){}); }, 500); } };
+  $('dailyOk').onclick=function(){ give(1); };
+  $('dailyDbl').disabled=false; $('dailyDbl').onclick=function(){ var b3=this; if (PF.adBusy) return; b3.disabled=true; PF.rewarded(function(ok){ if (ok) give(2); else b3.disabled=false; }); };
+  $('dailyM').classList.add('show');
+}
+
 // ---------------- rewards + hero upgrades ----------------
 var winStars=3;
 function upCost(lv){ return 30+20*lv+10*lv*lv; }
@@ -1418,6 +1470,7 @@ function boot(){
   startFloor(SAVE.level, Math.min(DJ.stagesOf(SAVE.level), +QS.get('stage')||0));
   if (DEBUG && QS.has('ending')) setTimeout(function(){ playEnding(function(){}); }, 600);
   $('loading').style.display='none'; PF.loaded();
+  if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); } else playIntro(maybeDaily);
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }

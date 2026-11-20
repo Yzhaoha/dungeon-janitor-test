@@ -168,6 +168,27 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #endT3{font-size:17px;font-weight:800;color:#fff;opacity:0;transition:opacity .6s;margin-top:8px;transform:scale(var(--u,1))}
 #endGo{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) scale(var(--u,1));opacity:0;transition:opacity .6s;pointer-events:none}
 #endGo.on{opacity:1;pointer-events:auto}
+#introM{position:fixed;inset:0;z-index:28;background:#07040a;cursor:pointer;transition:opacity .45s}
+#introM.out{opacity:0;pointer-events:none}
+#introC{position:absolute;inset:0;width:100%;height:100%}
+#introTx{position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none}
+#inLogo{font-size:46px;font-weight:900;letter-spacing:2px;color:#ffe98a;transform:scale(0);transition:transform .5s cubic-bezier(.3,1.7,.5,1);line-height:1.05}
+#inLogo.pop{transform:scale(var(--u,1))}
+#inLogo small{display:block;font-size:22px;color:#ffb09a;letter-spacing:1px;margin-top:4px}
+#inStory{font-size:16px;font-weight:800;color:#e8dcf4;opacity:0;transition:opacity .6s;margin:14px auto 0;max-width:86vw;transform:scale(var(--u,1))}
+#inTap{position:absolute;left:0;right:0;bottom:10%;text-align:center;font-size:16px;font-weight:800;color:#fff;opacity:0;transition:opacity .5s;transform:scale(var(--u,1))}
+#inTap.on{opacity:.9;animation:rdy 1.2s infinite}
+#dailyM{align-items:center;padding-bottom:0}
+#dailyM .card{padding:12px 14px 16px}
+#days{display:grid;grid-template-columns:repeat(4,64px);gap:6px;justify-content:center;margin:8px 0}
+.dd{height:76px;border-radius:12px;background:#2a1f33;border:2px solid #4a3a56;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#c8b8d4;position:relative}
+.dd b{font-size:15px;color:#ffe98a;margin-top:2px}
+.dd .coin{font-size:20px;margin:3px 0 1px}
+.dd.got{opacity:.55} .dd.got:after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px;color:#8df07a;text-shadow:0 2px 0 #0008}
+.dd.now{border-color:#ffe45c;background:#3a2c44;box-shadow:0 0 12px #ffe45c88;animation:rdy 1.1s infinite;color:#fff}
+.dd.big{grid-column:span 1;background:linear-gradient(#4a2a6a,#2a1a3a);border-color:#b97aff}
+.dd canvas{width:32px;height:32px}
+#dailyHint{font-size:13px;font-weight:800;color:#c8b8d4;margin-bottom:4px}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
@@ -198,6 +219,8 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
+<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo" class="out">POTION KNIGHT<small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
+<div class="modal" id="dailyM"><div class="card"><h2 class="out" data-t="daily"></h2><div id="days"></div><div id="dailyHint" data-t="dailyHint"></div><div id="wnBtns"><button class="btn ad" id="dailyDbl">📺 ×2</button><button class="btn" id="dailyOk" data-t="claim"></button></div></div></div>
 <div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
@@ -538,6 +561,13 @@ var TL={
   sp_heavy:['💥 Bosses and elites wind up a HEAVY blow every 3rd strike. Raise a 🛡️ before it lands!','💥 Boss et élites préparent un coup LOURD toutes les 3 attaques. Lève un 🛡️ avant !','💥 Boss ed élite caricano un colpo PESANTE ogni 3 attacchi. Alza uno 🛡️ prima!','💥 Bosse und Elite holen jeden 3. Angriff zu einem SCHWEREN Schlag aus. Vorher 🛡️ hoch!','💥 Jefes y élites cargan un golpe FUERTE cada 3 ataques. ¡Prepara un 🛡️!','💥 Bosslar ve elitler her 3. vuruşta AĞIR darbe hazırlar. Önce 🛡️ kaldır!','💥 Boss 和精英每第 3 次出手是重击！提前凑一瓶 🛡️ 挡住它','💥 ボスとエリートは3回に1回強打を放つ。先に🛡️を！','💥 보스와 정예는 3번째마다 강타를 날려요. 미리 🛡️를!','💥 Chefes e elites carregam um golpe PESADO a cada 3 ataques. Erga um 🛡️ antes!','💥 Боссы и элита каждый 3-й удар бьют СИЛЬНО. Подними 🛡️ заранее!'],
   locked:['Chained! {n} more pours','Enchaînée ! encore {n} coups','Incatenata! ancora {n} mosse','Angekettet! noch {n} Züge','¡Encadenada! {n} turnos más','Zincirli! {n} hamle daha','被锁住了！还要 {n} 步','鎖で封印中！あと{n}手','묶였어요! {n}번 남음','Acorrentado! mais {n} jogadas','Скована! ещё {n} хода'],
   heavyHit:['HEAVY!','LOURD !','PESANTE!','SCHWER!','¡FUERTE!','AĞIR!','重击！','強打！','강타!','PESADO!','МОЩНО!'],
+  subtitle:['Save the Princess','Sauve la princesse','Salva la principessa','Rette die Prinzessin','Salva a la princesa','Prensesi kurtar','拯救公主','姫を救え','공주를 구하라','Salve a princesa','Спаси принцессу'],
+  story:['The dragon took the princess. Mix potions, fight down 96 floors!','Le dragon a enlevé la princesse. Prépare tes potions, descends 96 étages !','Il drago ha rapito la principessa. Prepara pozioni e scendi 96 piani!','Der Drache hat die Prinzessin entführt. Braue Tränke, kämpf dich 96 Ebenen hinab!','El dragón raptó a la princesa. ¡Prepara pociones y baja 96 pisos!','Ejderha prensesi kaçırdı. İksir yap, 96 kat aşağı in!','恶龙掳走了公主。调好魔药，一路杀下 96 层！','竜が姫をさらった。薬を調合し96階まで突き進め！','드래곤이 공주를 납치했다. 물약을 만들어 96층까지 내려가라!','O dragão levou a princesa. Prepare poções e desça 96 andares!','Дракон похитил принцессу. Вари зелья и пробейся на 96 этажей вниз!'],
+  tapSkip:['Tap to start','Touche pour commencer','Tocca per iniziare','Tippen zum Starten','Toca para empezar','Başlamak için dokun','点击开始','タップでスタート','탭하여 시작','Toque para começar','Нажми, чтобы начать'],
+  daily:['Daily reward','Récompense du jour','Premio giornaliero','Tagesbelohnung','Recompensa diaria','Günlük ödül','每日奖励','デイリーボーナス','일일 보상','Recompensa diária','Награда дня'],
+  dayN:['Day {n}','Jour {n}','Giorno {n}','Tag {n}','Día {n}','Gün {n}','第 {n} 天','{n}日目','{n}일차','Dia {n}','День {n}'],
+  claim:['Claim','Récupérer','Riscuoti','Abholen','Recoger','Al','领取','受け取る','받기','Pegar','Забрать'],
+  dailyHint:['Come back every day — day 7 gives a gear chest!','Reviens chaque jour — le jour 7 donne un coffre d\'équipement !','Torna ogni giorno: il giorno 7 dà un forziere di equipaggiamento!','Komm jeden Tag — Tag 7 gibt eine Ausrüstungstruhe!','Vuelve cada día: ¡el día 7 da un cofre de equipo!','Her gün gel — 7. gün ekipman sandığı!','每天来领 —— 第 7 天送装备宝箱！','毎日来よう — 7日目は装備の宝箱！','매일 오세요 — 7일차엔 장비 상자!','Volte todo dia — o dia 7 dá um baú de equipamento!','Заходи каждый день — на 7-й день сундук со снаряжением!'],
   victory:['Victory!','Victoire !','Vittoria!','Sieg!','¡Victoria!','Zafer!','打赢了！','勝利！','승리!','Vitória!','Победа!'],
   blocked:['Blocked!','Bloqué !','Parato!','Geblockt!','¡Bloqueado!','Engellendi!','挡住了！','ガード！','막았다!','Bloqueado!','Блок!'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
@@ -1651,7 +1681,7 @@ function setGate(id){ var h=nodeAt(RT.at), r=nodeAt(id); walkGate={dx:r.x-h.x, d
 function pickRoom(id){ if (walk>0) return; closeMap(); setGate(id); choosing=false; nextRoom=id; walk=0.001; }
 function dirs(){ if (!choosing || walk>0 || !RT || RT.at<0) return []; var h=nodeAt(RT.at); return options().map(function(id){ var r=nodeAt(id); return {id:id, dx:r.x-h.x, dy:r.y-h.y}; }); }
 function goDir(dx,dy){ var d=dirs().filter(function(q){ return q.dx===dx && q.dy===dy; })[0]; if (d){ Snd.unlock(); Snd.pop(); pickRoom(d.id); return true; } return false; }
-function updPad(){ var ds= ($('mapM').classList.contains('show')||$('gearM').classList.contains('show')||$('shopM').classList.contains('show')||$('lootM').classList.contains('show')||$('cardM').classList.contains('show')) ? [] : dirs(), ks=ds.map(function(d){ return d.dx+','+d.dy; }), key=ks.join('|'); if (key===padKey) return; padKey=key;
+function updPad(){ var ds= ($('mapM').classList.contains('show')||$('dailyM').classList.contains('show')||$('gearM').classList.contains('show')||$('shopM').classList.contains('show')||$('lootM').classList.contains('show')||$('cardM').classList.contains('show')) ? [] : dirs(), ks=ds.map(function(d){ return d.dx+','+d.dy; }), key=ks.join('|'); if (key===padKey) return; padKey=key;
   var pd=$('dpad'); pd.className= ds.length? 'on' : ''; [].forEach.call(pd.children, function(b2){ b2.disabled= ks.indexOf(b2.dataset.d)<0; }); }
 [].forEach.call($('dpad').children, function(b2){ b2.onclick=function(){ var q=b2.dataset.d.split(','); goDir(+q[0], +q[1]); }; });
 // walking into a room with nothing to fight: one already cleared, a chest, or a resting place
@@ -1938,6 +1968,58 @@ function playEnding(done){
   requestAnimationFrame(loop);
 }
 
+// ---------------- opening: the knight rides up to the dungeon gate, the title appears; any tap skips ----------------
+function playIntro(done){
+  var M=$('introM'), cv2=$('introC'), t0=performance.now(), fin=false, ps=[];
+  $('inLogo').firstChild.textContent='POTION KNIGHT'; $('inLogo').lastChild.textContent=tl('subtitle'); $('inStory').textContent=tl('story'); $('inTap').textContent=tl('tapSkip');
+  var end=function(){ if (fin) return; fin=true; Snd.unlock(); M.classList.add('out'); setTimeout(function(){ M.style.display='none'; }, 460); done&&done(); };
+  M.addEventListener('pointerdown', end); addEventListener('keydown', end, {once:true});
+  var loop=function(){ if (fin) return; requestAnimationFrame(loop);
+    var e=(performance.now()-t0)/1000, W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1); if (cv2.width!==Math.round(W*d)){ cv2.width=Math.round(W*d); cv2.height=Math.round(H*d); }
+    var c=cv2.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
+    var k=Math.min(W/360, H/420, 2.2), fy=H*0.78, gx=W*0.66, i;
+    var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#0a0614'); g.addColorStop(1,'#2a1a3a'); c.fillStyle=g; c.fillRect(0,0,W,H);
+    c.fillStyle='rgba(255,255,255,0.7)'; for (i=0;i<40;i++){ var sx=(i*137.5)%W, sy=(i*71.3)%(fy*0.6); c.globalAlpha=0.3+0.4*Math.abs(Math.sin(e*1.5+i)); c.fillRect(sx,sy,1.6,1.6); } c.globalAlpha=1;
+    var mx2=W*0.84, my2=H*0.42-150*k; c.fillStyle='#e8e0c8'; c.beginPath(); c.arc(mx2,my2,16*k,0,6.3); c.fill(); c.fillStyle='#0a0614'; c.beginPath(); c.arc(mx2+7*k,my2-4*k,14.5*k,0,6.3); c.fill();
+    // mountain with the dungeon gate cut into it
+    c.fillStyle='#1a1224'; c.beginPath(); c.moveTo(0,fy); c.lineTo(W*0.1,fy-90*k); c.lineTo(W*0.3,fy-60*k); c.lineTo(W*0.5,fy-200*k); c.lineTo(W*0.75,fy-230*k); c.lineTo(W*0.95,fy-120*k); c.lineTo(W,fy-140*k); c.lineTo(W,fy); c.closePath(); c.fill();
+    var aw=46*k, ah=110*k; c.beginPath(); c.moveTo(gx-aw-12*k,fy); c.lineTo(gx-aw-12*k,fy-ah+aw); c.arc(gx,fy-ah+aw,aw+12*k,Math.PI,0); c.lineTo(gx+aw+12*k,fy); c.closePath(); c.fillStyle='#4a3a5c'; c.fill(); c.lineWidth=3; c.strokeStyle=OL; c.stroke();
+    c.beginPath(); c.moveTo(gx-aw,fy); c.lineTo(gx-aw,fy-ah+aw); c.arc(gx,fy-ah+aw,aw,Math.PI,0); c.lineTo(gx+aw,fy); c.closePath(); var gg=c.createLinearGradient(0,fy-ah,0,fy); gg.addColorStop(0,'#000'); gg.addColorStop(1,'#5a1420'); c.fillStyle=gg; c.fill(); c.stroke();
+    var glow=0.5+Math.sin(e*3)*0.15; var rg=c.createRadialGradient(gx,fy,4,gx,fy,aw*2); rg.addColorStop(0,'rgba(255,80,60,'+glow*0.5+')'); rg.addColorStop(1,'rgba(255,80,60,0)'); c.fillStyle=rg; c.fillRect(gx-aw*2,fy-aw*2,aw*4,aw*2);
+    [-1,1].forEach(function(sd){ c.fillStyle='rgba(255,70,50,'+(0.6+Math.sin(e*4+sd)*0.3)+')'; c.beginPath(); c.ellipse(gx+sd*14*k,fy-ah*0.62,5*k,2.6*k,sd*0.3,0,6.3); c.fill(); });
+    bossMark(c,gx,fy-ah-26*k,16*k,'boss');
+    [gx-aw-34*k, gx+aw+34*k].forEach(function(tx,ti){ c.fillStyle='#5a3d24'; c.fillRect(tx-3*k,fy-80*k,6*k,24*k); var fl=0.85+Math.sin(e*11+ti*2)*0.12; c.fillStyle='#ff9a3c'; c.beginPath(); c.ellipse(tx,fy-86*k,6*k,12*k*fl,0,0,6.3); c.fill(); c.fillStyle='#fff3b0'; c.beginPath(); c.ellipse(tx,fy-84*k,3*k,6*k*fl,0,0,6.3); c.fill(); var tg=c.createRadialGradient(tx,fy-86*k,2,tx,fy-86*k,60*k); tg.addColorStop(0,'rgba(255,170,80,0.35)'); tg.addColorStop(1,'rgba(255,170,80,0)'); c.fillStyle=tg; c.fillRect(tx-60*k,fy-146*k,120*k,120*k); });
+    c.fillStyle='#120c18'; c.fillRect(0,fy,W,H-fy); c.fillStyle='#3a2a48'; c.fillRect(0,fy,W,3);
+    var ride=Math.min(1,e/2.0), hx=-70*k+(W*0.34+70*k)*easeOut(ride), keep=[heroRun,won,choosing,VS&&VS.empty];
+    heroRun=ride<1; won=false; choosing=false; if (VS) VS.empty=false;
+    c.save(); c.translate(hx,fy); c.scale(k*1.1,k*1.1); c.fillStyle='rgba(0,0,0,0.4)'; el(c,0,3,44,7); c.fill(); try{ heroArt(c,e); }catch(err){} c.restore();
+    heroRun=keep[0]; won=keep[1]; choosing=keep[2]; if (VS) VS.empty=keep[3];
+    if (ride<1 && Math.random()<0.5) ps.push({x:hx-20*k,y:fy,vx:-60-Math.random()*60,vy:-30-Math.random()*40,t:0.5});
+    for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=q.t; c.fillStyle='#8a7a9a'; c.beginPath(); c.arc(q.x,q.y,4*k,0,6.3); c.fill(); } c.globalAlpha=1;
+    if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').className='out pop'; Snd.horn(); }
+    if (e>1.9) $('inStory').style.opacity=1;
+    if (e>2.6) $('inTap').className='out on';
+    if (e>6) end();
+  };
+  requestAnimationFrame(loop);
+}
+// ---------------- daily reward: a 7-day ladder; missing a day starts it again ----------------
+var DAILY=[20,30,40,60,80,100,0];
+function dayKey(off){ var d=new Date(Date.now()+(off||0)*86400000); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function maybeDaily(){
+  if (SAVE.level<2) return; var dl=SAVE.daily||{last:'', streak:0}; if (dl.last===dayKey(0)) return;
+  var day= dl.last===dayKey(-1) ? (dl.streak%7)+1 : 1, box=$('days'); box.innerHTML='';
+  for (var i=1;i<=7;i++){ var dv=document.createElement('div'); dv.className='dd'+(i<day? ' got' : '')+(i===day? ' now' : '')+(i===7? ' big' : ''); var hd=document.createElement('div'); hd.textContent=tl('dayN',{n:i}); dv.appendChild(hd);
+    if (i<7){ var co=document.createElement('span'); co.className='coin'; dv.appendChild(co); var bb=document.createElement('b'); bb.textContent='+'+DAILY[i-1]; dv.appendChild(bb); }
+    else { var cv3=document.createElement('canvas'); cv3.width=cv3.height=64; gearTile(cv3,'top',1); dv.appendChild(cv3); var b2=document.createElement('b'); b2.textContent='+150'; dv.appendChild(b2); }
+    box.appendChild(dv); }
+  var give=function(mult){ var gold=(day<7? DAILY[day-1] : 150)*mult; SAVE.coins+=gold; SAVE.daily={last:dayKey(0), streak:day}; saveNow(); updHud(); $('dailyM').classList.remove('show'); Snd.buy(); toast('+'+gold);
+    if (day===7){ var r= Math.random()<0.5? 1 : 0, sl=SLOTS[Math.floor(Math.random()*SLOTS.length)]; setTimeout(function(){ showLoot({slot:sl, r:r}, function(){}); }, 500); } };
+  $('dailyOk').onclick=function(){ give(1); };
+  $('dailyDbl').disabled=false; $('dailyDbl').onclick=function(){ var b3=this; if (PF.adBusy) return; b3.disabled=true; PF.rewarded(function(ok){ if (ok) give(2); else b3.disabled=false; }); };
+  $('dailyM').classList.add('show');
+}
+
 // ---------------- rewards + hero upgrades ----------------
 var winStars=3;
 function upCost(lv){ return 30+20*lv+10*lv*lv; }
@@ -1999,6 +2081,7 @@ function boot(){
   startFloor(SAVE.level, Math.min(DJ.stagesOf(SAVE.level), +QS.get('stage')||0));
   if (DEBUG && QS.has('ending')) setTimeout(function(){ playEnding(function(){}); }, 600);
   $('loading').style.display='none'; PF.loaded();
+  if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); } else playIntro(maybeDaily);
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
