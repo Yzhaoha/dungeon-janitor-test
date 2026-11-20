@@ -830,7 +830,7 @@ function pourCount(i,j){ if (!DJ.canPour(B,i,j) || (V[i]&&V[i].lock>0) || (V[j]&
 // bottles on the right: wide windows), so neither half is left tiny with empty space around it.
 var BA={x0:10, x1:300, top:300, bot:92, cx:155};
 // on big windows the buttons, chips and the minimap grow with the window instead of staying phone-sized
-function uiScale(){ return VW<=600 ? 1 : Math.max(1, Math.min(2.2, Math.min(VW/960, VH/540))); }
+function uiScale(){ return VW<=600 ? 1 : Math.max(1, Math.min(2.2, VW<VH ? Math.min(VW/430, VH/860) : Math.min(VW/960, VH/540))); }
 function layout(){
   var n=B.length, small=VW<=600, wide= VW>=700 && VW>=VH*1.45, poki=PF.kind==='poki', u=uiScale(), top0= poki? (small?140:112*u) : (small?96:58*u), side=false; STG.u=u; STG.sd=false;
   document.documentElement.style.setProperty('--u', u); drawMap($('mini'), false);
@@ -849,7 +849,7 @@ function layout(){
   } else {
     lv.style.left=''; lv.style.top=''; lv.style.transform=''; lv.style.transformOrigin=''; cb.style.transformOrigin='';
     if (small){ cb.style.right='auto'; cb.style.left=(lv.offsetWidth+18)+'px'; cb.style.top=(poki? 98 : 52)+'px'; } else { cb.style.left='auto'; cb.style.right=Math.round(mnW+16+8*u)+'px'; cb.style.top='10px'; }
-    STG.top=top0; STG.h=Math.round(Math.max(118, Math.min(300, VH*(VW>VH?0.3:0.255)))); STG.w=Math.min(VW-12, STG.h*3.4); STG.x=(VW-STG.w)/2;
+    STG.top=top0; STG.h=Math.round(Math.max(118, Math.min(Math.max(300, VW/2.6), VH*(VW>VH?0.3:0.255)))); STG.w=Math.min(VW-12, STG.h*3.4); STG.x=(VW-STG.w)/2;
     if (mnW && STG.x+STG.w > VW-mnW-16) STG.top=Math.max(STG.top, 8+mnH+12);
     BA={x0:10, x1:VW-10, top:STG.top+STG.h+50*u, bot:92*u};
     mn.style.left='auto'; mn.style.right='8px'; mn.style.top='8px';
@@ -2003,11 +2003,45 @@ function playIntro(done){
   };
   requestAnimationFrame(loop);
 }
+// ---------------- poster for the store covers (?debug&poster): knight vs dragon in the dungeon, potions, the title ----------------
+function drawPoster(){
+  var W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1), c=cx, t=1.3, i, k=Math.min(W,H)/520, land=W>H*1.2, port=H>W*1.2;
+  cv.width=Math.round(W*d); cv.height=Math.round(H*d); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
+  var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl= land? 1 : 2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
+  var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#14081a'); g.addColorStop(1,'#4a1a24'); c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.strokeStyle='rgba(0,0,0,0.3)'; c.lineWidth=2; for (var y=0, rw=0; y<fy; y+=34*k, rw++){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for (var x=(rw%2? -40*k : 0); x<W; x+=80*k){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+34*k); c.stroke(); } }
+  // big arch behind the dragon, hellish light
+  var ax=W*(port? 0.62 : 0.68), aw=Math.min(W*0.28, 170*k), ah=Math.min(fy*0.86, 360*k);
+  c.beginPath(); c.moveTo(ax-aw-16*k,fy); c.lineTo(ax-aw-16*k,fy-ah+aw); c.arc(ax,fy-ah+aw,aw+16*k,Math.PI,0); c.lineTo(ax+aw+16*k,fy); c.closePath(); c.fillStyle='#4a3040'; c.fill(); c.lineWidth=4; c.strokeStyle=OL; c.stroke();
+  c.beginPath(); c.moveTo(ax-aw,fy); c.lineTo(ax-aw,fy-ah+aw); c.arc(ax,fy-ah+aw,aw,Math.PI,0); c.lineTo(ax+aw,fy); c.closePath(); g=c.createLinearGradient(0,fy-ah,0,fy); g.addColorStop(0,'#1a0408'); g.addColorStop(1,'#c0401a'); c.fillStyle=g; c.fill(); c.stroke();
+  var rg=c.createRadialGradient(ax,fy,10,ax,fy,aw*2.4); rg.addColorStop(0,'rgba(255,140,40,0.55)'); rg.addColorStop(1,'rgba(255,140,40,0)'); c.fillStyle=rg; c.fillRect(0,0,W,H);
+  // torches
+  [W*0.06, W*0.94].forEach(function(tx,ti){ var ty=fy-150*k; c.fillStyle='#5a3d24'; c.fillRect(tx-5*k,ty,10*k,36*k); c.fillStyle='#ff9a3c'; c.beginPath(); c.ellipse(tx,ty-10*k,10*k,20*k,0,0,6.3); c.fill(); c.fillStyle='#fff3b0'; c.beginPath(); c.ellipse(tx,ty-6*k,5*k,10*k,0,0,6.3); c.fill(); var tg=c.createRadialGradient(tx,ty,2,tx,ty,120*k); tg.addColorStop(0,'rgba(255,170,80,0.4)'); tg.addColorStop(1,'rgba(255,170,80,0)'); c.fillStyle=tg; c.fillRect(tx-120*k,ty-120*k,240*k,240*k); });
+  g=c.createLinearGradient(0,fy,0,H); g.addColorStop(0,'#3a2430'); g.addColorStop(1,'#100810'); c.fillStyle=g; c.fillRect(0,fy,W,H-fy); c.fillStyle='rgba(255,180,120,0.25)'; c.fillRect(0,fy,W,2);
+  // the dragon
+  var ds=fs2*1.08; c.save(); c.translate(ax+(land? 30 : 6)*ds, fy); c.scale(ds,ds); c.fillStyle='rgba(0,0,0,0.4)'; el(c,0,3,60,8); c.fill(); mArt.dragon(c,t,MCOL.dragon[0],-0.3,true,0,0.4); c.restore();
+  var fxs=ax+(land? 30 : 6)*ds-58*ds, fys=fy-86*ds; for (i=0;i<22;i++){ var fx2=fxs-i*4.2*ds, fy2=fys+i*1.6*ds+Math.sin(i*1.7)*4*ds; c.globalAlpha=0.9-i*0.03; c.fillStyle=['#fff3b0','#ffe14a','#ff9a3c','#f04848'][i%4]; c.beginPath(); c.arc(fx2,fy2,(3+i*0.45)*ds,0,6.3); c.fill(); } c.globalAlpha=1;
+  // the knight charging
+  var hs=fs2, kx=W*(land? 0.27 : 0.26); VS.hAtk=0; heroRun=true; c.save(); c.translate(kx, fy); c.scale(hs,hs); c.fillStyle='rgba(0,0,0,0.45)'; el(c,0,3,46,8); c.fill(); heroArt(c,0.06); c.restore(); heroRun=false;
+  // potions in front
+  var pc=[0,1,2,4,5,3], nb= land? 6 : 4, pw2=Math.min(30*k, (H-fy)*0.26), gap=pw2*1.7, px0=W/2-(nb-1)*gap/2, py0=H-(H-fy)*0.12;
+  for (i=0;i<nb;i++){ var bx=px0+i*gap, bh2=pw2*3, col=pc[i];
+    c.save(); c.translate(bx,py0); c.beginPath(); c.roundRect(-pw2/2,-bh2,pw2,bh2,[2,2,pw2/2,pw2/2]); c.fillStyle='rgba(200,225,255,0.15)'; c.fill();
+    c.save(); c.clip(); var lg=c.createLinearGradient(0,-bh2*0.9,0,0); lg.addColorStop(0,COL_HI[col]); lg.addColorStop(1,COL_LO[col]); c.fillStyle=lg; c.fillRect(-pw2,-bh2*0.88,pw2*2,bh2); c.restore();
+    icon(c,DJ.ROLE[col],0,-bh2*0.42,pw2*0.28,'#fff',2.5); c.lineWidth=4; c.strokeStyle=OL; c.stroke(); c.fillStyle='rgba(255,255,255,0.35)'; c.fillRect(-pw2*0.32,-bh2*0.85,pw2*0.12,bh2*0.6);
+    c.beginPath(); c.roundRect(-pw2*0.38,-bh2-pw2*0.42,pw2*0.76,pw2*0.5,4); c.fillStyle='#b9824a'; c.fill(); c.lineWidth=3; c.stroke(); c.restore(); }
+  // title
+  c.textAlign='center'; c.textBaseline='middle'; c.font='900 '+Math.round(tsz)+'px '+FNT; c.lineWidth=tsz*0.2; c.strokeStyle='#1a0610';
+  var lines= nl===1? ['POTION KNIGHT'] : ['POTION','KNIGHT'];
+  lines.forEach(function(tx3,li){ var yy=ty2+li*tsz*1.02; c.strokeText(tx3,W/2,yy); var tg2=c.createLinearGradient(0,yy-tsz/2,0,yy+tsz/2); tg2.addColorStop(0,'#fff6c2'); tg2.addColorStop(0.5,'#ffcf3a'); tg2.addColorStop(1,'#d9802a'); c.fillStyle=tg2; c.fillText(tx3,W/2,yy); });
+  var sy3=ty2+(lines.length-1)*tsz*1.02+tsz*0.78, ssz=tsz*0.38; c.font='900 '+Math.round(ssz)+'px '+FNT; c.lineWidth=ssz*0.25; c.strokeText('SAVE THE PRINCESS',W/2,sy3); c.fillStyle='#ffb09a'; c.fillText('SAVE THE PRINCESS',W/2,sy3);
+  var vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.4,W/2,H/2,Math.max(W,H)*0.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); c.fillStyle=vg; c.fillRect(0,0,W,H);
+}
 // ---------------- daily reward: a 7-day ladder; missing a day starts it again ----------------
 var DAILY=[20,30,40,60,80,100,0];
 function dayKey(off){ var d=new Date(Date.now()+(off||0)*86400000); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function maybeDaily(){
-  if (SAVE.level<2) return; var dl=SAVE.daily||{last:'', streak:0}; if (dl.last===dayKey(0)) return;
+  if (SAVE.level<2 || QS.has('nodaily')) return; var dl=SAVE.daily||{last:'', streak:0}; if (dl.last===dayKey(0)) return;
   var day= dl.last===dayKey(-1) ? (dl.streak%7)+1 : 1, box=$('days'); box.innerHTML='';
   for (var i=1;i<=7;i++){ var dv=document.createElement('div'); dv.className='dd'+(i<day? ' got' : '')+(i===day? ' now' : '')+(i===7? ' big' : ''); var hd=document.createElement('div'); hd.textContent=tl('dayN',{n:i}); dv.appendChild(hd);
     if (i<7){ var co=document.createElement('span'); co.className='coin'; dv.appendChild(co); var bb=document.createElement('b'); bb.textContent='+'+DAILY[i-1]; dv.appendChild(bb); }
@@ -2081,8 +2115,9 @@ function boot(){
   startFloor(SAVE.level, Math.min(DJ.stagesOf(SAVE.level), +QS.get('stage')||0));
   if (DEBUG && QS.has('ending')) setTimeout(function(){ playEnding(function(){}); }, 600);
   $('loading').style.display='none'; PF.loaded();
+  if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); drawPoster(); return; }
   if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); } else playIntro(maybeDaily);
-  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
+  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 PF.init().then(boot, boot);
