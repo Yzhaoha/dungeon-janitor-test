@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Dungeon Tavern</title>
+<title>Potion Knight: Save the Princess</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#1a1220;font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif;color:#fff;touch-action:none}
@@ -157,6 +157,16 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #ftTo.pop{transform:scale(var(--u,1))}
 #ftSub{font-size:19px;font-weight:800;color:#ffb09a;opacity:0;transition:opacity .4s;margin-top:calc(10px * var(--u,1));transform:scale(var(--u,1))}
 #ftSub.on{opacity:1}
+#endM{position:fixed;inset:0;z-index:27;display:none;background:#07040a}
+#endM.show{display:block}
+#endC{position:absolute;inset:0;width:100%;height:100%}
+#endTx{position:absolute;left:0;right:0;top:9%;text-align:center;pointer-events:none}
+#endT1{font-size:20px;font-weight:800;color:#e0c8ff;opacity:0;transition:opacity .6s;transform:scale(var(--u,1))}
+#endT2{font-size:44px;font-weight:900;color:#ffe98a;transform:scale(0);transition:transform .55s cubic-bezier(.3,1.7,.5,1)}
+#endT2.pop{transform:scale(var(--u,1))}
+#endT3{font-size:17px;font-weight:800;color:#fff;opacity:0;transition:opacity .6s;margin-top:8px;transform:scale(var(--u,1))}
+#endGo{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) scale(var(--u,1));opacity:0;transition:opacity .6s;pointer-events:none}
+#endGo.on{opacity:1;pointer-events:auto}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
@@ -187,10 +197,11 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
+<div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div id="adfake"></div>
-<div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
+<div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div></div>
 <script id="gamesrc" type="text/plain">
 // ===== SIM START =====
 // v0.8 — Potion Brawl: sort potions; every bottle you complete is drunk by the hero and becomes a move
@@ -511,6 +522,12 @@ var TL={
   worseHint:['Not better than yours','Pas mieux que le tien','Non migliore del tuo','Nicht besser als deins','No mejor que el tuyo','Seninkinden iyi değil','不如身上的','今の装備ほどではない','지금 것보다 못해요','Não é melhor','Не лучше твоего'],
   ftMini:['💀 A mini boss waits at the end','💀 Un mini-boss attend au bout','💀 Un mini boss attende alla fine','💀 Am Ende wartet ein Mini-Boss','💀 Un minijefe espera al final','💀 Sonda bir mini boss bekliyor','💀 终点有小 Boss','💀 最後にミニボス','💀 끝에 미니 보스가 있어요','💀 Um minichefe espera no fim','💀 В конце ждёт мини-босс'],
   missed:['missed','raté','perso','verpasst','perdido','kaçırıldı','错过了','逃した','놓침','perdido','упущено'],
+  ftLeft:['Princess: {n} floors to go','Princesse : encore {n} étages','Principessa: ancora {n} piani','Prinzessin: noch {n} Ebenen','Princesa: faltan {n} pisos','Prenses: {n} kat kaldı','离公主还有 {n} 层','姫まであと {n} 階','공주까지 {n}층','Princesa: faltam {n} andares','До принцессы {n} этажей'],
+  endless:['Endless mode','Mode infini','Modalità infinita','Endlos-Modus','Modo infinito','Sonsuz mod','无尽模式','エンドレスモード','무한 모드','Modo infinito','Бесконечный режим'],
+  endCursed:['The dragon sealed the princess in crystal…','Le dragon a scellé la princesse dans le cristal…','Il drago ha sigillato la principessa nel cristallo…','Der Drache hat die Prinzessin in Kristall gebannt…','El dragón selló a la princesa en cristal…','Ejderha prensesi kristale hapsetti…','恶龙把公主封在了魔法水晶里……','竜は姫を水晶に封じた……','드래곤이 공주를 수정에 가뒀다……','O dragão selou a princesa no cristal…','Дракон заточил принцессу в кристалл…'],
+  endSaved:['Princess saved!','Princesse sauvée !','Principessa salvata!','Prinzessin gerettet!','¡Princesa salvada!','Prenses kurtarıldı!','公主得救了！','姫を救った！','공주를 구했다!','Princesa salva!','Принцесса спасена!'],
+  endSub:['All {n} floors cleared · {c} gold earned','{n} étages terminés · {c} or','{n} piani completati · {c} oro','Alle {n} Ebenen geschafft · {c} Gold','{n} pisos superados · {c} oro','{n} katın hepsi bitti · {c} altın','打通全部 {n} 层 · 共得 {c} 金币','全 {n} 階クリア · {c} ゴールド','{n}층 모두 클리어 · {c} 골드','{n} andares concluídos · {c} ouro','Все {n} этажей пройдены · {c} золота'],
+  endGo:['Keep adventuring','Continuer l\'aventure','Continua l\'avventura','Weiter erkunden','Seguir la aventura','Maceraya devam','继续冒险','冒険を続ける','모험 계속하기','Continuar a aventura','Продолжить приключение'],
   victory:['Victory!','Victoire !','Vittoria!','Sieg!','¡Victoria!','Zafer!','打赢了！','勝利！','승리!','Vitória!','Победа!'],
   blocked:['Blocked!','Bloqué !','Parato!','Geblockt!','¡Bloqueado!','Engellendi!','挡住了！','ガード！','막았다!','Bloqueado!','Блок!'],
   rep:['Rating','Note','Voto','Bewertung','Valoración','Puan','口碑','評判','평점','Avaliação','Рейтинг'],
@@ -1096,11 +1113,18 @@ mArt.dragon=function(c,t,col,wa,ang,mood,a){
   wing(4,-64,1.05,sk,-0.05-fl*1.3);
 };
 // mark for the floor's boss room on the maps and gates: a white skull with a gold crown (mini boss), horns (boss), crown and wings (great boss)
-function bossMark(c,x,y,r,kind){ c.save(); c.translate(x,y); var lw=Math.max(1.2,r*0.13);
-  if (kind==='big'){ [-1,1].forEach(function(sd){ poly(c,[sd*r*0.45,-r*0.1, sd*r*1.3,-r*0.95, sd*r*1.15,r*0.2, sd*r*0.6,r*0.4]); fs(c,'#d98a10',lw); }); }
-  if (kind==='boss'){ [-1,1].forEach(function(sd){ poly(c,[sd*r*0.4,-r*0.4, sd*r*1.05,-r*1.15, sd*r*0.72,-r*0.2]); fs(c,'#f3ead8',lw); }); }
-  icon(c,'psn',0,r*0.15,r*0.66,'#fff',Math.max(1.4,r*0.16));
-  if (kind!=='boss'){ poly(c,[-r*0.55,-r*0.45,-r*0.62,-r*1.05,-r*0.28,-r*0.72,0,-r*1.15,r*0.28,-r*0.72,r*0.62,-r*1.05,r*0.55,-r*0.45]); fs(c,'#ffcf3a',lw); }
+// mark for the floor's boss room on the maps and gates. Boss and great boss: a red horned bull skull with glowing eyes (the
+// great boss's horns are gold and it has a crown); mini boss: a white skull with a small gold crown.
+function bossMark(c,x,y,r,kind){ c.save(); c.translate(x,y); var lw=Math.max(1.2,r*0.14);
+  if (kind==='n'){ icon(c,'psn',0,r*0.15,r*0.66,'#fff',Math.max(1.4,r*0.16)); poly(c,[-r*0.55,-r*0.45,-r*0.62,-r*1.05,-r*0.28,-r*0.72,0,-r*1.15,r*0.28,-r*0.72,r*0.62,-r*1.05,r*0.55,-r*0.45]); fs(c,'#ffcf3a',lw); c.restore(); return; }
+  var big=kind==='big', hc= big? '#ffcf3a' : '#f3ead8';
+  [-1,1].forEach(function(sd){ c.beginPath(); c.moveTo(sd*r*0.42,-r*0.42); c.quadraticCurveTo(sd*r*1.25,-r*0.55,sd*r*1.12,-r*1.25); c.quadraticCurveTo(sd*r*0.95,-r*0.78,sd*r*0.5,-r*0.12); c.closePath(); fs(c,hc,lw); });
+  c.beginPath(); c.moveTo(-r*0.62,-r*0.5); c.quadraticCurveTo(0,-r*0.82,r*0.62,-r*0.5); c.quadraticCurveTo(r*0.7,-r*0.05,r*0.36,r*0.3); c.lineTo(r*0.26,r*0.85); c.quadraticCurveTo(0,r*1.02,-r*0.26,r*0.85); c.lineTo(-r*0.36,r*0.3); c.quadraticCurveTo(-r*0.7,-r*0.05,-r*0.62,-r*0.5); c.closePath(); fs(c,'#d9283a',lw);
+  c.fillStyle='rgba(255,255,255,0.28)'; c.beginPath(); c.ellipse(-r*0.22,-r*0.48,r*0.2,r*0.08,-0.3,0,6.3); c.fill();
+  c.fillStyle='#140810'; [-1,1].forEach(function(sd){ poly(c,[sd*r*0.08,-r*0.2, sd*r*0.5,-r*0.32, sd*r*0.4,r*0.06]); c.fill(); });
+  c.fillStyle='#ffd84a'; [-1,1].forEach(function(sd){ c.beginPath(); c.arc(sd*r*0.32,-r*0.15,r*0.08,0,6.3); c.fill(); });
+  c.fillStyle='#140810'; c.beginPath(); c.ellipse(-r*0.1,r*0.66,r*0.06,r*0.1,0,0,6.3); c.fill(); c.beginPath(); c.ellipse(r*0.1,r*0.66,r*0.06,r*0.1,0,0,6.3); c.fill();
+  if (big){ poly(c,[-r*0.42,-r*0.62,-r*0.48,-r*1.08,-r*0.2,-r*0.8,0,-r*1.18,r*0.2,-r*0.8,r*0.48,-r*1.08,r*0.42,-r*0.62]); fs(c,'#ffcf3a',lw); }
   c.restore(); }
 function gearIcon(c, sl, x, y, s, col){
   c.save(); c.translate(x,y); c.scale(s,s); c.lineJoin='round'; var w=2.8/s, dk=shade(col,-0.22);
@@ -1585,16 +1609,16 @@ function drawMap(cv2, bigMap){
     c.globalAlpha= seen? 1 : 0.4; c.strokeStyle='#15101c'; c.lineWidth=Math.max(5,13*u); c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke();
     c.strokeStyle= lit? '#ffd84a' : '#6a5a80'; c.lineWidth=Math.max(2,5*u); c.setLineDash(lit? [Math.max(2,5*u), Math.max(3,7*u)] : []); c.lineDashOffset= lit? -tm*14*Math.max(0.5,u) : 0; c.beginPath(); c.moveTo(p1.x,p1.y); c.lineTo(p2.x,p2.y); c.stroke(); c.setLineDash([]); }); });
   c.globalAlpha=1;
-  M.rooms.forEach(function(r,i){ var p=P(r), kn=known(i), boss=r.t==='B', dn=RT.done[i], now=i===RT.at, op=ops.indexOf(i)>=0, sz=cell*(boss?1.12:1), x0=p.x-sz/2, y0=p.y-sz/2, pu=0.5+Math.sin(tm*5)*0.5;
+  M.rooms.forEach(function(r,i){ var p=P(r), kn=known(i), boss=r.t==='B', dn=RT.done[i], now=i===RT.at, op=ops.indexOf(i)>=0, sz=cell*(boss?(L.kind==='n'?1.12:1.3):1), x0=p.x-sz/2, y0=p.y-sz/2, pu=0.5+Math.sin(tm*5)*0.5;
     if (boss){ var bg=c.createRadialGradient(p.x,p.y,sz*0.3,p.x,p.y,sz*(0.95+pu*0.2)); bg.addColorStop(0,'rgba('+bossG+',0.8)'); bg.addColorStop(1,'rgba('+bossG+',0)'); c.fillStyle=bg; c.fillRect(p.x-sz*1.2,p.y-sz*1.2,sz*2.4,sz*2.4); }
     c.beginPath(); c.roundRect(x0,y0,sz,sz,sz*0.24);
     if (!kn && !boss){ c.fillStyle='#1c1626'; c.fill(); c.setLineDash([Math.max(2,4*u),Math.max(2,4*u)]); c.lineWidth=Math.max(1.2,2.5*u); c.strokeStyle='#5a4a70'; c.stroke(); c.setLineDash([]); }
-    else { var base= boss? bossC : (dn? '#8f80ac' : NCOL[r.t]), gr2=c.createLinearGradient(0,y0,0,y0+sz); gr2.addColorStop(0,shade(base,0.22)); gr2.addColorStop(1,shade(base,-0.18)); c.fillStyle=gr2; c.fill(); c.lineWidth=Math.max(1.4,3*u); c.strokeStyle=OL; c.stroke(); }
+    else { var base= boss? (L.kind==='n'? bossC : '#3a0f18') : (dn? '#8f80ac' : NCOL[r.t]), gr2=c.createLinearGradient(0,y0,0,y0+sz); gr2.addColorStop(0,shade(base,0.22)); gr2.addColorStop(1,shade(base,-0.18)); c.fillStyle=gr2; c.fill(); c.lineWidth=Math.max(1.4,3*u); c.strokeStyle=OL; c.stroke(); }
     if (now){ c.beginPath(); c.roundRect(x0-2*u-1,y0-2*u-1,sz+4*u+2,sz+4*u+2,sz*0.28); c.lineWidth=Math.max(1.6,3*u); c.strokeStyle='rgba(255,228,92,'+(0.6+pu*0.4)+')'; c.stroke(); }
     else if (op){ c.beginPath(); c.roundRect(x0-1,y0-1,sz+2,sz+2,sz*0.26); c.lineWidth=Math.max(1.4,3*u); c.strokeStyle='rgba(255,255,255,'+(0.45+pu*0.55)+')'; c.stroke(); }
     c.textAlign='center'; c.textBaseline='middle';
     if (now){ var hr=sz*0.3; c.beginPath(); c.arc(p.x,p.y+hr*0.15,hr,0,6.3); c.fillStyle='#aab6c9'; c.fill(); c.lineWidth=Math.max(1.2,2.4*u); c.strokeStyle=OL; c.stroke(); c.fillStyle='#120a14'; c.fillRect(p.x-hr*0.75,p.y-hr*0.2,hr*1.6,hr*0.55); c.fillStyle='#ff4638'; c.fillRect(p.x-hr*0.45,p.y-hr*0.1,hr*0.42,hr*0.34); c.fillRect(p.x+hr*0.25,p.y-hr*0.1,hr*0.42,hr*0.34); }
-    else if (boss) bossMark(c,p.x,p.y+sz*0.04,sz*0.34,L.kind);
+    else if (boss) bossMark(c,p.x,p.y+sz*0.06,sz*(L.kind==='n'?0.34:0.3),L.kind);
     else if (!kn){ c.font='900 '+Math.round(sz*0.56)+'px '+FNT; c.fillStyle='#6a5a80'; c.fillText('?', p.x, p.y+1); }
     else if (dn){ c.font='900 '+Math.round(sz*0.5)+'px '+FNT; c.fillStyle='rgba(255,255,255,0.8)'; c.fillText('✓', p.x, p.y+1); }
     else if (r.t==='c'){ c.beginPath(); c.arc(p.x,p.y,sz*0.22,0,6.3); c.fillStyle='#ffe98a'; c.fill(); c.lineWidth=Math.max(1,2.2*u); c.strokeStyle='#6a4a08'; c.stroke(); }
@@ -1620,7 +1644,7 @@ function afterKill(){
   if (fin){ SAVE.level=L.level+1; var hr=F.hHp/F.heroMax; winStars=revived?1:(hr>=0.7?3:(hr>=0.4?2:1)); lastReward=10+winStars*5+(L.kind==='big'?80:(L.kind==='boss'?25:bonus)); SAVE.coins+=lastReward; Snd.win(); confetti(); PF.happy(); }
   else { Snd.buy(); if (bonus){ SAVE.coins+=bonus; var g0=stg(); floatTx(g0.mx, g0.gy-60*g0.k, '+'+bonus, '#ffe98a', true); Snd.coin(); } }
   saveNow();
-  var cont=function(){ if (fin){ showWin(); return; } carryHp=F.hHp+Math.round(F.heroMax*0.15); updHud(); advance(); };
+  var cont=function(){ if (fin){ if (L.level===FINAL) playEnding(showWin); else showWin(); return; } carryHp=F.hHp+Math.round(F.heroMax*0.15); updHud(); advance(); };
   later(fin? 0.9 : 0.55, function(){ if (L.king) showCards(cont); else if (it) showLoot(it, cont); else cont(); });
 }
 function applyItem(it){ it.old=SAVE.gear[it.slot]; if (it.r>it.old) SAVE.gear[it.slot]=it.r; else { it.sold=[10,25,60,150][it.r]; SAVE.coins+=it.sold; } }
@@ -1727,7 +1751,7 @@ gearIcon($('gearBtn').firstChild.getContext('2d'),'hat',24,26,15,'#c3ccdb');
 function floorTransition(n, load){
   var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, th=THEMES[Math.floor((n-1)/6)%4], W=300, H=200, d=2;
   $('ftFrom').textContent=tl('floor',{n:n-1})+' ✓'; var to=$('ftTo'); to.textContent=(kind==='big'? '🐉 ' : (kind==='boss'? '👹 ' : '⚔️ '))+tl('floor',{n:n}); to.className='out';
-  $('ftSub').textContent= kind==='big'? tl('bigF') : (kind==='boss'? tl('bossF') : tl('ftMini')); $('ftSub').className='out';
+  $('ftSub').textContent=(kind==='big'? tl('bigF') : (kind==='boss'? tl('bossF') : tl('ftMini')))+'   ·   '+(n<=FINAL? tl('ftLeft',{n:FINAL-n+1}) : tl('endless')); $('ftSub').className='out';
   cvT.width=W*d; cvT.height=H*d; ft.classList.add('show'); Snd.door();
   var step=function(){ var e=(performance.now()-t0)/1000, c=cvT.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,W,H); c.lineJoin='round';
     var i, gl=c.createRadialGradient(W-30,H-20,4,W-30,H-20,120); gl.addColorStop(0,'rgba('+th.gl+',0.45)'); gl.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=gl; c.fillRect(0,0,W,H);
@@ -1766,6 +1790,86 @@ $('sk1').onclick=function(){ Snd.unlock(); if (busyNow() || anims.length) return
 // Magic Hand: the next pour ignores colours
 $('sk2').onclick=function(){ Snd.unlock(); if (busyNow()) return; if (magic){ magic=false; updSkills(); return; } if (energy<SK2){ toast(tl('needE')); Snd.nope(); return; } magic=true; toast(tl('sk2')); Snd.fill(); updSkills(); };
 icon($('sk1').firstChild.getContext('2d'),'atk',28,28,20,'#ffb09a',5); icon($('sk2').firstChild.getContext('2d'),'mag',28,28,21,'#e0c8ff',5);
+
+// ---------------- the ending: after the last great boss the knight frees the princess with a potion ----------------
+var FINAL=96;
+function princessArt(c,t,mood,arms){
+  // a slim young princess, facing left: long golden hair, small tiara, rose gown. mood 0 asleep, 1 awake and smiling
+  var sk='#f2c9a8', dr='#d9487a', drl='#ffb8d0', hair='#f0c050', hd=shade(hair,-0.25);
+  c.beginPath(); c.moveTo(4,-104); c.quadraticCurveTo(18,-96,16,-70); c.quadraticCurveTo(14,-58,10,-52); c.lineTo(2,-60); c.closePath(); fs(c,hd);
+  c.beginPath(); c.moveTo(-8,-64); c.lineTo(8,-64); c.quadraticCurveTo(20,-30,27,0); c.quadraticCurveTo(0,6,-27,0); c.quadraticCurveTo(-20,-30,-8,-64); c.closePath(); fs(c,dr);
+  c.save(); c.clip(); c.fillStyle=drl; poly(c,[-4,-62,4,-62,10,2,-10,2]); c.fill(); c.strokeStyle='rgba(0,0,0,0.18)'; c.lineWidth=1.5; [-14,-6,6,14].forEach(function(x){ c.beginPath(); c.moveTo(x*0.3,-58); c.lineTo(x,2); c.stroke(); }); c.restore();
+  c.strokeStyle='#ffcf3a'; c.lineWidth=2.4; c.beginPath(); c.moveTo(-26,-3); c.quadraticCurveTo(0,3,26,-3); c.stroke();
+  rr(c,-8,-86,16,24,5); fs(c,dr); c.fillStyle='#ffcf3a'; c.fillRect(-8,-66,16,3);
+  var ra=arms||0;
+  [-1,1].forEach(function(sd){ var sx=sd*7, hx=sd*(10+ra*8), hy=-70-ra*30; limb(c,sx,-82,hx,hy,4,sk); el(c,hx,hy,2.8); fs(c,sk,1.8); });
+  rr(c,-2.5,-92,5,7,2); fs(c,sk,1.8);
+  el(c,-1,-99,7.5,9); fs(c,sk);
+  c.beginPath(); c.moveTo(-8,-101); c.quadraticCurveTo(-6,-112,2,-110); c.quadraticCurveTo(10,-108,8,-96); c.quadraticCurveTo(5,-104,-2,-104); c.quadraticCurveTo(-6,-104,-8,-101); c.closePath(); fs(c,hair,2);
+  poly(c,[-6,-109,-5,-115,-2,-111,0,-117,2,-111,5,-115,6,-109]); fs(c,'#ffcf3a',1.6); c.fillStyle='#5ad8ff'; el(c,0,-112,1.2); c.fill();
+  c.strokeStyle=OL; c.lineWidth=1.5;
+  if (mood){ c.fillStyle=OL; el(c,-5,-99,1.1,1.6); c.fill(); el(c,1,-99,1.1,1.6); c.fill(); c.beginPath(); c.arc(-3,-95,2.2,0.2,Math.PI-0.2); c.stroke(); c.fillStyle='rgba(255,120,140,0.5)'; el(c,-6,-96,1.8,1.1); c.fill(); }
+  else { c.beginPath(); c.moveTo(-6.5,-99); c.quadraticCurveTo(-5,-98,-3.5,-99); c.moveTo(-0.5,-99); c.quadraticCurveTo(1,-98,2.5,-99); c.stroke(); c.beginPath(); c.moveTo(-4,-95); c.lineTo(-2,-95); c.stroke(); }
+}
+var endBuf=document.createElement('canvas');
+function playEnding(done){
+  var M=$('endM'), cv2=$('endC'), t0=performance.now(), ps=[], cracks=[], shards=[], burst=false, step=0, i, sp=Snd;
+  for (i=0;i<9;i++) cracks.push({a:Math.random()*6.28, l:20+Math.random()*40, b:Math.random()*6.28});
+  $('endT1').textContent=tl('endCursed'); $('endT1').style.opacity=0; $('endT2').textContent=tl('endSaved'); $('endT2').className='out'; $('endT3').textContent=tl('endSub',{n:FINAL, c:SAVE.coins}); $('endT3').style.opacity=0;
+  var go=$('endGo'); go.textContent=tl('endGo'); go.className='btn';
+  go.onclick=function(){ if (go.className.indexOf('on')<0) return; M.classList.remove('show'); step=-1; done&&done(); };
+  M.classList.add('show'); PF.setPlaying(false); Snd.door();
+  var loop=function(){ if (step<0) return; requestAnimationFrame(loop);
+    var e=(performance.now()-t0)/1000, W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1); if (cv2.width!==Math.round(W*d)){ cv2.width=Math.round(W*d); cv2.height=Math.round(H*d); }
+    var c=cv2.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
+    var k=Math.min(W/360, H/420, 2.2), fy=H*0.74, cxp=W*0.68, kx=W*0.3;
+    // throne room: stone wall, a tall stained-glass window pouring light, two pillars with banners, a red carpet
+    var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#1a1028'); g.addColorStop(1,'#3a2a48'); c.fillStyle=g; c.fillRect(0,0,W,fy);
+    c.strokeStyle='rgba(0,0,0,0.25)'; c.lineWidth=2; for (var y=0, rw=0; y<fy; y+=34*k, rw++){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for (var x=(rw%2? -40*k : 0); x<W; x+=80*k){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+34*k); c.stroke(); } }
+    var ww=46*k, wh=150*k, wx=cxp, wy=fy-40*k-wh, glow=burst? 1 : 0.35;
+    c.fillStyle='rgba(255,230,180,'+(0.08+glow*0.12)+')'; poly(c,[wx-ww,wy+wh,wx+ww,wy+wh,wx+ww*3.4,fy+40*k,wx-ww*3.4,fy+40*k]); c.fill();
+    c.beginPath(); c.moveTo(wx-ww,wy+wh); c.lineTo(wx-ww,wy+ww); c.arc(wx,wy+ww,ww,Math.PI,0); c.lineTo(wx+ww,wy+wh); c.closePath(); c.fillStyle='#2a1a3a'; c.fill(); c.lineWidth=4; c.strokeStyle=OL; c.stroke();
+    c.save(); c.clip(); var cols=['#5a9cff','#d9487a','#ffcf3a','#59d86a','#8b5cf6']; for (i=0;i<14;i++){ c.globalAlpha=0.35+glow*0.5; c.fillStyle=cols[i%5]; c.fillRect(wx-ww+(i%4)*ww/2, wy+Math.floor(i/4)*wh/4, ww/2-2, wh/4-2); } c.globalAlpha=1; c.restore();
+    [W*0.08, W*0.92].forEach(function(px){ c.fillStyle='#4a3a5c'; c.fillRect(px-16*k,0,32*k,fy); c.strokeStyle=OL; c.lineWidth=3; c.strokeRect(px-16*k,0,32*k,fy); c.fillStyle='#8a1f2a'; poly(c,[px-12*k,40*k,px+12*k,40*k,px+12*k,120*k,px,108*k,px-12*k,120*k]); c.fill(); c.stroke(); bossMark(c,px,72*k,9*k,'n'); });
+    g=c.createLinearGradient(0,fy,0,H); g.addColorStop(0,'#3a2c44'); g.addColorStop(1,'#140c1a'); c.fillStyle=g; c.fillRect(0,fy,W,H-fy);
+    c.fillStyle='#8a1f2a'; poly(c,[W*0.5-30*k,fy,W*0.5+30*k,fy,W*0.5+90*k,H,W*0.5-90*k,H]); c.fill(); c.fillStyle='#ffcf3a'; c.fillRect(0,fy,W,2);
+    // dais
+    rr(c,cxp-56*k,fy-14*k,112*k,16*k,4); c.fillStyle='#5a4a70'; c.fill(); c.lineWidth=3; c.strokeStyle=OL; c.stroke();
+    // the knight rides in
+    var ride=Math.min(1,Math.max(0,(e-0.3)/1.6)), hx=-60*k+(kx+60*k)*easeOut(ride), cheer=e>5.2;
+    var keep=[heroRun,won,VS.mDead,choosing,VS.empty,VS.hAtk,VS.hDrink]; heroRun=ride>0&&ride<1; won=cheer; VS.mDead=cheer?1:0; choosing=false; VS.empty=false; VS.hAtk=0; VS.hDrink= (e>2.5&&e<3.0)? 0.2 : 0;
+    c.save(); c.translate(hx, fy-(cheer? Math.abs(Math.sin(e*6))*8*k : 0)); c.scale(k*1.05,k*1.05); c.fillStyle='rgba(0,0,0,0.35)'; el(c,0,3,44,7); c.fill(); try{ heroArt(c,e); }catch(err){} c.restore();
+    heroRun=keep[0]; won=keep[1]; VS.mDead=keep[2]; choosing=keep[3]; VS.empty=keep[4]; VS.hAtk=keep[5]; VS.hDrink=keep[6];
+    // the princess, grey and still inside the crystal until the potion lands
+    var free=burst? Math.min(1,(e-4.3)/0.9) : 0, eb=endBuf, bw2=Math.ceil(80*k*d), bh2=Math.ceil(140*k*d); if (eb.width!==bw2){ eb.width=bw2; eb.height=bh2; }
+    var bc=eb.getContext('2d'); bc.setTransform(1,0,0,1,0,0); bc.clearRect(0,0,bw2,bh2); bc.setTransform(k*d,0,0,k*d,40*k*d,130*k*d); bc.lineJoin='round'; bc.lineCap='round';
+    princessArt(bc,e,free>0.5?1:0,free>0.6? Math.min(1,(e-5)/0.4)*(0.7+Math.sin(e*5)*0.3) : 0);
+    if (free<1){ bc.setTransform(1,0,0,1,0,0); bc.globalCompositeOperation='source-atop'; bc.fillStyle='rgba(150,130,190,'+(0.75*(1-free))+')'; bc.fillRect(0,0,bw2,bh2); bc.globalCompositeOperation='source-over'; }
+    c.drawImage(eb, cxp-40*k, fy-14*k-130*k-(free>0.6? Math.abs(Math.sin(e*5))*4*k : 0), 80*k, 140*k);
+    var py=fy-14*k;
+    if (!burst){ var gl=0.35+(e>3.2? Math.min(0.5,(e-3.2)*0.6) : 0)+Math.sin(e*3)*0.06;
+      c.fillStyle='rgba(170,120,255,'+gl*0.6+')'; poly(c,[cxp-30*k,py,cxp-36*k,py-90*k,cxp-14*k,py-142*k,cxp+16*k,py-150*k,cxp+36*k,py-96*k,cxp+30*k,py]); c.fill(); c.lineWidth=3; c.strokeStyle='rgba(230,210,255,0.9)'; c.stroke();
+      c.strokeStyle='rgba(255,255,255,0.45)'; c.lineWidth=2; c.beginPath(); c.moveTo(cxp-14*k,py-142*k); c.lineTo(cxp-6*k,py); c.moveTo(cxp+16*k,py-150*k); c.lineTo(cxp+10*k,py); c.stroke();
+      c.fillStyle='rgba(255,255,255,0.35)'; poly(c,[cxp-28*k,py-80*k,cxp-20*k,py-120*k,cxp-14*k,py-118*k,cxp-22*k,py-70*k]); c.fill();
+      if (e>3.4){ var cl=Math.min(1,(e-3.4)/0.8); c.strokeStyle='#fff'; c.lineWidth=2; cracks.forEach(function(q){ c.beginPath(); c.moveTo(cxp,py-72*k); var mx=cxp+Math.cos(q.a)*q.l*k*0.5*cl, my=py-72*k+Math.sin(q.a)*q.l*k*0.9*cl; c.lineTo(mx,my); c.lineTo(mx+Math.cos(q.b)*q.l*k*0.4*cl, my+Math.sin(q.b)*q.l*k*0.6*cl); c.stroke(); }); } }
+    // the potion: a rainbow orb arcing from the knight to the crystal
+    if (e>2.6 && e<3.4){ var pe=(e-2.6)/0.8, ox=hx+20*k+(cxp-hx-20*k)*pe, oy=fy-110*k-Math.sin(pe*Math.PI)*90*k+(py-72*k-(fy-110*k))*pe, hue=(e*400)%360;
+      c.fillStyle='hsl('+hue+',90%,65%)'; c.beginPath(); c.arc(ox,oy,8*k,0,6.3); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); ps.push({x:ox,y:oy,vx:(Math.random()-0.5)*40,vy:(Math.random()-0.5)*40,t:0.5,c:'hsl('+((hue+120)%360)+',90%,70%)',r:2.5,g:0}); if (!step){ step=1; sp.fill(); } }
+    if (e>2.2 && step<1){ $('endT1').style.opacity=1; }
+    if (e>4.2 && !burst){ burst=true; sp.win(); sp.cork(); $('endT1').style.opacity=0;
+      for (i=0;i<26;i++){ var an=Math.random()*6.28, s2=120+Math.random()*320; shards.push({x:cxp,y:py-72*k,vx:Math.cos(an)*s2,vy:Math.sin(an)*s2-120,t:1.2,r:Math.random()*6.28,vr:(Math.random()-0.5)*10,s:(5+Math.random()*9)*k}); }
+      for (i=0;i<40;i++){ var a2=Math.random()*6.28, s3=60+Math.random()*260; ps.push({x:cxp,y:py-72*k,vx:Math.cos(a2)*s3,vy:Math.sin(a2)*s3,t:1+Math.random()*0.6,c:['#ffe98a','#fff','#ffb8d0','#c8a8ff'][i%4],r:2+Math.random()*3,g:120}); } }
+    if (burst){ var fl=Math.max(0,1-(e-4.2)/0.5); if (fl>0){ c.fillStyle='rgba(255,250,230,'+fl*0.8+')'; c.fillRect(0,0,W,H); } }
+    shards.forEach(function(q){ q.t-=1/60; if (q.t<=0) return; q.vy+=900/60; q.x+=q.vx/60; q.y+=q.vy/60; q.r+=q.vr/60; c.save(); c.globalAlpha=Math.min(1,q.t*1.5); c.translate(q.x,q.y); c.rotate(q.r); c.fillStyle='rgba(200,170,255,0.85)'; poly(c,[0,-q.s,q.s*0.6,q.s*0.5,-q.s*0.5,q.s*0.4]); c.fill(); c.strokeStyle='#fff'; c.lineWidth=1.5; c.stroke(); c.restore(); });
+    if (e>5 && Math.random()<0.15) ps.push({x:cxp+(Math.random()-0.5)*50*k,y:py-100*k,vx:(Math.random()-0.5)*30,vy:-40-Math.random()*40,t:1.6,c:'#ff6a8a',r:5*k,g:-10,heart:1});
+    for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.vy+=q.g/60; q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=Math.min(1,q.t*2); if (q.heart) icon(c,'heal',q.x,q.y,q.r,q.c,2); else { c.fillStyle=q.c; c.beginPath(); c.arc(q.x,q.y,q.r,0,6.3); c.fill(); } }
+    c.globalAlpha=1;
+    if (e>4.6 && $('endT2').className.indexOf('pop')<0){ $('endT2').className='out pop'; sp.horn(); }
+    if (e>5.4) $('endT3').style.opacity=1;
+    if (e>6.2 && go.className.indexOf('on')<0) go.className='btn on';
+  };
+  requestAnimationFrame(loop);
+}
 
 // ---------------- rewards + hero upgrades ----------------
 var winStars=3;
@@ -1825,6 +1929,7 @@ function boot(){
   LANG=detectLang(PF.locale); applyLang(); loadSave();
   DPR=Math.min(window.devicePixelRatio||1, 2); VW=innerWidth; VH=innerHeight; cv.width=Math.round(VW*DPR); cv.height=Math.round(VH*DPR);
   startFloor(SAVE.level, Math.min(DJ.stagesOf(SAVE.level), +QS.get('stage')||0));
+  if (DEBUG && QS.has('ending')) setTimeout(function(){ playEnding(function(){}); }, 600);
   $('loading').style.display='none'; PF.loaded();
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__S={get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });

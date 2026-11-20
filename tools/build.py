@@ -4,7 +4,7 @@
 Output:
   index.html                              test build, no SDK, FPS counter on  -> GitHub Pages root
   poki/, crazygames/                       platform builds (also served on Pages)
-  dist/dungeon-janitor-poki.zip, dist/dungeon-janitor-crazygames.zip  (index.html at the zip root)
+  dist/potion-knight-poki.zip, dist/potion-knight-crazygames.zip  (index.html at the zip root)
 Run: python3 tools/build.py
 """
 import os, shutil, zipfile
@@ -32,7 +32,7 @@ write(ROOT, html(None)); print('index.html (test)')
 os.makedirs(os.path.join(ROOT, 'dist'), exist_ok=True)
 for p in ['poki', 'crazygames']:
     out = os.path.join(ROOT, p); write(out, html(p))
-    z = os.path.join(ROOT, 'dist', 'dungeon-janitor-%s.zip' % p)
+    z = os.path.join(ROOT, 'dist', 'potion-knight-%s.zip' % p)
     with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
         for f in ['index.html']:
             zf.write(os.path.join(out, f), f)

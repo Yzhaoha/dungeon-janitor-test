@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Dungeon Tavern</title>
+<title>Potion Knight: Save the Princess</title>
 <!--PLATFORM_HEAD-->
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -158,6 +158,16 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #ftTo.pop{transform:scale(var(--u,1))}
 #ftSub{font-size:19px;font-weight:800;color:#ffb09a;opacity:0;transition:opacity .4s;margin-top:calc(10px * var(--u,1));transform:scale(var(--u,1))}
 #ftSub.on{opacity:1}
+#endM{position:fixed;inset:0;z-index:27;display:none;background:#07040a}
+#endM.show{display:block}
+#endC{position:absolute;inset:0;width:100%;height:100%}
+#endTx{position:absolute;left:0;right:0;top:9%;text-align:center;pointer-events:none}
+#endT1{font-size:20px;font-weight:800;color:#e0c8ff;opacity:0;transition:opacity .6s;transform:scale(var(--u,1))}
+#endT2{font-size:44px;font-weight:900;color:#ffe98a;transform:scale(0);transition:transform .55s cubic-bezier(.3,1.7,.5,1)}
+#endT2.pop{transform:scale(var(--u,1))}
+#endT3{font-size:17px;font-weight:800;color:#fff;opacity:0;transition:opacity .6s;margin-top:8px;transform:scale(var(--u,1))}
+#endGo{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) scale(var(--u,1));opacity:0;transition:opacity .6s;pointer-events:none}
+#endGo.on{opacity:1;pointer-events:auto}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
@@ -188,7 +198,8 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
+<div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div id="adfake"></div>
-<div id="loading"><div>Dungeon Tavern</div><div class="bar"><i></i></div></div>
+<div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div></div>
