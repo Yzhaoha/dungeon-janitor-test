@@ -901,12 +901,12 @@ function drawBottle(v, i){
     // the cap, a little wider than the lip, slightly flared at the top
     c.fillStyle=kg; c.beginPath(); c.moveTo(-cw*0.47, cy0+bw*0.02); c.lineTo(cw*0.47, cy0+bw*0.02); c.lineTo(cw*0.5, cy0-chh); c.lineTo(-cw*0.5, cy0-chh); c.closePath(); c.fill(); c.lineWidth=lw2; c.strokeStyle=OL; c.stroke();
     c.fillStyle='rgba(90,50,20,0.45)'; [[-0.28,-0.3],[0.12,-0.55],[0.3,-0.2],[-0.05,-0.15],[-0.18,-0.7]].forEach(function(q){ c.beginPath(); c.arc(q[0]*cw, cy0+q[1]*chh, bw*0.026, 0, 6.3); c.fill(); });
-    var wc= B[i]&&B[i].length? COL_LO[B[i][0]] : '#a8303a', wh=COL[B[i]&&B[i].length? B[i][0] : 0];
-    c.fillStyle=wc; c.beginPath(); c.moveTo(-cw*0.53,cy0-chh*0.95); c.quadraticCurveTo(0,cy0-chh*1.5,cw*0.53,cy0-chh*0.95); c.lineTo(cw*0.53,cy0-chh*0.62); c.quadraticCurveTo(cw*0.46,cy0-chh*0.4,cw*0.38,cy0-chh*0.6); c.lineTo(cw*0.2,cy0-chh*0.66); c.quadraticCurveTo(cw*0.12,cy0-chh*0.18,cw*0.03,cy0-chh*0.62);
-    c.lineTo(-cw*0.3,cy0-chh*0.7); c.quadraticCurveTo(-cw*0.38,cy0-chh*0.3,-cw*0.46,cy0-chh*0.66); c.lineTo(-cw*0.53,cy0-chh*0.7); c.closePath(); c.fill(); c.lineWidth=lw2; c.strokeStyle=OL; c.stroke();
-    c.fillStyle=wh; c.beginPath(); c.ellipse(0, cy0-chh*1.12, cw*0.2, bw*0.07, 0, 0, 6.3); c.fill(); c.fillStyle='rgba(255,255,255,0.45)'; c.beginPath(); c.ellipse(-cw*0.22, cy0-chh*1.12, cw*0.14, bw*0.03, -0.15, 0, 6.3); c.fill();
-    c.strokeStyle='#e8d6a8'; c.lineWidth=Math.max(1.2,bw*0.035); c.beginPath(); c.moveTo(-cw*0.48, cy0-chh*0.25); c.lineTo(cw*0.48, cy0-chh*0.25); c.stroke(); c.beginPath(); c.moveTo(cw*0.3,cy0-chh*0.25); c.quadraticCurveTo(cw*0.42,cy0+chh*0.1,cw*0.34,cy0+chh*0.35); c.stroke();
-    if (done && ((tm*0.6+i*0.37)%1)<0.18){ var sp=((tm*0.6+i*0.37)%1)/0.18, sx=cw*0.42, sy=cy0-chh*1.0, ss=bw*0.16*Math.sin(sp*Math.PI); c.fillStyle='#fffbe0'; c.beginPath(); c.moveTo(sx,sy-ss); c.lineTo(sx+ss*0.25,sy); c.lineTo(sx,sy+ss); c.lineTo(sx-ss*0.25,sy); c.closePath(); c.fill(); c.beginPath(); c.moveTo(sx-ss,sy); c.lineTo(sx,sy+ss*0.25); c.lineTo(sx+ss,sy); c.lineTo(sx,sy-ss*0.25); c.closePath(); c.fill(); }
+    // the top of the cork: a lighter cut face, and a thin ribbon in the potion's colour tied round it
+    c.fillStyle='#e8c08a'; c.beginPath(); c.ellipse(0, cy0-chh, cw*0.5, bw*0.09, 0, 0, 6.3); c.fill(); c.lineWidth=lw2; c.strokeStyle=OL; c.stroke();
+    c.fillStyle='rgba(120,70,30,0.35)'; c.beginPath(); c.ellipse(0, cy0-chh, cw*0.3, bw*0.045, 0, 0, 6.3); c.fill();
+    var rb=COL[B[i]&&B[i].length? B[i][0] : 0]; c.fillStyle=rb; c.fillRect(-cw*0.485, cy0-chh*0.42, cw*0.97, bw*0.09); c.strokeStyle=OL; c.lineWidth=Math.max(1,bw*0.03); c.strokeRect(-cw*0.485, cy0-chh*0.42, cw*0.97, bw*0.09);
+    c.strokeStyle=rb; c.lineWidth=Math.max(1.2,bw*0.04); c.beginPath(); c.moveTo(cw*0.32,cy0-chh*0.34); c.quadraticCurveTo(cw*0.46,cy0-chh*0.05,cw*0.38,cy0+chh*0.3); c.stroke();
+    if (done && ((tm*0.6+i*0.37)%1)<0.18){ var sp=((tm*0.6+i*0.37)%1)/0.18, sx=cw*0.42, sy=cy0-chh*0.9, ss=bw*0.16*Math.sin(sp*Math.PI); c.fillStyle='#fffbe0'; c.beginPath(); c.moveTo(sx,sy-ss); c.lineTo(sx+ss*0.25,sy); c.lineTo(sx,sy+ss); c.lineTo(sx-ss*0.25,sy); c.closePath(); c.fill(); c.beginPath(); c.moveTo(sx-ss,sy); c.lineTo(sx,sy+ss*0.25); c.lineTo(sx+ss,sy); c.lineTo(sx,sy-ss*0.25); c.closePath(); c.fill(); }
     c.globalAlpha=1; }
   c.restore();
 }
