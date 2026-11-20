@@ -40,7 +40,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #btns button i.ad .ic{vertical-align:0}
 #btns.nudge #bUndo,#btns.nudge #bAdd{animation:nud .5s 3}
 @keyframes nud{50%{transform:translateY(-8px) scale(1.08)}}
-.modal{position:fixed;inset:0;background:#120a1855;display:none;align-items:flex-end;justify-content:center;pointer-events:auto;z-index:10;padding-bottom:9vh}
+.modal{position:fixed;inset:0;background:#120a1855;display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:10;padding:2vh 0}
 .modal.show{display:flex}
 .card{background:linear-gradient(#4a3256,#33213d);border:3px solid #f5c542;border-radius:24px;padding:14px 30px 18px;min-width:250px;max-width:92vw;text-align:center;box-shadow:0 8px 0 #0006;transform:scale(var(--u,1));animation:cardIn .4s cubic-bezier(.3,1.5,.5,1)}
 @keyframes cardIn{0%{transform:translateY(60px) scale(.8);opacity:0}}
@@ -2301,7 +2301,7 @@ function upCost(lv){ return 30+20*lv+10*lv*lv; }
 function showWin(){
   var b0=Math.floor((L.level-1)/6)*6;
   var st=$('stars').children, i; for (i=0;i<3;i++){ st[i].className=''; } void $('stars').offsetWidth; for (i=0;i<winStars;i++) st[i].className='on';
-  $('wnSub').textContent=tl('floor',{n:L.level})+' ✓  →  '+((b0+6)%24===0?'🐉 ':'👹 ')+tl('floor',{n:b0+6});
+  var nb= L.level%6===0? L.level+6 : b0+6; $('wnSub').textContent=tl('floor',{n:L.level})+' ✓  →  '+(nb%24===0?'🐉 ':'👹 ')+tl('floor',{n:nb});
   var p=$('wnPath'), b=Math.floor((L.level-1)/6)*6; p.innerHTML='';
   for (i=1;i<=6;i++){ if (i>1) p.appendChild(document.createElement('u')); var d=document.createElement('i'); d.textContent=b+i; if (b+i<=L.level){ d.className='d'; } if (i===6){ d.className+=' b'; d.textContent=(b+6<=L.level)?'✓':((b+6)%24===0?'🐉':'👹'); } p.appendChild(d); }
   $('wnCoinN').textContent=lastReward; $('wnDbl').style.display=''; $('wnDbl').disabled=false;

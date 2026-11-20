@@ -1666,7 +1666,7 @@ function upCost(lv){ return 30+20*lv+10*lv*lv; }
 function showWin(){
   var b0=Math.floor((L.level-1)/6)*6;
   var st=$('stars').children, i; for (i=0;i<3;i++){ st[i].className=''; } void $('stars').offsetWidth; for (i=0;i<winStars;i++) st[i].className='on';
-  $('wnSub').textContent=tl('floor',{n:L.level})+' ✓  →  '+((b0+6)%24===0?'🐉 ':'👹 ')+tl('floor',{n:b0+6});
+  var nb= L.level%6===0? L.level+6 : b0+6; $('wnSub').textContent=tl('floor',{n:L.level})+' ✓  →  '+(nb%24===0?'🐉 ':'👹 ')+tl('floor',{n:nb});
   var p=$('wnPath'), b=Math.floor((L.level-1)/6)*6; p.innerHTML='';
   for (i=1;i<=6;i++){ if (i>1) p.appendChild(document.createElement('u')); var d=document.createElement('i'); d.textContent=b+i; if (b+i<=L.level){ d.className='d'; } if (i===6){ d.className+=' b'; d.textContent=(b+6<=L.level)?'✓':((b+6)%24===0?'🐉':'👹'); } p.appendChild(d); }
   $('wnCoinN').textContent=lastReward; $('wnDbl').style.display=''; $('wnDbl').disabled=false;
