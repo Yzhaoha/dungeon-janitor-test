@@ -838,7 +838,7 @@ var LEGPH=[0, 0.12, 0.5, 0.62];
 function drawRider(c, n, base, hgt, ph, amp){ var P=riderParts(n); if (!P) return false; var m=ART_META[base]||ART_META[n], bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, k=P.k, sc2=m.w/(1024*k);
   c.save(); c.translate(-cxm*s, -bb[3]*s); c.scale(sc2*s, sc2*s);
   P.legs.forEach(function(lg,j){ var a=ph+LEGPH[j]*Math.PI*2, sw=Math.sin(a), lift=Math.max(0,Math.cos(a)); var px=(LEGX[j][0]+LEGX[j][1])/2*k, py=(LEGY-30)*k;
-    c.save(); c.translate(px,py); c.rotate(sw*0.42*amp); c.scale(1,1-0.16*lift*amp); c.translate(-px,-py); c.drawImage(lg,0,0); c.restore(); });
+    c.save(); c.translate(px,py-lift*34*k*amp); c.rotate(sw*0.8*amp); c.scale(1,1-0.3*lift*amp); c.translate(-px,-py); c.drawImage(lg,0,0); c.restore(); });
   c.drawImage(P.body,0,0); c.restore(); return true; }
 function drawBatFlap(c, t, hgt){ var P=batParts(); if (!P) return false; var m=ART_META.bat, bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, k=P.k, sc2=m.w/(512*k);
   var ph=t*2.3*Math.PI*2; ph+=0.45*Math.sin(ph); var th=Math.sin(ph)*0.42, sx=1-0.2*(1-Math.cos(ph))/2, bob=-Math.sin(ph-0.6)*9*k;
@@ -1066,8 +1066,8 @@ function heroArt(c, t){
   var tier=Math.max(0, SAVE.gear.top|0), n='knight-'+tier; if (!artOk(n)) return heroArtCode(c,t);
   var a=VS&&VS.hAtk>0? 1-VS.hAtk/HA : -1, atk=a>=0.12 && a<0.85 && artOk(n+'-attack'), br=Math.sin(t*3.2), run=heroRun, down=VS&&VS.hDead>0;
   c.save();
-  var amp= run===true? 1 : (+run||0), gph=t*Math.PI*2*2.3;
-  if (run){ c.translate(0, -(0.5+0.5*Math.sin(gph+0.6))*7*amp); c.translate(0,-40); c.rotate(Math.sin(gph)*0.055*amp); c.translate(0,40); }
+  var amp= run===true? 1 : (+run||0), gph=t*Math.PI*2*2.0;
+  if (run){ c.translate(0, -(0.5+0.5*Math.sin(gph+0.6))*13*amp); c.translate(0,-40); c.rotate(Math.sin(gph)*0.09*amp); c.translate(0,40); }
   else c.rotate(atk? -0.04 : (VS&&VS.hDrink>0? -0.06 : 0));
   if (!run && !atk) c.scale(1+br*0.006, 1-br*0.012);
   if (!(run && !atk && drawRider(c, n, n, 130, gph, amp))) drawChar(c, atk? n+'-attack' : n, n, 130);
@@ -2173,7 +2173,7 @@ function playIntro(done){
     if (ride<0.85 && Math.random()<0.5) ps.push({x:hx-20*k,y:fy,vx:-60-Math.random()*60,vy:-30-Math.random()*40,t:0.5});
     for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=q.t; c.fillStyle='#8a7a9a'; c.beginPath(); c.arc(q.x,q.y,4*k,0,6.3); c.fill(); } c.globalAlpha=1;
     if (!rumbled && Snd.live()){ rumbled=true; if (e<0.8) Snd.rumble(); }
-    if (ride<1) for (i=0;i<4;i++){ var hn=Math.floor(e*2.3+LEGPH[i]); if (hn>hoofN[i]){ hoofN[i]=hn; if (hn>0) Snd.hoof(0.35+0.65*Math.min(1,(1-ride)*2.6)); } }
+    if (ride<1) for (i=0;i<4;i++){ var hn=Math.floor(e*2.0+LEGPH[i]); if (hn>hoofN[i]){ hoofN[i]=hn; if (hn>0) Snd.hoof(0.35+0.65*Math.min(1,(1-ride)*2.6)); } }
     if (e>1.2 && !horned && Snd.live()){ horned=true; Snd.horn(); }
     if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').classList.add('pop'); }
     if (e>1.9) $('inStory').style.opacity=1;
