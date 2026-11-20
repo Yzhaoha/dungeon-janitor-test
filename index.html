@@ -166,7 +166,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #gearSum{font-size:13px;font-weight:800;color:#ffe98a;max-width:300px;margin:2px auto 0;line-height:1.45}
 #floorT{position:fixed;inset:0;z-index:26;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#2a1c34,#07040a 75%);opacity:0;pointer-events:none;transition:opacity .35s}
 #floorT.show{opacity:1;pointer-events:auto}
-#ftC{width:300px;height:200px;transform:scale(var(--u,1));margin-bottom:calc(20px * var(--u,1))}
+#ftC{width:360px;height:230px;max-width:94vw;transform:scale(var(--u,1));margin-bottom:calc(14px + 115px * (var(--u,1) - 1))}
 #ftFrom{font-size:20px;font-weight:900;color:#ffe98a;opacity:.8;transform:scale(var(--u,1))}
 #ftTo{font-size:40px;font-weight:900;margin-top:6px;transform:scale(0);transition:transform .45s cubic-bezier(.3,1.7,.5,1)}
 #ftTo.pop{transform:scale(var(--u,1))}
@@ -1377,29 +1377,44 @@ function buildStage(g){
 }
 function DJ_rnd(s){ return function(){ s|=0; s=s+0x6D2B79F5|0; var t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 // an open way out: two stone pillars with lit lamps and light pouring through; the lamp colour and the sign say what waits there
-function gatePos(g,dx,dy){ var k=g.k; return dx<0? {x:g.x+46*k, y:g.gy+3*k, s:1} : (dx>0? {x:g.x+g.w-46*k, y:g.gy+3*k, s:1} : (dy<0? {x:g.x+g.w/2, y:g.gy-21*k, s:0.9} : {x:g.x+g.w/2, y:g.gy+10*k, s:1.04})); }
+function gatePos(g,dx,dy){ var k=g.k; return dx<0? {x:g.x+38*k, y:g.gy+8*k, s:1.2} : (dx>0? {x:g.x+g.w-38*k, y:g.gy+8*k, s:1.2} : (dy<0? {x:g.x+g.w/2, y:g.gy-24*k, s:1.12} : {x:g.x+g.w/2, y:g.gy+10*k, s:1.04})); }
 function drawGate(c,g,t,dx,dy,id,hit){
   var k=g.k, P=gatePos(g,dx,dy), s=P.s*k, r=nodeAt(id), kn=known(id), dn=RT.done[id], boss=r.t==='B', th=THEMES[VS.scn];
   var col= boss? (L.kind==='big'?'255,170,40':(L.kind==='boss'?'255,80,80':'200,110,255')) : (dn? '170,205,255' : (!kn? '205,205,225' : {f:'255,225,120', e:'200,110,255', r:'120,240,130', c:'255,215,80'}[r.t]));
   var pu=0.6+Math.sin(t*5+dx+dy*2)*0.4, pw=21*s, ph=80*s;
   c.save(); c.translate(P.x,P.y);
-  var gr=c.createLinearGradient(0,-ph,0,0); gr.addColorStop(0,'rgba('+col+','+(0.18+pu*0.2)+')'); gr.addColorStop(1,'rgba('+col+','+(0.7+pu*0.25)+')'); c.fillStyle=gr; c.fillRect(-pw,-ph,pw*2,ph);
-  c.fillStyle='rgba(255,255,255,'+(0.2+pu*0.25)+')'; c.fillRect(-pw*0.3,-ph,pw*0.6,ph);
-  if (dy>0){ for (var st2=0;st2<5;st2++){ var sy2=-ph*0.42+st2*ph*0.105, sw2=pw*(0.55+st2*0.09); c.fillStyle='rgba(30,18,40,'+(0.32+st2*0.08)+')'; c.fillRect(-sw2,sy2,sw2*2,ph*0.05); } }
-  c.fillStyle='rgba('+col+','+(0.3+pu*0.25)+')'; el(c,0,3*s,pw*2,8*s); c.fill();
-  [-1,1].forEach(function(sd){ var x0=sd*(pw+6*s), ly=-ph-20*s;
-    rr(c,x0-7*s,-ph-3*s,14*s,ph+5*s,3*s); fs(c,th.fl,2.5*k); c.fillStyle='rgba(0,0,0,0.22)'; c.fillRect(x0+1.5*s,-ph,4*s,ph-2*s); c.fillStyle='rgba(255,255,255,0.18)'; c.fillRect(x0-5*s,-ph,2.5*s,ph-2*s);
-    rr(c,x0-10*s,-ph-11*s,20*s,9*s,3*s); fs(c,th.fl,2.5*k); rr(c,x0-10*s,-4*s,20*s,8*s,3*s); fs(c,th.fd,2.5*k);
-    var lg=c.createRadialGradient(x0,ly,1,x0,ly,30*s); lg.addColorStop(0,'rgba('+col+','+(0.55*pu+0.3)+')'); lg.addColorStop(1,'rgba('+col+',0)'); c.fillStyle=lg; c.fillRect(x0-30*s,ly-30*s,60*s,60*s);
-    rr(c,x0-3*s,ly+6*s,6*s,5*s,1.5*s); fs(c,'#5a3d24',2*k); el(c,x0,ly,8*s); fs(c,'rgb('+col+')',2.5*k); c.fillStyle='rgba(255,255,255,0.9)'; el(c,x0-2.5*s,ly-2.5*s,3*s); c.fill(); });
-  var by=-ph-22*s, br=13*s; el(c,0,by,br); fs(c,'#2a1a2e',2.5*k); c.lineWidth=2.5*k; c.strokeStyle='rgb('+col+')'; el(c,0,by,br-2.5*k); c.stroke();
+  var badgeX=0, badgeY=-ph-22*s;
+  {
+    // DNF-style side exit: an arched doorway in the side wall, seen at an angle (near edge tall, far edge short, converging on the horizon), light spilling onto the floor
+    var sd=dx>0? 1 : (dx<0? -1 : 0), side=dx!==0, xs=side? 0.62 : 1, HW=pw+16*s, hz=-58*s;
+    var mp=function(x,y){ var f=1+(sd*x/HW)*0.22; return [x*xs, hz+(y-hz)*f]; };          // x across the doorway (outer side = sd), y up from the floor
+    var quad=function(pts){ c.beginPath(); pts.forEach(function(q,qi){ var m=mp(q[0],q[1]); if (qi) c.lineTo(m[0],m[1]); else c.moveTo(m[0],m[1]); }); c.closePath(); };
+    var arch=function(r0,y0,ext){ var pts=[], n=14; pts.push([-r0,ext]); for (var a=0;a<=n;a++){ var an=Math.PI+a/n*Math.PI; pts.push([Math.cos(an)*r0, y0+Math.sin(an)*r0]); } pts.push([r0,ext]); return pts; };
+    // light pouring out of the doorway across the floor, toward the room
+    if (!side){ c.fillStyle='rgba('+col+','+(0.3+pu*0.25)+')'; el(c,0,3*s,pw*2,8*s); c.fill(); }
+    else { var f0=mp(-pw,0), f1=mp(pw,0), spill=-sd*80*s; c.beginPath(); c.moveTo(f0[0],f0[1]); c.lineTo(f1[0],f1[1]); c.lineTo(f1[0]+spill,f1[1]+16*s); c.lineTo(f0[0]+spill,f0[1]+10*s); c.closePath();
+    var sg=c.createLinearGradient(0,0,spill,0); sg.addColorStop(0,'rgba('+col+','+(0.35+pu*0.2)+')'); sg.addColorStop(1,'rgba('+col+',0)'); c.fillStyle=sg; c.fill(); }
+    // stone frame (thick arch), then the glowing opening
+    var R=pw+9*s, top=-ph+R; quad(arch(R,top,3*s)); c.fillStyle=th.fl; c.fill(); c.lineWidth=2.5*k; c.strokeStyle=OL; c.stroke();
+    quad(arch(pw,top,0)); var o0=mp(0,-ph), o1=mp(0,0), og=c.createLinearGradient(0,o0[1],0,o1[1]); og.addColorStop(0,'rgba('+col+','+(0.25+pu*0.2)+')'); og.addColorStop(1,'rgba('+col+','+(0.75+pu*0.2)+')'); c.fillStyle='#120a18'; c.fill(); c.fillStyle=og; c.fill(); c.stroke();
+    if (dy>0) for (var st3=0;st3<5;st3++){ var sy3=-ph*0.4+st3*ph*0.085, sw3=pw*(0.5+st3*0.1); c.fillStyle='rgba(30,18,40,'+(0.3+st3*0.09)+')'; c.fillRect(-sw3,sy3,sw3*2,ph*0.045); }
+    quad(arch(pw*0.45,top+pw*0.3,0)); c.fillStyle='rgba(255,255,255,'+(0.18+pu*0.22)+')'; c.fill();
+    // keystone + stone joints on the arch
+    for (var a2=0;a2<=6;a2++){ var an2=Math.PI+a2/6*Math.PI, p1=mp(Math.cos(an2)*pw,top+Math.sin(an2)*pw), p2=mp(Math.cos(an2)*R,top+Math.sin(an2)*R); c.beginPath(); c.moveTo(p1[0],p1[1]); c.lineTo(p2[0],p2[1]); c.lineWidth=1.6*k; c.strokeStyle='rgba(0,0,0,0.35)'; c.stroke(); }
+    // lamps on both jambs (the near one bigger)
+    [-1,1].forEach(function(e3){ var lx=e3*R, lp=mp(lx,-ph*0.62), f=1+(sd*lx/HW)*0.2, lr=7*s*f;
+      var lg2=c.createRadialGradient(lp[0],lp[1],1,lp[0],lp[1],30*s*f); lg2.addColorStop(0,'rgba('+col+','+(0.55*pu+0.3)+')'); lg2.addColorStop(1,'rgba('+col+',0)'); c.fillStyle=lg2; c.fillRect(lp[0]-30*s*f,lp[1]-30*s*f,60*s*f,60*s*f);
+      rr(c,lp[0]-2.5*s*f,lp[1]+5*s*f,5*s*f,6*s*f,1.5*s); fs(c,'#5a3d24',2*k); el(c,lp[0],lp[1],lr); fs(c,'rgb('+col+')',2.5*k); c.fillStyle='rgba(255,255,255,0.9)'; el(c,lp[0]-2*s,lp[1]-2*s,2.5*s*f); c.fill(); });
+    var bp=mp(0,-ph); badgeX=bp[0]; badgeY=bp[1]-11*s;
+  }
+  c.translate(badgeX,0); var by=badgeY, br=13*s; el(c,0,by,br); fs(c,'#2a1a2e',2.5*k); c.lineWidth=2.5*k; c.strokeStyle='rgb('+col+')'; el(c,0,by,br-2.5*k); c.stroke();
   c.textAlign='center'; c.textBaseline='middle';
   if (boss) bossMark(c,0,by,br*0.82,L.kind);
   else if (dn){ c.font='900 '+Math.round(br*1.25)+'px '+FNT; c.fillStyle='#cfe4ff'; c.fillText('✓', 0, by+1); }
   else if (!kn){ c.font='900 '+Math.round(br*1.35)+'px '+FNT; c.fillStyle='#e0e0f0'; c.fillText('?', 0, by+1); }
   else if (r.t==='c'){ el(c,0,by,br*0.48); fs(c,'#ffe98a',2*k); }
   else icon(c, r.t==='f'?'atk':(r.t==='e'?'psn':'heal'), 0, by, br*0.58, '#fff', 2.5);
-  c.restore(); if (hit) doorHits.push({id:id, x:P.x, y:P.y-ph*0.55, r:Math.max(52, 60*k)});
+  c.restore(); if (hit) doorHits.push({id:id, x:P.x+badgeX, y:P.y-ph*0.55, r:Math.max(52, 60*k)});
 }
 function hpBar(c,x,y,w,h,frac,lag,cA,cB,right){
   var cl=function(v){ return Math.max(0,Math.min(1,v)); }, lw=w*cl(lag), fw=w*cl(frac);
@@ -2017,15 +2032,42 @@ $('gearX').onclick=function(){ $('gearM').classList.remove('show'); };
 $('gearBtn').innerHTML='<span class="ic">'+ICO.svg('helm')+'</span>';
 // ----- going down to the next floor: the knight rides down a stairway, then the new floor's name -----
 function floorTransition(n, load){
-  var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, th=THEMES[Math.floor((n-1)/6)%4], W=300, H=200, d=2;
+  var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, th=THEMES[Math.floor((n-1)/6)%4], W=360, H=230, d=2;
   $('ftFrom').textContent=tl('floor',{n:n-1})+' ✓'; var to=$('ftTo'); to.textContent=(kind==='big'? '🐉 ' : (kind==='boss'? '👹 ' : '⚔️ '))+tl('floor',{n:n}); to.className='out';
   $('ftSub').textContent=(kind==='big'? tl('bigF') : (kind==='boss'? tl('bossF') : tl('ftMini')))+'   ·   '+(n<=FINAL? tl('ftLeft',{n:FINAL-n+1}) : tl('endless')); $('ftSub').className='out';
   cvT.width=W*d; cvT.height=H*d; ft.classList.add('show'); Snd.door();
+  var NS=10, SX=6, SY=70, SW=32, SR=14, DP=10;   // stairs: NS steps from (SX,SY) down to the right, each SW wide and SR tall
   var step=function(){ var e=(performance.now()-t0)/1000, c=cvT.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,W,H); c.lineJoin='round';
-    var i, gl=c.createRadialGradient(W-30,H-20,4,W-30,H-20,120); gl.addColorStop(0,'rgba('+th.gl+',0.45)'); gl.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=gl; c.fillRect(0,0,W,H);
-    for (i=0;i<6;i++){ var sx=8+i*46, sy=70+i*22; c.fillStyle=shade(th.fl,-0.12-i*0.07); rr(c,sx,sy,70,H-sy+10,5); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); c.fillStyle='rgba(255,255,255,0.16)'; c.fillRect(sx+3,sy+3,62,3); }
-    var p=Math.min(1,Math.max(0,(e-0.2)/1.35)), kk=p*5, x=32+kk*46, y=70+Math.floor(kk+0.5)*22-Math.abs(Math.sin(kk*Math.PI))*9;
-    c.save(); c.translate(x,y); c.scale(0.5,0.5); var keep=heroRun; heroRun=p>0&&p<1; try{ heroArt(c,e); }catch(err){} heroRun=keep; c.restore();
+    var i, j2, wall=shade(th.fl,-0.45), mort=shade(th.fl,-0.62);
+    // dungeon brick wall
+    rr(c,0,0,W,H,14); c.save(); c.clip(); c.fillStyle=wall; c.fillRect(0,0,W,H);
+    for (j2=0;j2<12;j2++){ var by2=j2*18; for (i=-1;i<12;i++){ var bx2=i*34+(j2%2? 17 : 0), sh2=((i*7+j2*13)%5)*0.025; c.fillStyle=shade(th.fl,-0.4-sh2); c.fillRect(bx2+1.5,by2+1.5,31,15); c.fillStyle='rgba(255,255,255,0.05)'; c.fillRect(bx2+1.5,by2+1.5,31,2); } }
+    c.fillStyle=mort; for (j2=0;j2<12;j2++) c.fillRect(0,j2*18,W,1.5);
+    // the arch at the bottom of the stairs, glowing with the next floor
+    var ax=W-34, ay=H-6, aw=30, ah=74, pu2=0.75+Math.sin(e*4)*0.12;
+    c.beginPath(); c.moveTo(ax-aw-9,ay); c.lineTo(ax-aw-9,ay-ah+aw); c.arc(ax,ay-ah+aw,aw+9,Math.PI,0); c.lineTo(ax+aw+9,ay); c.closePath(); c.fillStyle=shade(th.fl,-0.1); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke();
+    for (i=0;i<=6;i++){ var an=Math.PI+i/6*Math.PI; c.beginPath(); c.moveTo(ax+Math.cos(an)*aw,ay-ah+aw+Math.sin(an)*aw); c.lineTo(ax+Math.cos(an)*(aw+9),ay-ah+aw+Math.sin(an)*(aw+9)); c.lineWidth=1.4; c.strokeStyle='rgba(0,0,0,0.4)'; c.stroke(); }
+    c.beginPath(); c.moveTo(ax-aw,ay); c.lineTo(ax-aw,ay-ah+aw); c.arc(ax,ay-ah+aw,aw,Math.PI,0); c.lineTo(ax+aw,ay); c.closePath(); var ag=c.createLinearGradient(0,ay-ah,0,ay); ag.addColorStop(0,'#080408'); ag.addColorStop(1,'rgba('+th.gl+','+pu2+')'); c.fillStyle=ag; c.fill(); c.stroke();
+    var gl=c.createRadialGradient(ax,ay,4,ax,ay,130); gl.addColorStop(0,'rgba('+th.gl+','+(0.4*pu2)+')'); gl.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=gl; c.fillRect(0,0,W,H);
+    // two torches on the wall
+    [[80,40],[220,32]].forEach(function(tp,ti){ var tx=tp[0], ty=tp[1], fl=0.85+Math.sin(e*13+ti*2)*0.12+Math.sin(e*7.3+ti)*0.06;
+      var tg=c.createRadialGradient(tx,ty-6,2,tx,ty-6,58); tg.addColorStop(0,'rgba(255,170,70,0.42)'); tg.addColorStop(1,'rgba(255,170,70,0)'); c.fillStyle=tg; c.fillRect(tx-58,ty-64,116,116);
+      c.fillStyle='#4a3424'; c.beginPath(); c.moveTo(tx-6,ty); c.lineTo(tx+6,ty); c.lineTo(tx+3,ty+14); c.lineTo(tx-3,ty+14); c.closePath(); c.fill(); c.lineWidth=1.6; c.strokeStyle=OL; c.stroke();
+      c.fillStyle='#ff8a2a'; el(c,tx,ty-7*fl,6,11*fl); c.fill(); c.fillStyle='#ffd27a'; el(c,tx,ty-5*fl,3.6,7*fl); c.fill(); c.fillStyle='#fff6d0'; el(c,tx,ty-3,1.8,3.5*fl); c.fill(); });
+    // stone stairs going down to the right: dark mass underneath, then each step (tread + riser with block joints)
+    // side of the staircase: a stone wall under the steps, darker toward the bottom
+    c.save(); c.beginPath(); c.moveTo(SX,SY+SR); for (i=0;i<NS;i++){ c.lineTo(SX+i*SW+SW,SY+i*SR+SR); c.lineTo(SX+i*SW+SW,SY+(i+1)*SR+SR); } c.lineTo(SX+NS*SW,H); c.lineTo(SX,H); c.closePath(); c.clip();
+    var sg2=c.createLinearGradient(0,SY,0,H); sg2.addColorStop(0,shade(th.fl,-0.3)); sg2.addColorStop(1,shade(th.fl,-0.68)); c.fillStyle=sg2; c.fillRect(0,0,W,H);
+    for (j2=0;j2<14;j2++){ for (i=-1;i<14;i++){ var bx3=i*28+(j2%2? 14 : 0), by3=SY+j2*13; c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=1.2; c.strokeRect(bx3,by3,28,13); } } c.restore();
+    for (i=0;i<NS;i++){ var x0=SX+i*SW, y0=SY+i*SR+SR, lit=Math.max(0,1-Math.abs(x0-80)/120)*0.14+Math.max(0,1-Math.abs(x0-220)/110)*0.14, sh3=-i*0.025;
+      c.beginPath(); c.moveTo(x0,y0); c.lineTo(x0+DP,y0-DP*0.9); c.lineTo(x0+SW+DP,y0-DP*0.9); c.lineTo(x0+SW,y0); c.closePath(); c.fillStyle=shade(th.fl,0.02+lit+sh3); c.fill(); c.lineWidth=1.5; c.strokeStyle=OL; c.stroke();   // tread (top, going back)
+      c.fillStyle='rgba(255,255,255,0.22)'; c.fillRect(x0+1,y0-1.4,SW-1,1.4);
+      c.beginPath(); c.rect(x0,y0,SW,SR); c.fillStyle=shade(th.fl,-0.22+lit*0.7+sh3); c.fill(); c.stroke();                                  // riser (front)
+      c.fillStyle='rgba(0,0,0,0.3)'; c.fillRect(x0+((i*11)%3+1)*SW/4,y0+1,1.2,SR-2); c.fillStyle='rgba(0,0,0,0.25)'; c.fillRect(x0,y0+SR-3,SW,3); }
+    c.restore(); rr(c,1,1,W-2,H-2,14); c.lineWidth=3; c.strokeStyle='#c79a52'; c.stroke();
+    // the knight rides down the stairs
+    var p=Math.min(1,Math.max(0,(e-0.15)/1.6)), x=SX+18+p*(NS-1.3)*SW, si=Math.min(NS-1,Math.max(0,Math.floor((x-SX)/SW))), y=SY+SR-DP*0.45+si*SR+(((x-SX)%SW)/SW)*SR*0.35-Math.abs(Math.sin(p*(NS-1)*Math.PI))*3;
+    c.save(); c.beginPath(); c.rect(0,0,ax-aw+4,H); c.rect(ax-aw+4,0,W,ay-ah+aw-30); c.clip(); c.translate(x+DP*0.5,y); c.rotate(0.22); c.scale(0.5,0.5); var keep=heroRun; heroRun=p>0&&p<1; try{ heroArt(c,e); }catch(err){} heroRun=keep; c.restore();
     if (e>0.95 && to.className.indexOf('pop')<0){ to.className='out pop'; Snd.horn(); }
     if (e>1.3) $('ftSub').className='out on';
     if (e>1.15 && !loaded){ loaded=true; load(); }
@@ -2309,7 +2351,7 @@ function boot2(){
   if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); var tries=0, waitArt=function(){ if ((artOk('knight-2')&&artOk('dragon')&&artOk('room-arch')) || ++tries>60){ SAVE.gear.top=2; drawPoster(); } else setTimeout(waitArt,100); }; waitArt(); return; }
   if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
   else playIntro(maybeDaily);
-  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
+  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 PF.init().then(boot, boot);
