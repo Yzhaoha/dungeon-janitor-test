@@ -178,6 +178,21 @@ function artLoad(prog, done, wait){ var names=ART_META? Object.keys(ART_META) : 
   if (!left){ fin(); return; } setTimeout(fin, wait||12000);
   names.forEach(function(n){ var im=new Image(); im.onload=function(){ ART[n]=im; bgCache=null; stageCache=null; one(); }; im.onerror=one; im.src='img/'+n+'.webp'; }); }
 function artOk(n){ return !!ART[n]; }
+// bat wings: the painting is cut (soft seam) into left wing / body / right wing once, then each wing swings about its shoulder
+var BATP=null;
+function batParts(){ if (BATP!==null) return BATP; BATP=false; var im=ART.bat; if (!im) return false;
+  try{ var W=im.naturalWidth, H=im.naturalHeight, k=W/512, src=document.createElement('canvas'); src.width=W; src.height=H; var sc=src.getContext('2d'); sc.drawImage(im,0,0); var d=sc.getImageData(0,0,W,H);
+    var parts=[0,1,2].map(function(){ var cv2=document.createElement('canvas'); cv2.width=W; cv2.height=H; return cv2; }), ds=parts.map(function(cv2){ return cv2.getContext('2d').createImageData(W,H); });
+    function rp(v,a,b){ return Math.max(0,Math.min(1,(v-a)/(b-a))); }
+    for (var y=0;y<H;y++) for (var x=0;x<W;x++){ var X=x/k, Y=y/k, l=1-rp(X,166,182), r=rp(X,296,312); if (Y<258 && X>146) l=0; if (Y<238 && X<318) r=0;
+      var i=(y*W+x)*4, al=d.data[i+3], m=[l,1-l-r,r]; for (var j=0;j<3;j++){ var o=ds[j].data; o[i]=d.data[i]; o[i+1]=d.data[i+1]; o[i+2]=d.data[i+2]; o[i+3]=al*m[j]; } }
+    parts.forEach(function(cv2,j){ cv2.getContext('2d').putImageData(ds[j],0,0); }); BATP={L:parts[0], B:parts[1], R:parts[2], k:k}; }catch(e){ BATP=false; }
+  return BATP; }
+function drawBatFlap(c, t, hgt){ var P=batParts(); if (!P) return false; var m=ART_META.bat, bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, k=P.k, sc2=m.w/(512*k);
+  var ph=t*2.3*Math.PI*2; ph+=0.45*Math.sin(ph); var th=Math.sin(ph)*0.42, sx=1-0.2*(1-Math.cos(ph))/2, bob=-Math.sin(ph-0.6)*9*k;
+  c.save(); c.translate(-cxm*s, -bb[3]*s); c.scale(sc2*s, sc2*s); c.translate(0,bob);
+  [[P.L,176,272,-th],[P.R,302,240,th]].forEach(function(w){ c.save(); c.translate(w[1]*k,w[2]*k); c.rotate(w[3]); c.scale(sx,1); c.translate(-w[1]*k,-w[2]*k); c.drawImage(w[0],0,0); c.restore(); });
+  c.drawImage(P.B,0,0); c.restore(); return true; }
 // draw picture n with its feet at 0,0; hgt is the height of base's opaque box (base = the idle pose, so the attack pose lines up)
 function drawChar(c, n, base, hgt){ var im=ART[n], m=ART_META[base]||ART_META[n], bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, sc2=m.w/im.naturalWidth;
   c.drawImage(im, -cxm*s, -bb[3]*s, im.naturalWidth*sc2*s, im.naturalHeight*sc2*s); }
@@ -619,7 +634,7 @@ mArt.dragon=function(c,t,col,wa,ang,mood,a){
 // mark for the floor's boss room on the maps and gates: a white skull with a gold crown (mini boss), horns (boss), crown and wings (great boss)
 Object.keys(MIMG).forEach(function(kd){ var code=mArt[kd]; mArt[kd]=function(c,t,col,wa,ang,mood,a){ var n=MIMG[kd]; if (!artOk(n)) return code(c,t,col,wa,ang,mood,a);
   var atk=a>=0.12 && a<0.85 && artOk(n+'-attack'), br=Math.sin(t*3.2+1); c.save();
-  if (kd==='bat'){ var flap=((t*2.4)%1)<0.22; c.translate(0,-30+Math.sin(t*3.4)*5+(a>=0? Math.sin(Math.min(1,a/0.6)*Math.PI)*20 : 0)); drawChar(c, (atk||flap)&&artOk(n+'-attack')? n+'-attack' : n, n, MHI[kd].h); }
+  if (kd==='bat'){ c.translate(0,-30+(a>=0? Math.sin(Math.min(1,a/0.6)*Math.PI)*20 : 0)); if (atk&&artOk(n+'-attack')) drawChar(c, n+'-attack', n, MHI[kd].h); else if (!drawBatFlap(c, t, MHI[kd].h)){ c.translate(0,Math.sin(t*3.4)*5); drawChar(c, n, n, MHI[kd].h); } }
   else { if (!atk) c.scale(1+br*0.012, 1-br*0.02); else c.rotate(-0.03); drawChar(c, atk? n+'-attack' : n, n, MHI[kd].h); }
   c.restore(); }; });
 // mark for the floor's boss room on the maps and gates. Boss and great boss: a red horned bull skull with glowing eyes (the
