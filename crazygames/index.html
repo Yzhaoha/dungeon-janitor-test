@@ -835,11 +835,14 @@ function riderParts(n){ if (RIDEP[n]!==undefined) return RIDEP[n]; RIDEP[n]=fals
     cvs.forEach(function(c2,j){ c2.getContext('2d').putImageData(ds[j],0,0); }); RIDEP[n]={body:cvs[0], legs:cvs.slice(1), k:k}; }catch(e){ }
   return RIDEP[n]; }
 // gallop phase per leg (rear pair, then front pair, slightly staggered)
-var LEGPH=[0, 0.12, 0.5, 0.62];
+var LEGPH=[0.4, 0.3, 0.1, 0];   // hind-left, hind-right, fore-left, fore-right: a transverse gallop, the hooves land one after another
 function drawRider(c, n, base, hgt, ph, amp){ var P=riderParts(n); if (!P) return false; var m=ART_META[base]||ART_META[n], bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, k=P.k, sc2=m.w/(1024*k);
   c.save(); c.translate(-cxm*s, -bb[3]*s); c.scale(sc2*s, sc2*s);
-  P.legs.forEach(function(lg,j){ var a=ph+LEGPH[j]*Math.PI*2, sw=Math.sin(a), lift=Math.max(0,Math.cos(a)); var px=(LEGX[j][0]+LEGX[j][1])/2*k, py=(LEGY-30)*k;
-    c.save(); c.translate(px,py-lift*34*k*amp); c.rotate(sw*0.8*amp); c.scale(1,1-0.3*lift*amp); c.translate(-px,-py); c.drawImage(lg,0,0); c.restore(); });
+  P.legs.forEach(function(lg,j){ var u=((ph/(Math.PI*2)-LEGPH[j])%1+1)%1, ang, lift=0, A=0.62;
+    if (u<0.5) ang=-A+2*A*(u/0.5);                                  // hoof on the ground: sweeps from reaching forward to pushing back
+    else { var v=(u-0.5)/0.5, e2=v<0.5? 2*v*v : 1-Math.pow(-2*v+2,2)/2; ang=A-2*A*e2; lift=Math.sin(v*Math.PI); }   // in the air: folded and whipped forward
+    var px=(LEGX[j][0]+LEGX[j][1])/2*k, py=(LEGY-30)*k;
+    c.save(); c.translate(px,py-lift*30*k*amp); c.rotate(ang*amp); c.scale(1,1-0.32*lift*amp); c.translate(-px,-py); c.drawImage(lg,0,0); c.restore(); });
   c.drawImage(P.body,0,0); c.restore(); return true; }
 function drawBatFlap(c, t, hgt){ var P=batParts(); if (!P) return false; var m=ART_META.bat, bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, k=P.k, sc2=m.w/(512*k);
   var ph=t*2.3*Math.PI*2; ph+=0.45*Math.sin(ph); var th=Math.sin(ph)*0.42, sx=1-0.2*(1-Math.cos(ph))/2, bob=-Math.sin(ph-0.6)*9*k;
@@ -1067,8 +1070,8 @@ function heroArt(c, t){
   var tier=Math.max(0, SAVE.gear.top|0), n='knight-'+tier; if (!artOk(n)) return heroArtCode(c,t);
   var a=VS&&VS.hAtk>0? 1-VS.hAtk/HA : -1, atk=a>=0.12 && a<0.85 && artOk(n+'-attack'), br=Math.sin(t*3.2), run=heroRun, down=VS&&VS.hDead>0;
   c.save();
-  var amp= run===true? 1 : (+run||0), gph=t*Math.PI*2*2.0;
-  if (run){ c.translate(0, -(0.5+0.5*Math.sin(gph+0.6))*13*amp); c.translate(0,-40); c.rotate(Math.sin(gph)*0.09*amp); c.translate(0,40); }
+  var amp= run===true? 1 : (+run||0), gph=t*Math.PI*2*2.6;
+  if (run){ c.translate(0, -Math.abs(Math.sin(gph/2+0.4))*4*amp); c.translate(0,-30); c.rotate((0.05+Math.sin(gph)*0.02)*amp); c.translate(0,30); }
   else c.rotate(atk? -0.04 : (VS&&VS.hDrink>0? -0.06 : 0));
   if (!run && !atk) c.scale(1+br*0.006, 1-br*0.012);
   if (!(run && !atk && drawRider(c, n, n, 130, gph, amp))) drawChar(c, atk? n+'-attack' : n, n, 130);
@@ -2169,12 +2172,13 @@ function playIntro(done){
     c.fillStyle='#120c18'; c.fillRect(0,fy,W,H-fy); c.fillStyle='#3a2a48'; c.fillRect(0,fy,W,3); }
     var ride=Math.min(1,e/2.4), rp2= ride<0.6? ride/0.6*0.75 : 0.75+0.25*Math.sin((ride-0.6)/0.4*Math.PI/2), hx=-70*k+((artOk('gate')? W*0.3 : W*0.34)+70*k)*rp2, keep=[heroRun,won,choosing,VS&&VS.empty];
     heroRun= ride<1? Math.max(0.05, Math.min(1, (1-ride)*2.6)) : false; won=false; choosing=false; if (VS) VS.empty=false;
+    var spd= ride<1? Math.min(1,(1-ride)*2.6) : 0; if (spd>0.15){ c.save(); c.lineCap='round'; for (i=0;i<6;i++){ var ly2=fy-(18+((i*37)%110))*k*1.1, ln=(40+((i*53)%60))*k*spd, lx=hx-(70+((i*29+e*900)%140))*k; c.strokeStyle='rgba(255,240,210,'+(0.32*spd)+')'; c.lineWidth=(1.5+(i%3))*k*0.7; c.beginPath(); c.moveTo(lx,ly2); c.lineTo(lx-ln,ly2); c.stroke(); } c.restore(); }
     c.save(); c.translate(hx,fy); c.scale(k*1.1,k*1.1); c.fillStyle='rgba(0,0,0,0.4)'; el(c,0,3,44,7); c.fill(); try{ heroArt(c,e); }catch(err){} c.restore();
     heroRun=keep[0]; won=keep[1]; choosing=keep[2]; if (VS) VS.empty=keep[3];
-    if (ride<0.85 && Math.random()<0.5) ps.push({x:hx-20*k,y:fy,vx:-60-Math.random()*60,vy:-30-Math.random()*40,t:0.5});
+    if (ride<0.85 && Math.random()<0.8) ps.push({x:hx-30*k+Math.random()*50*k,y:fy-2*k,vx:-80-Math.random()*90,vy:-20-Math.random()*50,t:0.4+Math.random()*0.3});
     for (i=ps.length-1;i>=0;i--){ var q=ps[i]; q.t-=1/60; if (q.t<=0){ ps.splice(i,1); continue; } q.x+=q.vx/60; q.y+=q.vy/60; c.globalAlpha=q.t; c.fillStyle='#8a7a9a'; c.beginPath(); c.arc(q.x,q.y,4*k,0,6.3); c.fill(); } c.globalAlpha=1;
     if (!rumbled && Snd.live()){ rumbled=true; if (e<0.8) Snd.rumble(); }
-    if (ride<1) for (i=0;i<4;i++){ var hn=Math.floor(e*2.0+LEGPH[i]); if (hn>hoofN[i]){ hoofN[i]=hn; if (hn>0) Snd.hoof(0.35+0.65*Math.min(1,(1-ride)*2.6)); } }
+    if (ride<1) for (i=0;i<4;i++){ var hn=Math.floor(e*2.6-LEGPH[i]); if (hn>hoofN[i]){ hoofN[i]=hn; if (hn>0) Snd.hoof(0.35+0.65*Math.min(1,(1-ride)*2.6)); } }
     if (e>1.2 && !horned && Snd.live()){ horned=true; Snd.horn(); }
     if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').classList.add('pop'); }
     if (e>1.9) $('inStory').style.opacity=1;
