@@ -171,7 +171,12 @@ function shade(hex, k){ var n=parseInt(hex.slice(1),16), r=n>>16, g=(n>>8)&255, 
 var CAP=DJ.CAP;
 // ---------------- painted art (art/*.png, shrunk to img/*.webp by the build). The code-drawn versions stay as the fallback ----------------
 var ART_META=/*ART_META*/null, ART={};
-function artLoad(){ if (!ART_META) return; Object.keys(ART_META).forEach(function(n){ var im=new Image(); im.onload=function(){ ART[n]=im; bgCache=null; stageCache=null; }; im.src='img/'+n+'.webp'; }); }
+// loads every picture; done() fires once all have arrived (or failed), or after `wait` ms on a slow line - whichever is first
+function artLoad(prog, done, wait){ var names=ART_META? Object.keys(ART_META) : [], left=names.length, fired=false;
+  function fin(){ if (!fired){ fired=true; done(); } }
+  function one(){ left--; if (prog) prog(1-left/Math.max(1,names.length)); if (left<=0) fin(); }
+  if (!left){ fin(); return; } setTimeout(fin, wait||12000);
+  names.forEach(function(n){ var im=new Image(); im.onload=function(){ ART[n]=im; bgCache=null; stageCache=null; one(); }; im.onerror=one; im.src='img/'+n+'.webp'; }); }
 function artOk(n){ return !!ART[n]; }
 // draw picture n with its feet at 0,0; hgt is the height of base's opaque box (base = the idle pose, so the attack pose lines up)
 function drawChar(c, n, base, hgt){ var im=ART[n], m=ART_META[base]||ART_META[n], bb=m.bb, s=hgt/(bb[3]-bb[1]), cxm=(bb[0]+bb[2])/2, sc2=m.w/im.naturalWidth;
@@ -1078,6 +1083,52 @@ var tutMv=null, plan=null;
 // hints follow one stored solution, so repeated hints always make progress
 function nextHint(){ if (!plan || !plan.length) plan=DJ.solve(B); var m= plan && plan.length ? plan[0] : null; if (m && ((V[m[0]]&&V[m[0]].lock>0)||(V[m[1]]&&V[m[1]].lock>0))) return null; return m; }
 
+
+// ---------------- UI icons: every emoji in the HUD/menus is swapped for a drawn icon in one style (gold/colour fill, dark outline) ----------------
+var ICO=(function(){ var O='#2a1820';
+  function g(body,sw){ return '<g stroke="'+O+'" stroke-width="'+(sw||2.2)+'" stroke-linejoin="round" stroke-linecap="round" paint-order="stroke">'+body+'</g>'; }
+  function line(d,col,w){ return '<path d="'+d+'" fill="none" stroke="'+O+'" stroke-width="'+(w+3.4)+'" stroke-linecap="round" stroke-linejoin="round"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  var GOLD='#ffd76a', GH='#fff3c4';
+  var I={
+    atk: g('<polygon transform="rotate(40)" points="-1.8,2.5 -1.8,-7 0,-10.4 1.8,-7 1.8,2.5 5.4,2.5 5.4,4.9 1.4,4.9 1.4,10.2 -1.4,10.2 -1.4,4.9 -5.4,4.9 -5.4,2.5" fill="#e9eef6"/><polygon transform="rotate(40)" points="5.4,2.5 5.4,4.9 -5.4,4.9 -5.4,2.5" fill="'+GOLD+'" stroke="none"/>'),
+    shd: g('<path d="M0,-9.6 L8.4,-6.6 L8.4,0 Q7.8,7.2 0,10.2 Q-7.8,7.2 -8.4,0 L-8.4,-6.6Z" fill="#6fa8ff"/><path d="M0,-6.6 L5.4,-4.6 L5.4,0 Q5,4.8 0,7" fill="#a9ccff" stroke="none"/>'),
+    heal: g('<path d="M0,9.4 C-15.4,-0.5 -8,-12.8 0,-4.6 C8,-12.8 15.4,-0.5 0,9.4Z" fill="#ff5f7a"/><ellipse cx="-4.6" cy="-3.6" rx="2" ry="1.4" fill="#ffc2cc" stroke="none"/>'),
+    heal2: g('<path d="M0,9.4 C-15.4,-0.5 -8,-12.8 0,-4.6 C8,-12.8 15.4,-0.5 0,9.4Z" fill="#5fd068"/><ellipse cx="-4.6" cy="-3.6" rx="2" ry="1.4" fill="#c8f5c0" stroke="none"/>'),
+    stun: g('<polygon points="3,-10.4 -6.4,1.4 -0.6,1.4 -3.2,10.4 6.4,-2.2 0.6,-2.2" fill="#ffe14a"/>'),
+    psn: g('<circle cx="0" cy="-2" r="7.8" fill="#d3b0ff"/><rect x="-4.3" y="3" width="8.6" height="6.4" rx="1.4" fill="#d3b0ff"/><circle cx="0" cy="-2" r="7.8" fill="#d3b0ff" stroke="none"/>')+'<circle cx="-3" cy="-1.8" r="2.3" fill="'+O+'"/><circle cx="3" cy="-1.8" r="2.3" fill="'+O+'"/><rect x="-0.6" y="4.4" width="1.2" height="5" fill="'+O+'"/>',
+    mag: g('<polygon points="0,-10.4 2.5,-2.5 10.4,0 2.5,2.5 0,10.4 -2.5,2.5 -10.4,0 -2.5,-2.5" fill="#f3e2ff"/><polygon points="7,-10 8,-7.6 10.4,-6.6 8,-5.6 7,-3.2 6,-5.6 3.6,-6.6 6,-7.6" fill="'+GOLD+'"/>',1.6),
+    ad: g('<rect x="-10.4" y="-7.6" width="20.8" height="15.2" rx="4" fill="#8b5cf6"/><polygon points="-3,-4.4 5,0 -3,4.4" fill="#fff" stroke="none"/>',1.8),
+    flask: g('<path d="M-3.4,-10 H3.4 V-4 L9.4,5.4 A3,3 0 0 1 6.8,10 H-6.8 A3,3 0 0 1 -9.4,5.4 L-3.4,-4Z" fill="#cfeaff"/><path d="M-6.2,0.8 H6.2 L9.2,5.6 A2.6,2.6 0 0 1 6.8,9.4 H-6.8 A2.6,2.6 0 0 1 -9.2,5.6Z" fill="#5fd068" stroke="none"/><rect x="-4.4" y="-11.6" width="8.8" height="3" rx="1.2" fill="#b98a52"/><path d="M-5.6,6.6 L-2.8,2" fill="none" stroke="#fff" stroke-width="1.4" opacity=".8"/>'),
+    plus: g('<circle cx="0" cy="0" r="5.4" fill="'+GOLD+'"/>',1.8)+'<path d="M-2.8,0 H2.8 M0,-2.8 V2.8" stroke="'+O+'" stroke-width="1.9" stroke-linecap="round"/>',
+    undo: line('M7.6,9 V2.6 A6.4,6.4 0 0 0 1.2,-3.8 H-4.4',GOLD,3.8)+g('<polygon points="-10.4,-3.8 -3.4,-10 -3.4,2.4" fill="'+GOLD+'"/>'),
+    redo: line('M6.6,2.4 A7,7 0 1 1 3.5,-6.06',GOLD,3.8)+g('<polygon points="8.4,-3.2 1,-1.4 5.8,-11" fill="'+GOLD+'"/>'),
+    bulb: g('<path d="M-4,4.4 C-4,1 -7.6,-0.4 -7.6,-4 A7.6,7.6 0 0 1 7.6,-4 C7.6,-0.4 4,1 4,4.4Z" fill="#ffe680"/><rect x="-4.2" y="4.2" width="8.4" height="5.4" rx="1.6" fill="#b9a68a"/>')+'<path d="M-4,6.4 H4" stroke="'+O+'" stroke-width="1.2"/><path d="M-4,-5.2 A4.4,4.4 0 0 1 -0.4,-8.6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>',
+    spk: g('<polygon points="-10,-3.6 -5,-3.6 1,-9.2 1,9.2 -5,3.6 -10,3.6" fill="'+GOLD+'"/>')+line('M4.8,-4 Q7.8,0 4.8,4',GOLD,2.2)+line('M7.8,-7.4 Q12.6,0 7.8,7.4',GOLD,2.2),
+    mute: g('<polygon points="-10,-3.6 -5,-3.6 1,-9.2 1,9.2 -5,3.6 -10,3.6" fill="#b9a68a"/>')+line('M4.6,-3.6 L10.6,3.6 M10.6,-3.6 L4.6,3.6','#ff6a5a',2.4),
+    globe: g('<circle cx="0" cy="0" r="9.6" fill="#5fa8f0"/>')+'<path d="M-5,-6 Q-1,-3 -3,0 Q-6,2 -5,6 Q-8,3 -8.4,0 Q-8,-4 -5,-6Z M2,-8.6 Q6,-6 4,-3 Q8,-1 7.4,3 Q5,6 2,8.4 Q3,3 0,1 Q3,-3 2,-8.6Z" fill="#7ad37a" stroke="'+O+'" stroke-width="1"/><circle cx="0" cy="0" r="9.6" fill="none" stroke="'+O+'" stroke-width="2"/><ellipse cx="0" cy="0" rx="4.2" ry="9.6" fill="none" stroke="'+O+'" stroke-width="1" opacity=".55"/><path d="M-9.6,0 H9.6" stroke="'+O+'" stroke-width="1" opacity=".55"/>',
+    ques: g('<circle cx="0" cy="0" r="9.8" fill="#8b5cf6"/>')+'<text x="0" y="5.4" text-anchor="middle" font-size="15" font-weight="900" font-family="Arial,sans-serif" fill="#fff">?</text>',
+    door: g('<path d="M-8,10.4 V-1.6 A8,8 0 0 1 8,-1.6 V10.4Z" fill="#8a8494"/><path d="M-4.8,10.4 V-1 A4.8,4.8 0 0 1 4.8,-1 V10.4Z" fill="#ffd76a"/>')+'<circle cx="-8" cy="-5" r="1.8" fill="#ffe680" stroke="'+O+'" stroke-width="1"/><circle cx="8" cy="-5" r="1.8" fill="#ffe680" stroke="'+O+'" stroke-width="1"/>',
+    chain: '<g transform="rotate(-40)">'+line('M-9,-2.6 H-1 A2.6,2.6 0 0 1 -1,2.6 H-9 A2.6,2.6 0 0 1 -9,-2.6Z','#c9ccd6',2.2)+line('M1,-2.6 H9 A2.6,2.6 0 0 1 9,2.6 H1 A2.6,2.6 0 0 1 1,-2.6Z','#c9ccd6',2.2)+line('M-3.4,0 H3.4','#e9ecf2',2.2)+'</g>',
+    boom: g('<polygon points="0,-11 2.6,-5 9,-8 5.6,-2 11,1 4.8,3 7,10 1,5.4 -3,11 -3.4,4.6 -10.4,6 -6,0.4 -11,-4.4 -4.2,-4 -5.4,-10.4" fill="#ff8a3c"/><polygon points="0,-5.4 1.6,-1.8 5,-1.6 2.2,1.2 3,5 0,3 -3,5 -2.2,1.2 -5,-1.6 -1.6,-1.8" fill="#ffe14a" stroke="none"/>',1.8),
+    broke: g('<path d="M0,9.4 C-15.4,-0.5 -8,-12.8 0,-4.6 L-2.4,0 L1.6,2.4 L-1,6.6 Z" fill="#c23a4e"/><path d="M1.6,9 L3.4,5.6 L0.4,3 L3.2,-1.2 L1.2,-4 C8.6,-12 15.4,-0.6 1.6,9Z" fill="#c23a4e"/>'),
+    star: g('<polygon points="0,-10.4 3,-3.4 10.4,-3.2 4.6,1.8 6.6,9.4 0,5.2 -6.6,9.4 -4.6,1.8 -10.4,-3.2 -3,-3.4" fill="#ffe14a"/>'),
+    up: g('<polygon points="0,-9 8,0 3,0 3,8.4 -3,8.4 -3,0 -8,0" fill="#fff"/>',1.6),
+    helm: g('<path d="M0,-12 Q7,-14.5 10.4,-8 Q5,-9.6 1.4,-7.4Z" fill="#d8402f"/><path d="M-8.4,10 V-0.6 A8.4,9.4 0 0 1 8.4,-0.6 V10 Q0,7.6 -8.4,10Z" fill="#d4d8e2"/><path d="M-1.4,-9.6 Q0,-11 1.4,-9.6 V9 H-1.4Z" fill="'+GOLD+'"/>')+'<path d="M-6.4,0.6 H6.4 M0,0.6 V7.4" stroke="'+O+'" stroke-width="2.6" stroke-linecap="round"/><circle cx="-3.4" cy="0.6" r="0.9" fill="#ff4a3a"/><circle cx="3.4" cy="0.6" r="0.9" fill="#ff4a3a"/><path d="M-6.4,-2.6 A7,7 0 0 1 -3,-7.4" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>',
+    arr: g('<polygon points="0,-8.6 9,5.6 -9,5.6" fill="#3a2440" stroke="#3a2440" stroke-width="2.6"/>')
+  };
+  function svg(n){ return '<svg viewBox="-12 -12 24 24" aria-hidden="true">'+I[n]+'</svg>'; }
+  return { svg:svg, has:function(n){ return !!I[n]; } };
+})();
+var EMO={'📺':'ad','⚔':'atk','🛡':'shd','❤':'heal','💚':'heal2','⚡':'stun','☠':'psn','✨':'mag','🧪':'flask','↩':'undo','🔄':'redo','💡':'bulb','🔊':'spk','🔇':'mute','🌐':'globe','❓':'ques','🚪':'door','⛓':'chain','💥':'boom','💫':'broke','⬆':'up','👹':'#boss','🐉':'#big','💀':'#n'};
+var EMO_RE=new RegExp('('+Object.keys(EMO).join('|')+')️?','g'), EMO_T=new RegExp(EMO_RE.source), MARKS={};
+function markUrl(k){ if (!MARKS[k]){ var cv2=document.createElement('canvas'); cv2.width=cv2.height=96; bossMark(cv2.getContext('2d'),48,k==='n'?54:56,k==='n'?34:30,k); MARKS[k]=cv2.toDataURL(); } return MARKS[k]; }
+function icEl(n){ var e=document.createElement('span'); e.className='ic';
+  if (n.charAt(0)==='#'){ var im=document.createElement('img'); im.src=markUrl(n.slice(1)); im.alt=''; e.appendChild(im); } else e.innerHTML=ICO.svg(n); return e; }
+function emoNode(t){ var s=t.nodeValue, p=t.parentNode; if (!p || !EMO_T.test(s) || /^(SCRIPT|STYLE|OPTION|TEXTAREA)$/.test(p.nodeName)) return;
+  var f=document.createDocumentFragment(), i=0; s.replace(EMO_RE, function(m,k,off){ if (off>i) f.appendChild(document.createTextNode(s.slice(i,off))); f.appendChild(icEl(EMO[k])); i=off+m.length; return m; });
+  if (i<s.length) f.appendChild(document.createTextNode(s.slice(i))); p.replaceChild(f,t); }
+function emoScan(root){ if (/^(SCRIPT|STYLE)$/.test(root.nodeName)) return; var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list=[], n; while ((n=w.nextNode())) list.push(n); list.forEach(emoNode); }
+function emoWatch(){ emoScan(document.body); new MutationObserver(function(ms){ ms.forEach(function(m){ if (m.type==='characterData') emoNode(m.target); else [].forEach.call(m.addedNodes, function(n){ if (n.nodeType===3) emoNode(n); else if (n.nodeType===1) emoScan(n); }); }); }).observe(document.body, {childList:true, subtree:true, characterData:true}); }
 // ---------------- HUD ----------------
 function banner(main, sub, ms){
   var b=$('banner'); b.innerHTML=''; b.textContent=main; if(sub){ var s=document.createElement('small'); s.textContent=sub; b.appendChild(s); }
@@ -1089,13 +1140,16 @@ function updHud(){
   $('lvlIc').textContent = L.kind==='big' ? '🐉' : (L.kind==='boss' ? '👹' : '⚔️');
   $('lvlTx').textContent = tl('floor',{n:L.level}); updSkills(); drawMap($('mini'), false);
   $('coinN').textContent=SAVE.coins; $('shopBtn').classList.toggle('can', UPS.some(function(u){ return SAVE.up[u.k]<UPMAX && SAVE.coins>=upCost(SAVE.up[u.k]); }));
-  $('undoN').textContent = undoLeft>0 ? undoLeft : '📺'; $('bAdd').style.opacity = extra>=2 ? 0.35 : 1;
+  $('undoN').textContent = undoLeft>0 ? undoLeft : '📺'; $('undoN').classList.toggle('ad', undoLeft<=0); $('bAdd').style.opacity = extra>=2 ? 0.35 : 1;
 }
 function applyLang(){
   document.querySelectorAll('[data-t]').forEach(function(e){ e.textContent=tl(e.dataset.t); });
-  var sel2=$('langSel'); sel2.innerHTML=''; CODES.forEach(function(c){ var o=document.createElement('option'); o.value=c; o.textContent=LANG_NAMES[c]; if(c===LANG) o.selected=true; sel2.appendChild(o); });
+  $('langNm').textContent=LANG_NAMES[LANG];
+  var ll=$('langList'); ll.innerHTML=''; CODES.forEach(function(c){ var b=document.createElement('button'); b.className='lgb'+(c===LANG?' on':''); b.textContent=LANG_NAMES[c]; b.onclick=function(){ Snd.pop(); $('langM').classList.remove('show'); setLang(c); }; ll.appendChild(b); });
 }
-$('langSel').onchange=function(){ LANG=this.value; try{localStorage.setItem('dj_lang',LANG);}catch(e){} applyLang(); if (L){ updHud(); if ($('shopM').classList.contains('show')) drawShop(); if ($('mapM').classList.contains('show')) openMap(); if ($('gearM').classList.contains('show')) buildGear(); setTut(L.tut&&moved<2? tl(curStage? 'tutB2' : 'tutA2') : ''); } };
+$('langBtn').onclick=function(){ Snd.unlock(); if (PF.adBusy) return; $('langM').classList.add('show'); };
+$('langM').onclick=function(e){ if (e.target===this) this.classList.remove('show'); };
+function setLang(c){ LANG=c; try{localStorage.setItem('dj_lang',LANG);}catch(e){} applyLang(); if (L){ updHud(); if ($('shopM').classList.contains('show')) drawShop(); if ($('mapM').classList.contains('show')) openMap(); if ($('gearM').classList.contains('show')) buildGear(); setTut(L.tut&&moved<2? tl(curStage? 'tutB2' : 'tutA2') : ''); } }
 $('sndBtn').onclick=function(){ var on=Snd.toggle(); this.textContent=on?'🔊':'🔇'; };
 $('sndBtn').textContent=Snd.isOn()?'🔊':'🔇';
 $('lsRetry').onclick=function(){ $('loseM').classList.remove('show'); loadLevel(SAVE.level, false, curStage, Math.max(entryHp, Math.round(F.heroMax*0.6)), curLane, curType); };
@@ -1287,7 +1341,7 @@ function buildGear(){
 }
 $('gearBtn').onclick=function(){ Snd.unlock(); if (PF.adBusy) return; buildGear(); $('gearM').classList.add('show'); startDolls(); };
 $('gearX').onclick=function(){ $('gearM').classList.remove('show'); };
-gearIcon($('gearBtn').firstChild.getContext('2d'),'hat',24,26,15,'#c3ccdb');
+$('gearBtn').innerHTML='<span class="ic">'+ICO.svg('helm')+'</span>';
 // ----- going down to the next floor: the knight rides down a stairway, then the new floor's name -----
 function floorTransition(n, load){
   var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, th=THEMES[Math.floor((n-1)/6)%4], W=300, H=200, d=2;
@@ -1561,7 +1615,11 @@ function frame(now){
 
 // ---------------- boot ----------------
 function boot(){
-  artLoad();
+  var bar=document.querySelector('#loading .bar i'); if (bar){ bar.style.animation='none'; bar.style.width='4%'; }
+  var pct=document.getElementById('ldPct'); artLoad(function(p){ if (bar) bar.style.width=Math.round(4+96*p)+'%'; if (pct) pct.textContent=Math.round(100*p)+'%'; }, function(){ setTimeout(boot2, 120); }, 15000);
+}
+function boot2(){
+  emoWatch(); [].forEach.call($('dpad').children, function(b2){ var q=b2.dataset.d.split(','); b2.innerHTML='<span class="ic" style="transform:rotate('+Math.round(Math.atan2(+q[1],+q[0])*180/Math.PI+90)+'deg)">'+ICO.svg('arr')+'</span>'; });
   LANG=detectLang(PF.locale); applyLang(); loadSave();
   DPR=Math.min(window.devicePixelRatio||1, 2); VW=innerWidth; VH=innerHeight; cv.width=Math.round(VW*DPR); cv.height=Math.round(VH*DPR);
   startFloor(SAVE.level, Math.min(DJ.stagesOf(SAVE.level), +QS.get('stage')||0));

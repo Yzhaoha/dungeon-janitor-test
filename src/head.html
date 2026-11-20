@@ -12,8 +12,19 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .out{text-shadow:0 2px 0 #2a1a2e,0 0 4px #2a1a2e,1px 1px 0 #2a1a2e,-1px -1px 0 #2a1a2e,1px -1px 0 #2a1a2e,-1px 1px 0 #2a1a2e}
 #hud{position:fixed;inset:0;pointer-events:none}
 #pref{position:absolute;left:10px;top:10px;display:flex;gap:6px;pointer-events:auto;transform:scale(var(--u,1));transform-origin:0 0}
-.rb{pointer-events:auto;border:none;border-radius:12px;background:rgba(40,24,48,.8);color:#fff;font:inherit;font-weight:800;font-size:15px;padding:7px 10px;cursor:pointer}
-#langSel{pointer-events:auto;background:rgba(40,24,48,.8);color:#fff;border:none;border-radius:12px;font:inherit;font-weight:800;font-size:14px;padding:6px 4px;max-width:104px}
+.rb{pointer-events:auto;border:2px solid #c79a52;border-radius:12px;background:linear-gradient(#57486a,#2f2540);box-shadow:0 3px 0 #1a1022,inset 0 1px 0 #ffffff30;color:#fff;font:inherit;font-weight:800;font-size:15px;padding:7px 10px;cursor:pointer}
+#langBtn{display:flex;align-items:center;gap:5px;font-size:14px;padding:4px 10px 4px 6px}
+#langBtn .ic{font-size:22px;vertical-align:0}
+#sndBtn{padding:4px 7px;line-height:0}
+#sndBtn .ic{font-size:22px;vertical-align:0}
+#langList{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}
+.lgb{border:2px solid #8a6a3a;border-radius:14px;background:linear-gradient(#57486a,#2f2540);color:#fff;font:inherit;font-weight:800;font-size:17px;padding:9px 14px;cursor:pointer;box-shadow:0 3px 0 #1a1022}
+.lgb.on{border-color:#ffd76a;background:linear-gradient(#8a6a3a,#5a4224);box-shadow:0 3px 0 #1a1022,0 0 10px #ffd76a88}
+#langM h2 .ic{font-size:40px}
+.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-0.22em;line-height:0}
+.ic svg,.ic img{width:100%;height:100%;display:block;overflow:visible}
+.ic img{transform:scale(1.7)}
+#lvlIc .ic{margin:0 4px 0 2px}
 #lvl{position:absolute;left:50%;top:9px;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;background:rgba(40,24,48,.78);border:2px solid #f5c542;border-radius:20px;padding:4px 16px;font-size:20px;font-weight:900;white-space:nowrap}
 #banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:opacity .3s,transform .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:24px;font-weight:900;width:max-content;max-width:92vw;background:rgba(30,18,38,.9);border:2px solid #f5c542;border-radius:16px;padding:8px 18px;box-shadow:0 5px 0 #0005}
 #banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
@@ -21,10 +32,12 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #tut{position:absolute;left:50%;top:300px;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;width:max-content;background:#fff;color:#3a2440;border-radius:14px;padding:6px 14px;font-size:16px;line-height:1.3;font-weight:800;max-width:90vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
 #tut.show{display:block}
 #btns{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 100%;display:flex;gap:12px;pointer-events:auto}
-#btns button{position:relative;width:62px;height:62px;border-radius:20px;border:3px solid #fff;background:linear-gradient(#7a5a8c,#4a3256);box-shadow:0 5px 0 #2a1a2e;color:#fff;font:inherit;font-size:27px;cursor:pointer;padding:0;transition:transform .08s}
-#btns button:active{transform:translateY(4px);box-shadow:0 1px 0 #2a1a2e}
-#btns button i{position:absolute;right:-7px;top:-9px;min-width:24px;height:24px;border-radius:12px;background:#ff5a4a;border:2px solid #fff;font-style:normal;font-size:13px;font-weight:900;line-height:20px;padding:0 4px}
-#btns button i.ad{background:#8b5cf6;font-size:12px}
+#btns button{position:relative;width:62px;height:62px;border-radius:20px;border:3px solid #e2b155;background:linear-gradient(#5e4e72,#2f2540);box-shadow:0 5px 0 #1a1022,inset 0 2px 0 #ffffff2a,inset 0 -3px 0 #00000040;color:#fff;font:inherit;font-size:27px;cursor:pointer;padding:0;transition:transform .08s}
+#btns button:active{transform:translateY(4px);box-shadow:0 1px 0 #1a1022}
+#btns button>.ic{font-size:36px;vertical-align:0;filter:drop-shadow(0 2px 0 #0006)}
+#btns button i{position:absolute;right:-7px;top:-9px;min-width:24px;height:24px;border-radius:12px;background:#d8402f;border:2px solid #ffd76a;font-style:normal;font-size:13px;font-weight:900;line-height:20px;padding:0 4px}
+#btns button i.ad{background:none;border:none;font-size:22px;line-height:0;padding:0;right:-9px;top:-11px}
+#btns button i.ad .ic{vertical-align:0}
 #btns.nudge #bUndo,#btns.nudge #bAdd{animation:nud .5s 3}
 @keyframes nud{50%{transform:translateY(-8px) scale(1.08)}}
 .modal{position:fixed;inset:0;background:#120a1855;display:none;align-items:flex-end;justify-content:center;pointer-events:auto;z-index:10;padding-bottom:9vh}
@@ -36,12 +49,14 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #wnSub{font-size:17px;font-weight:800;opacity:.85;margin-bottom:8px}
 .btn{border:none;border-radius:18px;font:inherit;font-weight:900;font-size:24px;padding:12px 40px;margin:6px 4px 0;cursor:pointer;color:#fff;background:linear-gradient(#5fd068,#33a144);box-shadow:0 5px 0 #1f6b2b}
 .btn.ad{background:linear-gradient(#9b6bff,#6a3fd6);box-shadow:0 5px 0 #3d2380;font-size:20px;padding:11px 22px}
+.btn .ic{font-size:1.25em;vertical-align:-0.28em;margin-right:2px}
+#dpad button .ic{font-size:30px;vertical-align:0}
 .btn:disabled{filter:grayscale(1);opacity:.6}
 #loseM .btn{display:block;margin:8px auto 0;min-width:220px}
 .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #1f6b2b}
 #coinBox{position:fixed;right:10px;top:10px;pointer-events:auto;z-index:11;display:flex;gap:6px;align-items:center;transform:scale(var(--u,1));transform-origin:100% 0}
 #shopBtn{position:relative;font-size:16px;padding:7px 12px;border:2px solid #f5c542}
-#shopBtn b{display:none;position:absolute;right:-6px;top:-8px;width:22px;height:22px;border-radius:11px;background:#5fd068;border:2px solid #fff;font-size:13px;line-height:18px;animation:nud .8s infinite}
+#shopBtn b{display:none;position:absolute;right:-6px;top:-8px;width:22px;height:22px;border-radius:11px;background:#3fae4c;border:2px solid #ffd76a;font-size:13px;line-height:0;padding-top:3px;animation:nud .8s infinite}
 #shopBtn.can b{display:block}
 .coin{display:inline-block;width:1em;height:1em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c2,#f5b82e 70%);border:2px solid #a8700f;vertical-align:-0.16em}
 #stars{display:flex;justify-content:center;gap:6px;margin:-40px 0 0}
@@ -69,7 +84,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #shopM{align-items:center;padding-bottom:0}
 #skills{position:absolute;left:50%;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;display:flex;align-items:center;gap:8px;pointer-events:auto;height:42px}
 #skills.none{visibility:hidden}
-#skills button{position:relative;width:46px;height:40px;border-radius:13px;border:2px solid #fff;background:linear-gradient(#7a5a8c,#4a3256);box-shadow:0 3px 0 #2a1a2e;padding:0;cursor:pointer;flex:none}
+#skills button{position:relative;width:46px;height:40px;border-radius:13px;border:2px solid #e2b155;background:linear-gradient(#5e4e72,#2f2540);box-shadow:0 3px 0 #1a1022,inset 0 1px 0 #ffffff2a;padding:0;cursor:pointer;flex:none}
 #skills button canvas{width:28px;height:28px;display:block;margin:0 auto}
 #skills button i{position:absolute;right:-6px;bottom:-6px;min-width:20px;height:16px;border-radius:8px;background:#2a1a2e;border:1.5px solid #9fdcff;color:#9fdcff;font-style:normal;font-size:11px;font-weight:900;line-height:13px;padding:0 3px}
 #skills button.off{filter:grayscale(.9) brightness(.62)}
@@ -91,7 +106,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #mini{position:absolute;right:8px;top:8px;pointer-events:auto;cursor:pointer;background:linear-gradient(#3a2a46,#241830);border:2px solid #c79a52;border-radius:12px;display:block;box-shadow:0 3px 0 #0006}
 #dpad{position:absolute;left:50%;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;width:204px;height:204px;display:none;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:6px;padding:8px;border-radius:50%;background:radial-gradient(rgba(20,12,28,.9) 55%,rgba(20,12,28,0) 72%);pointer-events:auto}
 #dpad.on{display:grid}
-#dpad button{border:3px solid #fff;border-radius:16px;background:linear-gradient(#ffe98a,#f5b82e);box-shadow:0 4px 0 #8a5a10;color:#3a2440;font-size:26px;font-weight:900;cursor:pointer;padding:0;animation:rdy 1s infinite}
+#dpad button{border:3px solid #fff3c4;line-height:0;border-radius:16px;background:linear-gradient(#ffe98a,#f5b82e);box-shadow:0 4px 0 #8a5a10;color:#3a2440;font-size:26px;font-weight:900;cursor:pointer;padding:0;animation:rdy 1s infinite}
 #dpad button:disabled{background:#3a2c44;border-color:#5a4a66;box-shadow:none;color:#5a4a66;animation:none;cursor:default}
 #dpad button:active{transform:translateY(3px)}
 #dpad button:nth-child(1){grid-area:1/2} #dpad button:nth-child(2){grid-area:2/1} #dpad button:nth-child(3){grid-area:2/3} #dpad button:nth-child(4){grid-area:3/2}
@@ -132,7 +147,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #cardBtns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;visibility:hidden;transform:scale(var(--u,1))} #cardBtns.on{visibility:visible}
 #cardBtns .btn{margin-top:6px;font-size:20px;padding:11px 20px}
 #gearBtn{padding:3px 6px;border:2px solid #c79a52;line-height:0}
-#gearBtn canvas{width:26px;height:26px}
+#gearBtn .ic{width:28px;height:28px;vertical-align:0}
 #lootCmp{display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0}
 .lc{display:flex;flex-direction:column;align-items:center;font-size:13px;font-weight:800;max-width:130px}
 #lootOld{width:60px;height:60px;margin:18px 0 4px;opacity:.85}
@@ -191,10 +206,11 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #dailyHint{font-size:13px;font-weight:800;color:#c8b8d4;margin-bottom:4px}
 #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1a1220;z-index:20;font-size:22px;font-weight:800}
 #loading .bar{width:220px;height:10px;background:#ffffff22;border-radius:6px;margin-top:12px;overflow:hidden}
-#loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate}
+#loading .bar i{display:block;height:100%;width:30%;background:#f5c542;animation:ld 1s infinite alternate;transition:width .25s}
+#ldPct{font-size:14px;color:#c9b8d8;margin-top:8px;font-weight:700}
 @keyframes ld{to{width:100%}}
 #adfake{position:fixed;inset:0;background:#000d;display:none;align-items:center;justify-content:center;font-size:24px;z-index:30;pointer-events:auto}
-@media (max-width:600px){ #lvl{font-size:18px;top:54px;left:10px;transform:none;padding:4px 12px} #banner{font-size:19px} #tut{font-size:14px} #btns button{width:56px;height:56px;font-size:24px} }
+@media (max-width:600px){ #lvl{font-size:18px;top:54px;left:10px;transform:none;padding:4px 12px} #banner{font-size:19px} #tut{font-size:14px} #btns button{width:56px;height:56px;font-size:24px} #btns button>.ic{font-size:32px} }
 /* Poki pill sits at top centre: keep the level chip clear of it */
 body.pf-poki #lvl{top:70px}
 @media (max-width:600px){ body.pf-poki #lvl{top:100px} }
@@ -203,7 +219,7 @@ body.pf-poki #lvl{top:70px}
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
-  <div id="pref"><button class="rb" id="sndBtn">🔊</button><select id="langSel"></select></div>
+  <div id="pref"><button class="rb" id="sndBtn">🔊</button><button class="rb" id="langBtn">🌐<span id="langNm"></span></button></div>
   <div id="lvl" class="out"><span id="lvlIc"></span> <span id="lvlTx"></span></div>
   <div id="skills"><button id="sk1"><canvas width="56" height="56"></canvas><i>100</i></button><div id="ebar"><b></b><u></u></div><button id="sk2"><canvas width="56" height="56"></canvas><i>100</i></button></div>
   <canvas id="mini" width="10" height="10"></canvas>
@@ -224,5 +240,6 @@ body.pf-poki #lvl{top:70px}
 <div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
+<div class="modal" id="langM"><div class="card"><h2 class="out">🌐</h2><div id="langList"></div></div></div>
 <div id="adfake"></div>
-<div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div></div>
+<div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div><div id="ldPct">0%</div></div>
