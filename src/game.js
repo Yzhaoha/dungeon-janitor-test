@@ -715,13 +715,25 @@ function gearIcon(c, sl, x, y, s, col){
   else { c.lineWidth=0.14+w; c.strokeStyle=OL; c.beginPath(); c.arc(0,-0.62,0.72,0.35,Math.PI-0.35); c.stroke(); c.lineWidth=0.14; c.strokeStyle='#ffcf3a'; c.stroke(); poly(c,[0,-0.12,0.42,0.3,0,0.92,-0.42,0.3]); fs(c,col,w); c.fillStyle='rgba(255,255,255,0.6)'; poly(c,[0,0.04,0.2,0.3,0,0.4]); c.fill(); }
   c.restore();
 }
-var spr=document.createElement('canvas'), sc=spr.getContext('2d');
+var spr=document.createElement('canvas'), sc=spr.getContext('2d'), sil=document.createElement('canvas'), sl=sil.getContext('2d');
 function sprite(art, x, y, k, big, o){
   var K=k*1.25*DPR, W=Math.ceil(300*K), H=Math.ceil(270*K); if (spr.width!==W || spr.height!==H){ spr.width=W; spr.height=H; }
   sc.setTransform(1,0,0,1,0,0); sc.globalCompositeOperation='source-over'; sc.globalAlpha=1; sc.clearRect(0,0,W,H);
   sc.setTransform(k*big*DPR,0,0,k*big*DPR,150*K,225*K); sc.lineJoin='round'; sc.lineCap='round'; sc.save(); art(sc); sc.restore();
   if (o.ta>0){ sc.setTransform(1,0,0,1,0,0); sc.globalCompositeOperation='source-atop'; sc.globalAlpha=Math.min(1,o.ta); sc.fillStyle=o.tint; sc.fillRect(0,0,W,H); sc.globalCompositeOperation='source-over'; sc.globalAlpha=1; }
-  var c=cx; c.save(); c.translate(x,y); if (o.rot) c.rotate(o.rot); c.scale(o.sx||1,o.sy||1); c.globalAlpha=o.alpha==null?1:o.alpha; c.drawImage(spr,-150*K/DPR,-225*K/DPR,300*K/DPR,270*K/DPR); c.restore();
+  var c=cx; c.save(); c.translate(x,y); if (o.rot) c.rotate(o.rot); c.scale(o.sx||1,o.sy||1); c.globalAlpha=o.alpha==null?1:o.alpha;
+  if (o.glow){ // a coloured rim and soft halo round the character so it stands off the background (white for the hero, red for
+    // monsters, a moving rainbow for bosses): a silhouette of the sprite filled with the colour, drawn behind it
+    if (sil.width!==W || sil.height!==H){ sil.width=W; sil.height=H; }
+    sl.setTransform(1,0,0,1,0,0); sl.globalCompositeOperation='source-over'; sl.clearRect(0,0,W,H); sl.drawImage(spr,0,0); sl.globalCompositeOperation='source-in';
+    var tm=performance.now()/1000, hc=o.glow;
+    if (o.glow==='rainbow'){ var gr=sl.createLinearGradient(0,0,W,H*0.6); for (var q=0;q<=6;q++) gr.addColorStop(q/6,'hsl('+Math.round((tm*90+q*60)%360)+',100%,62%)'); sl.fillStyle=gr; hc='hsl('+Math.round((tm*90)%360)+',100%,65%)'; } else sl.fillStyle=o.glow;
+    sl.fillRect(0,0,W,H); sl.globalCompositeOperation='source-over';
+    var ox=-150*K/DPR, oy=-225*K/DPR, ow=300*K/DPR, oh=270*K/DPR, rw=2.6*k, pu=0.8+0.2*Math.sin(tm*3), a0=c.globalAlpha;
+    c.globalAlpha=a0*0.85*pu; c.shadowColor=hc; c.shadowBlur=16*k; c.drawImage(sil,ox,oy,ow,oh); c.shadowBlur=0; c.shadowColor='rgba(0,0,0,0)';
+    c.globalAlpha=a0*pu; for (var d=0;d<8;d++){ var an=d*Math.PI/4; c.drawImage(sil,ox+Math.cos(an)*rw,oy+Math.sin(an)*rw,ow,oh); }
+    c.globalAlpha=a0; }
+  c.drawImage(spr,-150*K/DPR,-225*K/DPR,300*K/DPR,270*K/DPR); c.restore();
 }
 function buildStage(g){
   var k=g.k, W=g.w, H=STG.h, th=THEMES[VS.scn], s=stageCache=document.createElement('canvas'); s.width=Math.round(W*DPR); s.height=Math.round(H*DPR);
@@ -853,7 +865,7 @@ function drawStage(dt, t){
     var wa=ma>=0? -0.35+swingA(ma)*0.7 : -0.35+Math.sin(t*3)*0.05, mood=VS.mHurt>0||dp>0? 2 : ((t%4.1)<0.12&&kd==='slime'? 1 : 0);
     var hop=(kd==='slime'&&ma>=0)? -Math.sin(Math.min(1,ma/0.6)*Math.PI)*26*k : 0;
     sprite(function(s){ mArt[kd](s,t,MCOL[kd][VS.tier],wa,hot||ma>=0||L.elite,mood,ma); }, mxx, myy+hop, k, big,
-      {sx:(1+0.35*Math.sin(dp*Math.PI))*(1-dp*dp), sy:(1-0.3*Math.sin(dp*Math.PI))*(1-dp*dp), tint: dp>0||VS.mHurt>0.2? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : (VS.mHurt>0.2? 0.85 : (VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp});
+      {sx:(1+0.35*Math.sin(dp*Math.PI))*(1-dp*dp), sy:(1-0.3*Math.sin(dp*Math.PI))*(1-dp*dp), tint: dp>0||VS.mHurt>0.2? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : (VS.mHurt>0.2? 0.85 : (VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp, glow: dp>0? null : ((L.king||L.role==='big')? 'rainbow' : (L.elite? '#c88aff' : '#ff4a6a'))});
     if (L.elite && alive && !(VS.mIn>0)){ var ey=myy-(kd==='bat'? md.h+26 : md.h+14)*big*k+Math.sin(t*3)*2*k; icon(c,'psn',mxx,ey,(L.final?10:8)*k,'#d9a8ff',3); if (L.final){ poly(c,[mxx-9*k,ey-9*k,mxx-9*k,ey-18*k,mxx-4*k,ey-13*k,mxx,ey-20*k,mxx+4*k,ey-13*k,mxx+9*k,ey-18*k,mxx+9*k,ey-9*k]); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); c.fillStyle='#ffcf3a'; c.fill(); } }
     if (VS.dizzy>0 && alive) for (i=0;i<3;i++){ var da=t*6+i*2.1; icon(c,'stun',mxx+Math.cos(da)*20*k*big, myy-(md.h+8)*big*k+Math.sin(da)*5*k, 6*k, '#ffe14a', 2); }
     if (VS.poison>0 && alive && Math.random()<dt*5) parts.push({x:mxx+(Math.random()-0.5)*md.w*0.7*k, y:mcy+10*k, vx:0, vy:-25-Math.random()*30, t:0.7, c:'rgba(182,132,245,0.85)', r:2+Math.random()*2.5, g:-30});
@@ -866,7 +878,7 @@ function drawStage(dt, t){
   c.fillStyle='rgba(0,0,0,0.34)'; el(c,hxx+2*k,g.gy+3*k,44*k,7*k); c.fill(); if (!(VS.hDead>0)){ gearAura(c,hxx+2*k,g.gy+3*k,95*k,t); var gb=gearBest(); if (gb>=2 && Math.random()<dt*6) parts.push({x:hxx+(Math.random()-0.5)*90*k, y:g.gy, vx:0, vy:-30-Math.random()*40, t:0.8, c:hexA(RAR[gb],0.9), r:1.5+Math.random()*2, g:-20}); }
   if (VS.hGlow>0){ c.fillStyle='rgba(140,240,120,'+(VS.hGlow*0.7)+')'; el(c,hxx,g.gy-58*k,58*k,70*k); c.fill(); }
   heroRun=(ha>=0.18 && ha<0.96) || wk>0 || VS.fadeIn>0;
-  sprite(function(s){ heroArt(s,t); }, hxx-hdp*8*k, hyy-hdp*6*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1), rot:-easeOut(hdp)*1.5, tint: VS.hHurt>0.25? '#fff' : '#ff3030', ta: VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0)});
+  sprite(function(s){ heroArt(s,t); }, hxx-hdp*8*k, hyy-hdp*6*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1), rot:-easeOut(hdp)*1.5, tint: VS.hHurt>0.25? '#fff' : '#ff3030', ta: VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0), glow: hdp>0? null : '#ffffff'});
   if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',g.hx-36*k+Math.cos(sa)*16*k, g.gy-34*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
   if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(70+sp*10)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45, scx=hxx, scy=hyy-58*k, rx=sr, ry=sr*1.08, brk=VS.shield<=0;
     c.save(); c.globalAlpha=sa2;
