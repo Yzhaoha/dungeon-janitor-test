@@ -169,13 +169,18 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #gearM{align-items:center;padding-bottom:0}
 #gearM .card{padding:12px 12px 14px}
 #gearBody{display:flex;align-items:center;justify-content:center;gap:4px;margin:4px 0}
-.gcol{display:flex;flex-direction:column;gap:5px}
-.gslot{display:flex;flex-direction:column;align-items:center;cursor:pointer;font-size:11px;font-weight:800;width:58px}
-.gslot canvas{width:44px;height:44px}
-.gslot.on canvas{filter:drop-shadow(0 0 6px #ffe45c)}
-#gearDoll{width:150px;height:210px}
+.gcol{display:flex;flex-direction:column;gap:4px;justify-content:center}
+.gslot{display:flex;flex-direction:column;align-items:center;cursor:pointer;font-size:11px;font-weight:800;width:60px}
+.gslot canvas{width:52px;height:52px}
+.gslot.on canvas{filter:drop-shadow(0 0 7px #ffe45c);transform:scale(1.08)}
+.gslot canvas{transition:transform .15s}
+#gearDoll{width:196px;height:214px;margin:0 -10px}
 #gearInfo2{min-height:20px;font-size:14px;font-weight:900}
-#gearSum{font-size:13px;font-weight:800;color:#ffe98a;max-width:300px;margin:2px auto 0;line-height:1.45}
+#gearSum{font-size:13px;font-weight:800;color:#c8b8d4;max-width:310px;margin:4px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.gsr{display:flex;align-items:center;gap:5px;background:#1d1424aa;border:1px solid #6a4f2a;border-radius:9px;padding:3px 8px;text-align:left;line-height:1.15}
+.gsr .ic{width:16px;height:16px;flex:none}
+.gsr .gsn{flex:1;font-size:11px;color:#d8c8e4}
+.gsr b{color:#ffe98a;font-size:14px;white-space:nowrap}
 #floorT{position:fixed;inset:0;z-index:26;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(#2a1c34,#07040a 75%);opacity:0;pointer-events:none;transition:opacity .35s}
 #floorT.show{opacity:1;pointer-events:auto}
 #ftC{width:calc(360px * var(--u,1));max-width:94vw;aspect-ratio:360/230;height:auto;margin-bottom:calc(14px * var(--u,1))}
