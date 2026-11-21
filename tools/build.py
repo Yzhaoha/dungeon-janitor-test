@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build Potion Knight from src/ and art/.
+"""Build Potion Sort Knight from src/ and art/.
 
 Output:
   index.html + img/                        test build, no SDK -> GitHub Pages root
   poki/, crazygames/ (each with img/)      platform builds (also served on Pages)
-  dist/potion-knight-poki.zip, dist/potion-knight-crazygames.zip  (index.html and img/ at the zip root)
+  dist/potion-sort-knight-poki.zip, dist/potion-sort-knight-crazygames.zip  (index.html and img/ at the zip root)
 art/*.png (ChatGPT drawings, 1024x1024 characters / 1920x1080 scenes) are shrunk to img/*.webp, and each character's
 opaque box is measured so the game can stand it on its feet; that table is written into the game as ART_META.
 Run: python3 tools/build.py
@@ -58,7 +58,7 @@ write(ROOT, html(None, meta)); print('index.html (test),', len(meta), 'images,',
 os.makedirs(os.path.join(ROOT, 'dist'), exist_ok=True)
 for p in ['poki', 'crazygames']:
     out = os.path.join(ROOT, p); write(out, html(p, meta))
-    z = os.path.join(ROOT, 'dist', 'potion-knight-%s.zip' % p)
+    z = os.path.join(ROOT, 'dist', 'potion-sort-knight-%s.zip' % p)
     with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.write(os.path.join(out, 'index.html'), 'index.html')
         for f in sorted(os.listdir(os.path.join(out, 'img'))): zf.write(os.path.join(out, 'img', f), 'img/' + f)

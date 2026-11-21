@@ -1771,7 +1771,7 @@ function playIntro(done){
 function drawPoster(){ VCH=0;
   var W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1), c=cx, t=1.3, i, k=Math.min(W,H)/520, land=W>H*1.2, port=H>W*1.2;
   cv.width=Math.round(W*d); cv.height=Math.round(H*d); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
-  var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl= land? 1 : 2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
+  var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl=2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
   var useImg=artOk('room-arch');
   if (useImg){ var s0=Math.max(W/1920, H/1080, fy/(0.8*1080)), iw=1920*s0, ih=1080*s0; c.drawImage(ART['room-arch'], (W-iw)/2, fy-0.8*ih, iw, ih); c.fillStyle='rgba(20,6,10,0.35)'; c.fillRect(0,0,W,H); }
   var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#14081a'); g.addColorStop(1,'#4a1a24'); c.fillStyle=g; if (!useImg) c.fillRect(0,0,W,H);
@@ -1798,7 +1798,7 @@ function drawPoster(){ VCH=0;
   B=sB; V=sV; bw=sbw; bh=sbh; uh=suh; sel=ssel; VCH=sCH;
   // title
   c.textAlign='center'; c.textBaseline='middle'; c.font='900 '+Math.round(tsz)+'px '+FNT; c.lineWidth=tsz*0.2; c.strokeStyle='#1a0610';
-  var lines= nl===1? ['POTION KNIGHT'] : ['POTION','KNIGHT'];
+  var lines= nl===1? ['POTION SORT KNIGHT'] : ['POTION SORT','KNIGHT'];
   lines.forEach(function(tx3,li){ var yy=ty2+li*tsz*1.02; c.strokeText(tx3,W/2,yy); var tg2=c.createLinearGradient(0,yy-tsz/2,0,yy+tsz/2); tg2.addColorStop(0,'#fff6c2'); tg2.addColorStop(0.5,'#ffcf3a'); tg2.addColorStop(1,'#d9802a'); c.fillStyle=tg2; c.fillText(tx3,W/2,yy); });
   var sy3=ty2+(lines.length-1)*tsz*1.02+tsz*0.78, ssz=tsz*0.38; c.font='900 '+Math.round(ssz)+'px '+FNT; c.lineWidth=ssz*0.25; c.strokeText('SAVE THE PRINCESS',W/2,sy3); c.fillStyle='#ffb09a'; c.fillText('SAVE THE PRINCESS',W/2,sy3);
   var vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.4,W/2,H/2,Math.max(W,H)*0.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); c.fillStyle=vg; c.fillRect(0,0,W,H);
