@@ -55,7 +55,11 @@ var Snd = (function(){
   // generated reverb so the dungeon sounds like a stone room.
   var ac=null, master=null, dry=null, wet=null, muted=false, pmuted=false, off=false;
   try{ off = localStorage.getItem('dj_snd')==='0'; }catch(e){}
+  // no audio context until the player has touched the page: creating one earlier only fills the console with autoplay warnings
+  var gest=false; ['pointerdown','keydown','touchend'].forEach(function(ev){ addEventListener(ev, function(){ gest=true; }, {capture:true, passive:true}); });
+  function canStart(){ return gest || !!(navigator.userActivation && navigator.userActivation.hasBeenActive); }
   function ctx(){
+    if(!ac && !canStart()) return null;
     if(!ac){ try{ ac=new (window.AudioContext||window.webkitAudioContext)();
       master=ac.createGain(); master.gain.value=0.6; var comp=ac.createDynamicsCompressor(); comp.threshold.value=-14; comp.ratio.value=4; master.connect(comp); comp.connect(ac.destination);
       dry=ac.createGain(); dry.connect(master);
@@ -63,7 +67,7 @@ var Snd = (function(){
       for (var ch=0;ch<2;ch++){ var d=ir.getChannelData(ch); for (var i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.6); }
       cv.buffer=ir; wet=ac.createGain(); wet.gain.value=0.32; wet.connect(cv); var wl=ac.createBiquadFilter(); wl.type='lowpass'; wl.frequency.value=4200; cv.connect(wl); wl.connect(master);
     }catch(e){} }
-    if(ac&&ac.state==='suspended') ac.resume(); return ac; }
+    if(ac&&ac.state==='suspended'&&canStart()) ac.resume(); return ac; }
   function silent(){ return muted||pmuted||off; }
   function out(node, rv){ node.connect(dry); if (rv) { var s=ac.createGain(); s.gain.value=rv; node.connect(s); s.connect(wet); } }
   // tone: frequency f (Hz), duration d, wave type, volume, pitch slide factor, delay, reverb send, attack
@@ -162,7 +166,7 @@ var Snd = (function(){
     hoof:function(v){ v=v||1; tone(95, 0.09, 'sine', 0.22*v, 0.5, 0, 0.15); noise(0.05, 0.16*v, 1800, 0, 'bandpass', 600, 1.2, 0.12); noise(0.025, 0.07*v, 4200, 0.004, 'highpass', null, null, 0.1); },
     rumble:function(){ drum(48, 1.4, 0.32, 0); noise(1.2, 0.08, 220, 0, 'lowpass', 90, null, 0.4); },
     live:function(){ return !!(ac && ac.state==='running'); },
-    isOn:function(){ return !off; }, unlock:function(){ ctx(); if(ac&&ac.state!=='running') ac.resume().then(bgm); else bgm(); }
+    isOn:function(){ return !off; }, unlock:function(){ ctx(); if(!ac) return; if(ac.state!=='running') ac.resume().then(bgm); else bgm(); }
   };
   return S;
 })();
@@ -1762,7 +1766,7 @@ function playIntro(done){
     if (e>1.2 && !horned && Snd.live()){ horned=true; Snd.horn(); }
     if (e>1.2 && $('inLogo').className.indexOf('pop')<0){ $('inLogo').classList.add('pop'); }
     if (e>1.9) $('inStory').style.opacity=1;
-    if (e>2.6) $('inTap').className='out on';
+    if (e>2.6) $('inTap').className='out on'; if (e>7.5) end();
     if (e>6.5) end();
   };
   requestAnimationFrame(loop);
@@ -1891,7 +1895,7 @@ function boot2(){
   if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); var tries=0, waitArt=function(){ if ((artOk('knight-2')&&artOk('dragon')&&artOk('room-arch')) || ++tries>60){ SAVE.gear.top=2; drawPoster(); } else setTimeout(waitArt,100); }; waitArt(); return; }
   if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
   else playIntro(maybeDaily);
-  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
+  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, cards:showCards, daily:maybeDaily, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 PF.init().then(boot, boot);
