@@ -425,7 +425,7 @@ function icon(c, role, x, y, s, col, lw){
   c.restore();
 }
 function floatTx(x,y,txt,col,big,ic){ floats.push({x:x,y:y,txt:txt,col:col||'#fff',t:1.0,big:big,ic:ic}); }
-function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.34; shk=Math.max(shk, crit?1.1:(big?0.7:0.35)); hitStop=crit?0.12:0.07;
+function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.34; VS.mSl=0.32; shk=Math.max(shk, crit?1.1:(big?0.7:0.35)); hitStop=crit?0.12:0.07;
   if (v<900) floatTx(g.mx+(Math.random()-0.5)*14*k, y-34*k, '-'+v+(crit?'!!':''), crit?'#ff9a3c':'#ffd84a', big); Snd.hit(); Snd.thud();
   fx.push({ty:'slash', x:g.mx-6*k, y:y, t:0, d:0.24, c:c==null?'#fff':COL_HI[c], r:46*k});
   if (crit){ critFlash=1; Snd.crit(); fx.push({ty:'rays', x:g.mx, y:y, t:0, d:0.45, c:'#ffd84a', r:90*k}); bigTx(tl('crit'), '#ff9a3c', g.mx, y-74*k, 1.15); }
@@ -467,7 +467,7 @@ function doMonsterTurn(delay){
     later(delay+0.1+MA*0.42, function(){ var hy=g.gy-44*k;
       if (ev.blocked){ VS.shield=Math.max(0,VS.shield-1); VS.shPop=0.45; VS.shBreak=0.45; floatTx(g.hx, g.gy-70*k, tl('blocked'), '#9cc8ff', true); Snd.clank(); Snd.hit(); shk=Math.max(shk,0.3);
         for (var i=0;i<12;i++) parts.push({x:g.hx+30*k,y:hy,vx:(Math.random()-0.6)*300,vy:-60-Math.random()*200,t:0.45,c:i%2?'#cfe4ff':'#fff',r:2+Math.random()*2.5,g:600}); }
-      else { VS.hHp=Math.max(0,hpAfter); VS.hHurt=0.4; floatTx(g.hx, g.gy-70*k, '-'+ev.hit, '#ff6a5a', true); Snd.bad(); Snd.thud(); hurtFlash=1; shk=Math.max(shk,1); hitStop=0.08;
+      else { VS.hHp=Math.max(0,hpAfter); VS.hHurt=0.4; VS.hSl=0.32; floatTx(g.hx, g.gy-70*k, '-'+ev.hit, '#ff6a5a', true); Snd.bad(); Snd.thud(); hurtFlash=1; shk=Math.max(shk,1); hitStop=0.08;
         fx.push({ty:'slash', x:g.hx+6*k, y:hy, t:0, d:0.24, c:'#ff8a7a', r:44*k, flip:1});
         for (var j=0;j<10;j++) parts.push({x:g.hx,y:hy,vx:(Math.random()-0.8)*300,vy:-60-Math.random()*220,t:0.5,c:j%2?'#ff9a8a':'#fff',r:2+Math.random()*2.5,g:700}); } }); }
 }
@@ -727,6 +727,14 @@ function gearIcon(c, sl, x, y, s, col){
   else { c.lineWidth=0.14+w; c.strokeStyle=OL; c.beginPath(); c.arc(0,-0.62,0.72,0.35,Math.PI-0.35); c.stroke(); c.lineWidth=0.14; c.strokeStyle='#ffcf3a'; c.stroke(); poly(c,[0,-0.12,0.42,0.3,0,0.92,-0.42,0.3]); fs(c,col,w); c.fillStyle='rgba(255,255,255,0.6)'; poly(c,[0,0.04,0.2,0.3,0,0.4]); c.fill(); }
   c.restore();
 }
+// getting hit: a red jagged slash sweeps diagonally across the body (p 0..1), white-hot core, fades out
+function slashFx(c, x, y, k, p, seed){ var L2=62*k, a0=-0.85, hd=Math.min(1,p*3), tl2=Math.max(0,(p-0.3)/0.7), n=9, pts=[], i;
+  for (i=0;i<=n;i++){ var f=i/n, j=(i%2? 1 : -1)*(i>0&&i<n? (2.5+((seed*7+i*13)%5)*0.6)*k : 0); pts.push([x+Math.cos(a0)*(f-0.5)*2*L2*-1 + Math.sin(a0)*j, y+Math.sin(a0)*(f-0.5)*2*L2*-1 - Math.cos(a0)*j]); }
+  var seg=function(){ c.beginPath(); var s0=tl2*n, s1=hd*n; for (var q=Math.floor(s0); q<=Math.ceil(s1) && q<n; q++){ var A=pts[q], B=pts[q+1], u0=Math.max(0,s0-q), u1=Math.min(1,s1-q); if (u1<=u0) continue; var ax=A[0]+(B[0]-A[0])*u0, ay=A[1]+(B[1]-A[1])*u0, bx=A[0]+(B[0]-A[0])*u1, by=A[1]+(B[1]-A[1])*u1; if (q===Math.floor(s0)) c.moveTo(ax,ay); else c.lineTo(ax,ay); c.lineTo(bx,by); } };
+  var al=p<0.6? 1 : 1-(p-0.6)/0.4; c.save(); c.lineCap='round'; c.lineJoin='round'; c.globalCompositeOperation='lighter';
+  c.globalAlpha=al*0.55; c.strokeStyle='#ff1a1a'; c.lineWidth=11*k; seg(); c.stroke();
+  c.globalAlpha=al; c.strokeStyle='#ff3a2a'; c.lineWidth=5*k; seg(); c.stroke();
+  c.strokeStyle='#ffe0d8'; c.lineWidth=1.8*k; seg(); c.stroke(); c.restore(); }
 var spr=document.createElement('canvas'), sc=spr.getContext('2d'), sil=document.createElement('canvas'), sl=sil.getContext('2d');
 function sprite(art, x, y, k, big, o){
   var K=k*1.25*DPR, W=Math.ceil(300*K), H=Math.ceil(270*K); if (spr.width!==W || spr.height!==H){ spr.width=W; spr.height=H; }
@@ -849,7 +857,7 @@ function hpBar(c,x,y,w,h,frac,lag,cA,cB,right){
 function txt(c,s,x,y,px,col,al,lw){ c.font='900 '+Math.round(px)+'px '+FNT; c.textAlign=al||'center'; c.textBaseline='middle'; c.lineJoin='round'; c.lineWidth=lw||Math.max(3,px*0.28); c.strokeStyle=OL; c.strokeText(s,x,y); c.fillStyle=col; c.fillText(s,x,y); }
 function drawStage(dt, t){
   var c=cx, g=stg(), k=g.k, i, kd=VS.kind, md=mdOf(kd), th=THEMES[VS.scn];
-  ['hAtk','hHurt','hDrink','mAtk','mHurt','mIn','hGlow','shPop','shBreak','dizzy','cdPop','fadeIn'].forEach(function(n){ if (VS[n]>0) VS[n]=Math.max(0,VS[n]-dt); }); if (VS.mDead>0) VS.mDead+=dt;
+  ['hSl','mSl','hAtk','hHurt','hDrink','mAtk','mHurt','mIn','hGlow','shPop','shBreak','dizzy','cdPop','fadeIn'].forEach(function(n){ if (VS[n]>0) VS[n]=Math.max(0,VS[n]-dt); }); if (VS.mDead>0) VS.mDead+=dt;
   if (lost && VS.hHp<=0 && VS.hHurt<=0.15) VS.hDead+=dt; else if (!lost) VS.hDead=0;
   VS.hBar+=(VS.hHp/F.heroMax-VS.hBar)*Math.min(1,dt*12); VS.mBar+=(VS.mHp/F.mMax-VS.mBar)*Math.min(1,dt*12);
   VS.hLag= VS.hLag>VS.hBar? Math.max(VS.hBar, VS.hLag-dt*0.45) : VS.hBar; VS.mLag= VS.mLag>VS.mBar? Math.max(VS.mBar, VS.mLag-dt*0.45) : VS.mBar;
@@ -876,7 +884,7 @@ function drawStage(dt, t){
     var wa=ma>=0? -0.35+swingA(ma)*0.7 : -0.35+Math.sin(t*3)*0.05, mood=VS.mHurt>0||dp>0? 2 : ((t%4.1)<0.12&&kd==='slime'? 1 : 0);
     var hop=(kd==='slime'&&ma>=0)? -Math.sin(Math.min(1,ma/0.6)*Math.PI)*26*k : 0;
     sprite(function(s){ mArt[kd](s,t,MCOL[kd][VS.tier],wa,hot||ma>=0||L.elite,mood,ma); }, mxx, myy+hop, k, big,
-      {rot:mh*0.14+dp*0.9, sx:(1+0.2*Math.sin(dp*Math.PI))*(1-dp*dp)*(1+0.08*mh), sy:(1-0.15*Math.sin(dp*Math.PI))*(1-dp*dp)*(1-0.09*mh), tint: dp>0||VS.mHurt>0.2? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : (VS.mHurt>0.2? 0.85 : (VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp});
+      {rot:dp*0.9, sx:(1+0.2*Math.sin(dp*Math.PI))*(1-dp*dp), sy:(1-0.15*Math.sin(dp*Math.PI))*(1-dp*dp), tint: dp>0? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : ((VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp});
     if (L.elite && alive && !(VS.mIn>0)){ var ey=myy-(kd==='bat'? md.h+26 : md.h+14)*big*k+Math.sin(t*3)*2*k; icon(c,'psn',mxx,ey,(L.final?10:8)*k,'#d9a8ff',3); if (L.final){ poly(c,[mxx-9*k,ey-9*k,mxx-9*k,ey-18*k,mxx-4*k,ey-13*k,mxx,ey-20*k,mxx+4*k,ey-13*k,mxx+9*k,ey-18*k,mxx+9*k,ey-9*k]); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); c.fillStyle='#ffcf3a'; c.fill(); } }
     if (VS.dizzy>0 && alive) for (i=0;i<3;i++){ var da=t*6+i*2.1; icon(c,'stun',mxx+Math.cos(da)*20*k*big, myy-(md.h+8)*big*k+Math.sin(da)*5*k, 6*k, '#ffe14a', 2); }
     if (VS.poison>0 && alive && Math.random()<dt*5) parts.push({x:mxx+(Math.random()-0.5)*md.w*0.7*k, y:mcy+10*k, vx:0, vy:-25-Math.random()*30, t:0.7, c:'rgba(182,132,245,0.85)', r:2+Math.random()*2.5, g:-30});
@@ -890,7 +898,9 @@ function drawStage(dt, t){
   if (VS.hGlow>0){ c.fillStyle='rgba(140,240,120,'+(VS.hGlow*0.7)+')'; el(c,hxx,g.gy-58*k,58*k,70*k); c.fill(); }
   heroRun=(ha>=0.18 && ha<0.96) || wk>0 || VS.fadeIn>0;
   if (hdp>=0.7 && !VS.hThud){ VS.hThud=1; shk=Math.max(shk,0.8); Snd.thud(); for (i=0;i<16;i++) parts.push({x:hxx-50*k+Math.random()*70*k, y:g.gy, vx:(Math.random()-0.5)*220, vy:-30-Math.random()*90, t:0.6+Math.random()*0.3, c:'rgba(210,200,220,0.7)', r:3+Math.random()*5, g:120}); }
-  sprite(function(s){ heroArt(s,t); }, hxx+hfall*14*k, hyy+hfall*10*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1)*(1+0.03*hh+0.06*hfall), sy:1-0.08*hh-0.14*hfall, rot:hfall*0.62-hh*0.16, tint: hdp>0? '#1a1024' : (VS.hHurt>0.25? '#fff' : '#ff3030'), ta: hdp>0? 0.35*hdp : (VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0))});
+  sprite(function(s){ heroArt(s,t); }, hxx+hfall*14*k, hyy+hfall*10*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1)*(1+0.06*hfall), sy:1-0.14*hfall, rot:hfall*0.62, tint:'#1a1024', ta: hdp>0? 0.35*hdp : 0});
+  if (VS.hSl>0) slashFx(c, hxx, hyy-55*k, k, 1-VS.hSl/0.32, 7);
+  if (VS.mSl>0 && !VS.mDead) slashFx(c, mxx, myy-md.h*0.5*big*k, k*Math.max(1,big*0.9), 1-VS.mSl/0.32, 3);
   if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',hxx+30*k+Math.cos(sa)*18*k, g.gy-78*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
   if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(70+sp*10)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45, scx=hxx, scy=hyy-58*k, rx=sr, ry=sr*1.08, brk=VS.shield<=0;
     c.save(); c.globalAlpha=sa2;
