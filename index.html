@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Potion Sort Knight</title>
+<title>Potion Knight: Save the Princess</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#1a1220;font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif;color:#fff;touch-action:none}
@@ -256,14 +256,14 @@ body.pf-poki #lvl{top:70px}
 <div class="modal" id="cardM"><div class="card"><div id="cardTop"><h2 class="out" data-t="pickCard"></h2><div id="cardTimer">10</div></div><div id="cards"></div><div id="cardRs"></div><div id="cardBtns"><button class="btn ad" id="cardAgain" data-t="again"></button><button class="btn" id="cardOk" data-t="next"></button></div></div></div>
 <div class="modal" id="lootM"><div class="card"><h2 class="out" data-t="loot"></h2><div id="lootCmp"><div class="lc"><canvas id="lootOld" width="120" height="120"></canvas><span id="lootOldNm"></span></div><div id="lootArrow">➜</div><div class="lc"><canvas id="lootIc" width="200" height="200"></canvas><span id="lootNm" class="out"></span></div></div><div id="lootSt"></div><canvas id="lootDoll" width="10" height="10"></canvas><div id="lootRs"></div><div id="lootBtns"><button class="btn" id="lootEq" data-t="wear"></button><button class="btn" id="lootSell"></button></div><button class="btn" id="lootOk" data-t="next"></button></div></div>
 <div class="modal" id="gearM"><div class="card"><h2 class="out" data-t="myGear"></h2><div id="gearBody"><div class="gcol" id="gcolL"></div><canvas id="gearDoll" width="10" height="10"></canvas><div class="gcol" id="gcolR"></div></div><div id="gearInfo2"></div><div id="gearSum"></div><button class="btn" id="gearX">OK</button></div></div>
-<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo"><span>POTION SORT KNIGHT</span><br><small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
+<div id="introM"><canvas id="introC"></canvas><div id="introTx"><div id="inLogo"><span>POTION KNIGHT</span><br><small></small></div><div id="inStory" class="out"></div></div><div id="inTap" class="out"></div></div>
 <div class="modal" id="dailyM"><div class="card"><h2 class="out" data-t="daily"></h2><div id="days"></div><div id="dailyHint" data-t="dailyHint"></div><div id="wnBtns"><button class="btn ad" id="dailyDbl">📺 ×2</button><button class="btn" id="dailyOk" data-t="claim"></button></div></div></div>
 <div id="endM"><canvas id="endC"></canvas><div id="endTx"><div id="endT1" class="out"></div><div id="endT2" class="out"></div><div id="endT3" class="out"></div></div><button class="btn" id="endGo"></button></div>
 <div id="floorT"><canvas id="ftC" width="10" height="10"></canvas><div id="ftFrom" class="out"></div><div id="ftTo" class="out"></div><div id="ftSub" class="out"></div></div>
 <div class="modal" id="loseM"><div class="card"><div id="wnIc">💫</div><h2 class="out" data-t="dead"></h2><button class="btn ad" id="lsRevive" data-t="revive"></button><button class="btn" id="lsRetry" data-t="retry"></button></div></div>
 <div class="modal" id="langM"><div class="card"><h2 class="out">🌐</h2><div id="langList"></div></div></div>
 <div id="adfake"></div>
-<div id="loading"><div>Potion Sort Knight</div><div class="bar"><i></i></div><div id="ldPct">0%</div></div>
+<div id="loading"><div>Potion Knight</div><div class="bar"><i></i></div><div id="ldPct">0%</div></div>
 <script id="gamesrc" type="text/plain">
 // ===== SIM START =====
 // v0.8 — Potion Brawl: sort potions; every bottle you complete is drunk by the hero and becomes a move
@@ -608,7 +608,7 @@ var TL={
   crit:['CRITICAL!','CRITIQUE !','CRITICO!','KRITISCH!','¡CRÍTICO!','KRİTİK!','暴击！','クリティカル！','치명타!','CRÍTICO!','КРИТ!'],
   combo:['COMBO x{n}','COMBO x{n}','COMBO x{n}','COMBO x{n}','COMBO x{n}','KOMBO x{n}','连击 ×{n}','{n}連鎖！','{n}콤보!','COMBO x{n}','КОМБО x{n}'],
   heavyHit:['HEAVY!','LOURD !','PESANTE!','SCHWER!','¡FUERTE!','AĞIR!','重击！','強打！','강타!','PESADO!','МОЩНО!'],
-  gameName:['POTION SORT KNIGHT','POTION SORT KNIGHT','POTION SORT KNIGHT','POTION SORT KNIGHT','POTION SORT KNIGHT','POTION SORT KNIGHT','药水骑士','ポーションソートナイト','포션 소트 나이트','POTION SORT KNIGHT','POTION SORT KNIGHT'],
+  gameName:['POTION KNIGHT','POTION KNIGHT','POTION KNIGHT','POTION KNIGHT','POTION KNIGHT','POTION KNIGHT','药水骑士','ポーションナイト','포션 나이트','POTION KNIGHT','POTION KNIGHT'],
   subtitle:['Save the Princess','Sauve la princesse','Salva la principessa','Rette die Prinzessin','Salva a la princesa','Prensesi kurtar','拯救公主','姫を救え','공주를 구하라','Salve a princesa','Спаси принцессу'],
   story:['The dragon took the princess. Mix potions, fight down 96 floors!','Le dragon a enlevé la princesse. Prépare tes potions, descends 96 étages !','Il drago ha rapito la principessa. Prepara pozioni e scendi 96 piani!','Der Drache hat die Prinzessin entführt. Braue Tränke, kämpf dich 96 Ebenen hinab!','El dragón raptó a la princesa. ¡Prepara pociones y baja 96 pisos!','Ejderha prensesi kaçırdı. İksir yap, 96 kat aşağı in!','恶龙掳走了公主。调好魔药，一路杀下 96 层！','竜が姫をさらった。薬を調合し96階まで突き進め！','드래곤이 공주를 납치했다. 물약을 만들어 96층까지 내려가라!','O dragão levou a princesa. Prepare poções e desça 96 andares!','Дракон похитил принцессу. Вари зелья и пробейся на 96 этажей вниз!'],
   tapSkip:['Tap to start','Touche pour commencer','Tocca per iniziare','Tippen zum Starten','Toca para empezar','Başlamak için dokun','点击开始','タップでスタート','탭하여 시작','Toque para começar','Нажми, чтобы начать'],
@@ -1528,14 +1528,14 @@ function drawStage(dt, t){
   var hot=alive && !won && VS.cd<=1, mcy=mCY(g);
   if (L.elite && alive && !hot){ var eg=c.createRadialGradient(g.mx,mcy,4,g.mx,mcy,(58+Math.sin(t*4)*5)*k*big); eg.addColorStop(0,'rgba(190,90,255,0.5)'); eg.addColorStop(1,'rgba(190,90,255,0)'); c.fillStyle=eg; c.fillRect(g.mx-80*k*big,mcy-80*k*big,160*k*big,160*k*big); }
   if (hot){ var ag=c.createRadialGradient(g.mx,mcy,4,g.mx,mcy,(60+Math.sin(t*9)*6)*k*big); ag.addColorStop(0,'rgba(255,50,50,0.5)'); ag.addColorStop(1,'rgba(255,50,50,0)'); c.fillStyle=ag; c.fillRect(g.mx-80*k*big,mcy-80*k*big,160*k*big,160*k*big); }
-  var dp=VS.mDead>0? Math.min(1,VS.mDead/0.45) : 0, inn=VS.mIn/0.7, mxx=g.mx-dashP(ma)*D*(kd==='dragon'?0.22:1)+(VS.mHurt>0? Math.sin(Math.min(1,VS.mHurt/0.34)*Math.PI)*12*k : 0)+inn*inn*190*k, myy=g.gy-Math.abs(Math.sin(inn*Math.PI*2))*22*k;
+  var dp=VS.mDead>0? Math.min(1,VS.mDead/0.45) : 0, inn=VS.mIn/0.7, mxx=g.mx-dashP(ma)*D*(kd==='dragon'?0.22:1)+(VS.mHurt>0? Math.sin(Math.min(1,VS.mHurt/0.34)*Math.PI)*12*k : 0)+inn*inn*190*k+dp*34*k, myy=g.gy-Math.abs(Math.sin(inn*Math.PI*2))*22*k-Math.sin(dp*Math.PI)*26*k, mh=VS.mHurt>0&&!dp? Math.sin(Math.min(1,VS.mHurt/0.34)*Math.PI) : 0;
   if (VS.mIn<=0 && !VS.landed){ VS.landed=1; if (moved===0){ shk=Math.max(shk,L.king?0.9:0.3); if (L.king) Snd.boss(); for (i=0;i<10;i++) parts.push({x:g.mx+(Math.random()-0.5)*60*k,y:g.gy,vx:(Math.random()-0.5)*160,vy:-20-Math.random()*50,t:0.5,c:'rgba(230,220,240,0.7)',r:3+Math.random()*4,g:60}); } }
   if (dp<1){
     c.fillStyle='rgba(0,0,0,'+(0.34*(1-dp))+')'; el(c,mxx,g.gy+3*k,(kd==='bat'?20:md.w*0.48)*big*k,6*k*big); c.fill();
     var wa=ma>=0? -0.35+swingA(ma)*0.7 : -0.35+Math.sin(t*3)*0.05, mood=VS.mHurt>0||dp>0? 2 : ((t%4.1)<0.12&&kd==='slime'? 1 : 0);
     var hop=(kd==='slime'&&ma>=0)? -Math.sin(Math.min(1,ma/0.6)*Math.PI)*26*k : 0;
     sprite(function(s){ mArt[kd](s,t,MCOL[kd][VS.tier],wa,hot||ma>=0||L.elite,mood,ma); }, mxx, myy+hop, k, big,
-      {sx:(1+0.35*Math.sin(dp*Math.PI))*(1-dp*dp), sy:(1-0.3*Math.sin(dp*Math.PI))*(1-dp*dp), tint: dp>0||VS.mHurt>0.2? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : (VS.mHurt>0.2? 0.85 : (VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp});
+      {rot:mh*0.14+dp*0.9, sx:(1+0.2*Math.sin(dp*Math.PI))*(1-dp*dp)*(1+0.08*mh), sy:(1-0.15*Math.sin(dp*Math.PI))*(1-dp*dp)*(1-0.09*mh), tint: dp>0||VS.mHurt>0.2? '#fff' : '#9a4ae0', ta: dp>0? 0.9 : (VS.mHurt>0.2? 0.85 : (VS.poison>0? 0.22+Math.sin(t*5)*0.06 : 0)), alpha:1-dp*dp});
     if (L.elite && alive && !(VS.mIn>0)){ var ey=myy-(kd==='bat'? md.h+26 : md.h+14)*big*k+Math.sin(t*3)*2*k; icon(c,'psn',mxx,ey,(L.final?10:8)*k,'#d9a8ff',3); if (L.final){ poly(c,[mxx-9*k,ey-9*k,mxx-9*k,ey-18*k,mxx-4*k,ey-13*k,mxx,ey-20*k,mxx+4*k,ey-13*k,mxx+9*k,ey-18*k,mxx+9*k,ey-9*k]); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); c.fillStyle='#ffcf3a'; c.fill(); } }
     if (VS.dizzy>0 && alive) for (i=0;i<3;i++){ var da=t*6+i*2.1; icon(c,'stun',mxx+Math.cos(da)*20*k*big, myy-(md.h+8)*big*k+Math.sin(da)*5*k, 6*k, '#ffe14a', 2); }
     if (VS.poison>0 && alive && Math.random()<dt*5) parts.push({x:mxx+(Math.random()-0.5)*md.w*0.7*k, y:mcy+10*k, vx:0, vy:-25-Math.random()*30, t:0.7, c:'rgba(182,132,245,0.85)', r:2+Math.random()*2.5, g:-30});
@@ -1543,13 +1543,14 @@ function drawStage(dt, t){
     for (i=0;i<16;i++){ var pa=Math.random()*6.28, ps=40+Math.random()*120; parts.push({x:g.mx,y:mcy,vx:Math.cos(pa)*ps,vy:Math.sin(pa)*ps-30,t:0.6+Math.random()*0.3,c:'rgba(240,235,250,0.8)',r:5+Math.random()*7,g:-40}); }
     for (i=0;i<14;i++) parts.push({x:g.mx,y:mcy,vx:(Math.random()-0.5)*340,vy:-160-Math.random()*260,t:0.9,c:i%2?'#ffd84a':MCOL[kd][VS.tier],r:2.5+Math.random()*3,g:800}); }
   // ----- hero -----
-  var hdp=Math.min(1,VS.hDead/0.4), wk=walk>0? Math.min(1,walk/0.9) : 0, cheer=won && VS.mDead>0.3 && !wk && !choosing && !VS.empty, hxx=g.hx+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).x-g.hx)*ease(wk) : 0)+(VS.fadeIn>0? -VS.fadeIn/0.45*60*k : 0)+dashP(ha)*D-(VS.hHurt>0? Math.sin(Math.min(1,VS.hHurt/0.4)*Math.PI)*14*k : 0), hyy=g.gy+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).y-g.gy)*ease(wk) : 0)-(cheer? Math.abs(Math.sin(t*6.5))*16*k : 0)-(wk||VS.fadeIn>0? Math.abs(Math.sin(t*16))*7*k : 0);
+  var hdp=Math.min(1,VS.hDead/0.55), hfall= hdp<0.7? Math.pow(hdp/0.7,2) : 1-Math.sin((hdp-0.7)/0.3*Math.PI)*0.09, hh=VS.hHurt>0&&!(VS.hDead>0)? Math.sin(Math.min(1,VS.hHurt/0.4)*Math.PI) : 0, wk=walk>0? Math.min(1,walk/0.9) : 0, cheer=won && VS.mDead>0.3 && !wk && !choosing && !VS.empty, hxx=g.hx+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).x-g.hx)*ease(wk) : 0)+(VS.fadeIn>0? -VS.fadeIn/0.45*60*k : 0)+dashP(ha)*D-(VS.hHurt>0? Math.sin(Math.min(1,VS.hHurt/0.4)*Math.PI)*14*k : 0), hyy=g.gy+(wk&&walkGate? (gatePos(g,walkGate.dx,walkGate.dy).y-g.gy)*ease(wk) : 0)-(cheer? Math.abs(Math.sin(t*6.5))*16*k : 0)-(wk||VS.fadeIn>0? Math.abs(Math.sin(t*16))*7*k : 0);
   if (wk && Math.random()<dt*30) parts.push({x:hxx,y:hyy,vx:-40-Math.random()*40,vy:-20-Math.random()*30,t:0.4,c:'rgba(230,220,240,0.6)',r:2+Math.random()*3,g:60});
   c.fillStyle='rgba(0,0,0,0.34)'; el(c,hxx+2*k,g.gy+3*k,44*k,7*k); c.fill(); if (!(VS.hDead>0)){ gearAura(c,hxx+2*k,g.gy+3*k,95*k,t); var gb=gearBest(); if (gb>=2 && Math.random()<dt*6) parts.push({x:hxx+(Math.random()-0.5)*90*k, y:g.gy, vx:0, vy:-30-Math.random()*40, t:0.8, c:hexA(RAR[gb],0.9), r:1.5+Math.random()*2, g:-20}); }
   if (VS.hGlow>0){ c.fillStyle='rgba(140,240,120,'+(VS.hGlow*0.7)+')'; el(c,hxx,g.gy-58*k,58*k,70*k); c.fill(); }
   heroRun=(ha>=0.18 && ha<0.96) || wk>0 || VS.fadeIn>0;
-  sprite(function(s){ heroArt(s,t); }, hxx-hdp*8*k, hyy-hdp*6*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1), rot:-easeOut(hdp)*1.5, tint: VS.hHurt>0.25? '#fff' : '#ff3030', ta: VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0)});
-  if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',g.hx-36*k+Math.cos(sa)*16*k, g.gy-34*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
+  if (hdp>=0.7 && !VS.hThud){ VS.hThud=1; shk=Math.max(shk,0.8); Snd.thud(); for (i=0;i<16;i++) parts.push({x:hxx-50*k+Math.random()*70*k, y:g.gy, vx:(Math.random()-0.5)*220, vy:-30-Math.random()*90, t:0.6+Math.random()*0.3, c:'rgba(210,200,220,0.7)', r:3+Math.random()*5, g:120}); }
+  sprite(function(s){ heroArt(s,t); }, hxx+hfall*14*k, hyy+hfall*10*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1)*(1+0.03*hh+0.06*hfall), sy:1-0.08*hh-0.14*hfall, rot:hfall*0.62-hh*0.16, tint: hdp>0? '#1a1024' : (VS.hHurt>0.25? '#fff' : '#ff3030'), ta: hdp>0? 0.35*hdp : (VS.hHurt>0.25? 0.85 : (VS.hHurt>0? VS.hHurt*1.6 : 0))});
+  if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',hxx+30*k+Math.cos(sa)*18*k, g.gy-78*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
   if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(70+sp*10)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45, scx=hxx, scy=hyy-58*k, rx=sr, ry=sr*1.08, brk=VS.shield<=0;
     c.save(); c.globalAlpha=sa2;
     var dg=c.createRadialGradient(scx-rx*0.3,scy-ry*0.4,rx*0.1,scx,scy,rx); dg.addColorStop(0,'rgba(200,235,255,0.06)'); dg.addColorStop(0.75,'rgba(90,170,255,0.14)'); dg.addColorStop(1,'rgba(120,200,255,'+(0.45+sp*0.3)+')'); c.fillStyle=dg; el(c,scx,scy,rx,ry); c.fill();
@@ -2434,7 +2435,7 @@ function playIntro(done){
 function drawPoster(){ VCH=0;
   var W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1), c=cx, t=1.3, i, k=Math.min(W,H)/520, land=W>H*1.2, port=H>W*1.2;
   cv.width=Math.round(W*d); cv.height=Math.round(H*d); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
-  var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl=2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
+  var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl= land? 1 : 2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
   var useImg=artOk('room-arch');
   if (useImg){ var s0=Math.max(W/1920, H/1080, fy/(0.8*1080)), iw=1920*s0, ih=1080*s0; c.drawImage(ART['room-arch'], (W-iw)/2, fy-0.8*ih, iw, ih); c.fillStyle='rgba(20,6,10,0.35)'; c.fillRect(0,0,W,H); }
   var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#14081a'); g.addColorStop(1,'#4a1a24'); c.fillStyle=g; if (!useImg) c.fillRect(0,0,W,H);
@@ -2461,7 +2462,7 @@ function drawPoster(){ VCH=0;
   B=sB; V=sV; bw=sbw; bh=sbh; uh=suh; sel=ssel; VCH=sCH;
   // title
   c.textAlign='center'; c.textBaseline='middle'; c.font='900 '+Math.round(tsz)+'px '+FNT; c.lineWidth=tsz*0.2; c.strokeStyle='#1a0610';
-  var lines= nl===1? ['POTION SORT KNIGHT'] : ['POTION SORT','KNIGHT'];
+  var lines= nl===1? ['POTION KNIGHT'] : ['POTION','KNIGHT'];
   lines.forEach(function(tx3,li){ var yy=ty2+li*tsz*1.02; c.strokeText(tx3,W/2,yy); var tg2=c.createLinearGradient(0,yy-tsz/2,0,yy+tsz/2); tg2.addColorStop(0,'#fff6c2'); tg2.addColorStop(0.5,'#ffcf3a'); tg2.addColorStop(1,'#d9802a'); c.fillStyle=tg2; c.fillText(tx3,W/2,yy); });
   var sy3=ty2+(lines.length-1)*tsz*1.02+tsz*0.78, ssz=tsz*0.38; c.font='900 '+Math.round(ssz)+'px '+FNT; c.lineWidth=ssz*0.25; c.strokeText('SAVE THE PRINCESS',W/2,sy3); c.fillStyle='#ffb09a'; c.fillText('SAVE THE PRINCESS',W/2,sy3);
   var vg=c.createRadialGradient(W/2,H/2,Math.min(W,H)*0.4,W/2,H/2,Math.max(W,H)*0.75); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); c.fillStyle=vg; c.fillRect(0,0,W,H);
@@ -2554,7 +2555,7 @@ function boot2(){
   if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); var tries=0, waitArt=function(){ if ((artOk('knight-2')&&artOk('dragon')&&artOk('room-arch')) || ++tries>60){ SAVE.gear.top=2; drawPoster(); } else setTimeout(waitArt,100); }; waitArt(); return; }
   if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
   else playIntro(maybeDaily);
-  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, cards:showCards, daily:maybeDaily, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
+  if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, cards:showCards, daily:maybeDaily, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, set lost(v){ lost=v; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 PF.init().then(boot, boot);
