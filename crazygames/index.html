@@ -1391,8 +1391,7 @@ function sprite(art, x, y, k, big, o){
     if (o.glow==='rainbow'){ var gr=sl.createLinearGradient(0,0,W,H*0.6); for (var q=0;q<=6;q++) gr.addColorStop(q/6,'hsl('+Math.round((tm*90+q*60)%360)+',100%,62%)'); sl.fillStyle=gr; hc='hsl('+Math.round((tm*90)%360)+',100%,65%)'; } else sl.fillStyle=o.glow;
     sl.fillRect(0,0,W,H); sl.globalCompositeOperation='source-over';
     var ox=-150*K/DPR, oy=-225*K/DPR, ow=300*K/DPR, oh=270*K/DPR, rw=Math.max(1,1.1*k), pu=0.8+0.2*Math.sin(tm*3), a0=c.globalAlpha;
-    c.globalAlpha=a0*0.45*pu; c.shadowColor=hc; c.shadowBlur=7*k; c.drawImage(sil,ox,oy,ow,oh); c.shadowBlur=0; c.shadowColor='rgba(0,0,0,0)';
-    c.globalAlpha=a0*pu; for (var d=0;d<8;d++){ var an=d*Math.PI/4; c.drawImage(sil,ox+Math.cos(an)*rw,oy+Math.sin(an)*rw,ow,oh); }
+    c.globalAlpha=a0; for (var d=0;d<8;d++){ var an=d*Math.PI/4; c.drawImage(sil,ox+Math.cos(an)*rw,oy+Math.sin(an)*rw,ow,oh); }
     c.globalAlpha=a0; }
   c.drawImage(spr,-150*K/DPR,-225*K/DPR,300*K/DPR,270*K/DPR); c.restore();
 }
