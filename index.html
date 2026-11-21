@@ -1088,7 +1088,6 @@ function icon(c, role, x, y, s, col, lw){
 function floatTx(x,y,txt,col,big,ic){ floats.push({x:x,y:y,txt:txt,col:col||'#fff',t:1.0,big:big,ic:ic}); }
 function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.34; VS.mSl=0.32; shk=Math.max(shk, crit?1.1:(big?0.7:0.35)); hitStop=crit?0.12:0.07;
   if (v<900) floatTx(g.mx+(Math.random()-0.5)*14*k, y-34*k, '-'+v+(crit?'!!':''), crit?'#ff9a3c':'#ffd84a', big); Snd.hit(); Snd.thud();
-  fx.push({ty:'slash', x:g.mx-6*k, y:y, t:0, d:0.24, c:c==null?'#fff':COL_HI[c], r:46*k});
   if (crit){ critFlash=1; Snd.crit(); fx.push({ty:'rays', x:g.mx, y:y, t:0, d:0.45, c:'#ffd84a', r:90*k}); bigTx(tl('crit'), '#ff9a3c', g.mx, y-74*k, 1.15); }
   for (var i=0;i<12;i++) parts.push({x:g.mx,y:y,vx:(Math.random()-0.2)*320,vy:-80-Math.random()*240,t:0.5,c:i%3?'#ffe9a8':'#fff',r:2+Math.random()*3,g:700}); }
 function doDrink(c, bv){
@@ -1129,7 +1128,7 @@ function doMonsterTurn(delay){
       if (ev.blocked){ VS.shield=Math.max(0,VS.shield-1); VS.shPop=0.45; VS.shBreak=0.45; floatTx(g.hx, g.gy-70*k, tl('blocked'), '#9cc8ff', true); Snd.clank(); Snd.hit(); shk=Math.max(shk,0.3);
         for (var i=0;i<12;i++) parts.push({x:g.hx+30*k,y:hy,vx:(Math.random()-0.6)*300,vy:-60-Math.random()*200,t:0.45,c:i%2?'#cfe4ff':'#fff',r:2+Math.random()*2.5,g:600}); }
       else { VS.hHp=Math.max(0,hpAfter); VS.hHurt=0.4; VS.hSl=0.32; floatTx(g.hx, g.gy-70*k, '-'+ev.hit, '#ff6a5a', true); Snd.bad(); Snd.thud(); hurtFlash=1; shk=Math.max(shk,1); hitStop=0.08;
-        fx.push({ty:'slash', x:g.hx+6*k, y:hy, t:0, d:0.24, c:'#ff8a7a', r:44*k, flip:1});
+        
         for (var j=0;j<10;j++) parts.push({x:g.hx,y:hy,vx:(Math.random()-0.8)*300,vy:-60-Math.random()*220,t:0.5,c:j%2?'#ff9a8a':'#fff',r:2+Math.random()*2.5,g:700}); } }); }
 }
 // ----- characters: drawn at 1 unit = 1px around their feet, facing each other -----
