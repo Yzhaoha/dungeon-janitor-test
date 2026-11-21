@@ -1768,14 +1768,14 @@ function playIntro(done){
   requestAnimationFrame(loop);
 }
 // ---------------- poster for the store covers (?debug&poster): knight vs dragon in the dungeon, potions, the title ----------------
-function drawPoster(){
+function drawPoster(){ VCH=0;
   var W=innerWidth, H=innerHeight, d=Math.min(2,window.devicePixelRatio||1), c=cx, t=1.3, i, k=Math.min(W,H)/520, land=W>H*1.2, port=H>W*1.2;
   cv.width=Math.round(W*d); cv.height=Math.round(H*d); c.setTransform(d,0,0,d,0,0); c.lineJoin='round'; c.lineCap='round';
   var th=THEMES[3], fy=H*(port? 0.72 : 0.76), tsz=Math.min(W*(land? 0.085 : 0.13), H*(land? 0.13 : 0.1)), ty2=H*0.04+tsz*0.6, nl= land? 1 : 2, tb=ty2+(nl-1)*tsz*1.02+tsz*1.25, fs2=Math.min((fy-tb-10)/150, W*(land? 0.36 : 0.44)/125);
   var useImg=artOk('room-arch');
   if (useImg){ var s0=Math.max(W/1920, H/1080, fy/(0.8*1080)), iw=1920*s0, ih=1080*s0; c.drawImage(ART['room-arch'], (W-iw)/2, fy-0.8*ih, iw, ih); c.fillStyle='rgba(20,6,10,0.35)'; c.fillRect(0,0,W,H); }
   var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,'#14081a'); g.addColorStop(1,'#4a1a24'); c.fillStyle=g; if (!useImg) c.fillRect(0,0,W,H);
-  if (!useImg) c.strokeStyle='rgba(0,0,0,0.3)'; c.lineWidth=2; for (var y=0, rw=0; y<fy; y+=34*k, rw++){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for (var x=(rw%2? -40*k : 0); x<W; x+=80*k){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+34*k); c.stroke(); } }
+  if (!useImg){ c.strokeStyle='rgba(0,0,0,0.3)'; c.lineWidth=2; for (var y=0, rw=0; y<fy; y+=34*k, rw++){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); for (var x=(rw%2? -40*k : 0); x<W; x+=80*k){ c.beginPath(); c.moveTo(x,y); c.lineTo(x,y+34*k); c.stroke(); } } }
   // big arch behind the dragon, hellish light
   var ax=W*(port? 0.62 : 0.68), aw=Math.min(W*0.28, 170*k), ah=Math.min(fy*0.86, 360*k);
   if (!useImg){ c.beginPath(); c.moveTo(ax-aw-16*k,fy); c.lineTo(ax-aw-16*k,fy-ah+aw); c.arc(ax,fy-ah+aw,aw+16*k,Math.PI,0); c.lineTo(ax+aw+16*k,fy); c.closePath(); c.fillStyle='#4a3040'; c.fill(); c.lineWidth=4; c.strokeStyle=OL; c.stroke();
@@ -1791,11 +1791,11 @@ function drawPoster(){
   var hs=fs2, kx=W*(land? 0.27 : 0.26); VS.hAtk=0; heroRun=true; c.save(); c.translate(kx, fy); c.scale(hs,hs); c.fillStyle='rgba(0,0,0,0.45)'; el(c,0,3,46,8); c.fill(); heroArt(c,0.06); c.restore(); heroRun=false;
   // potions in front
   var pc=[0,1,2,4,5,3], nb= land? 6 : 4, pw2=Math.min(30*k, (H-fy)*0.26), gap=pw2*1.7, px0=W/2-(nb-1)*gap/2, py0=H-(H-fy)*0.12;
-  for (i=0;i<nb;i++){ var bx=px0+i*gap, bh2=pw2*3, col=pc[i];
-    c.save(); c.translate(bx,py0); c.beginPath(); c.roundRect(-pw2/2,-bh2,pw2,bh2,[2,2,pw2/2,pw2/2]); c.fillStyle='rgba(200,225,255,0.15)'; c.fill();
-    c.save(); c.clip(); var lg=c.createLinearGradient(0,-bh2*0.9,0,0); lg.addColorStop(0,COL_HI[col]); lg.addColorStop(1,COL_LO[col]); c.fillStyle=lg; c.fillRect(-pw2,-bh2*0.88,pw2*2,bh2); c.restore();
-    icon(c,DJ.ROLE[col],0,-bh2*0.42,pw2*0.28,'#fff',2.5); c.lineWidth=4; c.strokeStyle=OL; c.stroke(); c.fillStyle='rgba(255,255,255,0.35)'; c.fillRect(-pw2*0.32,-bh2*0.85,pw2*0.12,bh2*0.6);
-    c.beginPath(); c.roundRect(-pw2*0.38,-bh2-pw2*0.42,pw2*0.76,pw2*0.5,4); c.fillStyle='#b9824a'; c.fill(); c.lineWidth=3; c.stroke(); c.restore(); }
+  // the real in-game bottles (full and corked), drawn by borrowing drawBottle's globals for a moment
+  var sB=B, sV=V, sbw=bw, sbh=bh, suh=uh, ssel=sel, sCH=VCH; VCH=0; sel=-1; bw=pw2*1.05; bh=bw*3.15; uh=bh*0.91/CAP; B=[]; V=[];
+  for (i=0;i<nb;i++){ var col=pc[i]; B.push([col,col,col,col]); V.push({x:px0+i*gap, y:py0, lift:0, shake:0, busy:0, cork:1, pop:0, drop:0, ox:0, oy:0, ang:0, disp:[0,1,2,3].map(function(){ return {c:col,a:1,k:1}; })}); }
+  for (i=0;i<nb;i++) drawBottle(V[i], i);
+  B=sB; V=sV; bw=sbw; bh=sbh; uh=suh; sel=ssel; VCH=sCH;
   // title
   c.textAlign='center'; c.textBaseline='middle'; c.font='900 '+Math.round(tsz)+'px '+FNT; c.lineWidth=tsz*0.2; c.strokeStyle='#1a0610';
   var lines= nl===1? ['POTION KNIGHT'] : ['POTION','KNIGHT'];
