@@ -168,6 +168,8 @@ var Snd = (function(){
     live:function(){ return !!(ac && ac.state==='running'); },
     isOn:function(){ return !off; }, unlock:function(){ ctx(); if(!ac) return; if(ac.state!=='running') ac.resume().then(bgm); else bgm(); }
   };
+  // iPhone Safari only lets sound start on a finished touch or a click (not on the first touch-down), so try again on every one
+  ['pointerup','touchend','click','keydown'].forEach(function(ev){ addEventListener(ev, function(){ gest=true; if (!ac || ac.state!=='running' || !musOn) S.unlock(); }, {capture:true, passive:true}); });
   return S;
 })();
 
