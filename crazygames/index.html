@@ -1087,7 +1087,7 @@ function icon(c, role, x, y, s, col, lw){
   c.restore();
 }
 function floatTx(x,y,txt,col,big,ic){ floats.push({x:x,y:y,txt:txt,col:col||'#fff',t:1.0,big:big,ic:ic}); }
-function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.34; VS.mSl=0.32; shk=Math.max(shk, crit?1.1:(big?0.7:0.35)); hitStop=crit?0.12:0.07;
+function hitMonster(v, big, c, crit){ var g=stg(), k=g.k, y=mCY(g); VS.mHurt=0.34; VS.mSl=0.32; VS.mSd=Math.floor(Math.random()*999); shk=Math.max(shk, crit?1.1:(big?0.7:0.35)); hitStop=crit?0.12:0.07;
   if (v<900) floatTx(g.mx+(Math.random()-0.5)*14*k, y-34*k, '-'+v+(crit?'!!':''), crit?'#ff9a3c':'#ffd84a', big); Snd.hit(); Snd.thud();
   if (crit){ critFlash=1; Snd.crit(); fx.push({ty:'rays', x:g.mx, y:y, t:0, d:0.45, c:'#ffd84a', r:90*k}); bigTx(tl('crit'), '#ff9a3c', g.mx, y-74*k, 1.15); }
   for (var i=0;i<12;i++) parts.push({x:g.mx,y:y,vx:(Math.random()-0.2)*320,vy:-80-Math.random()*240,t:0.5,c:i%3?'#ffe9a8':'#fff',r:2+Math.random()*3,g:700}); }
@@ -1128,7 +1128,7 @@ function doMonsterTurn(delay){
     later(delay+0.1+MA*0.42, function(){ var hy=g.gy-44*k;
       if (ev.blocked){ VS.shield=Math.max(0,VS.shield-1); VS.shPop=0.45; VS.shBreak=0.45; floatTx(g.hx, g.gy-70*k, tl('blocked'), '#9cc8ff', true); Snd.clank(); Snd.hit(); shk=Math.max(shk,0.3);
         for (var i=0;i<12;i++) parts.push({x:g.hx+30*k,y:hy,vx:(Math.random()-0.6)*300,vy:-60-Math.random()*200,t:0.45,c:i%2?'#cfe4ff':'#fff',r:2+Math.random()*2.5,g:600}); }
-      else { VS.hHp=Math.max(0,hpAfter); VS.hHurt=0.4; VS.hSl=0.32; floatTx(g.hx, g.gy-70*k, '-'+ev.hit, '#ff6a5a', true); Snd.bad(); Snd.thud(); hurtFlash=1; shk=Math.max(shk,1); hitStop=0.08;
+      else { VS.hHp=Math.max(0,hpAfter); VS.hHurt=0.4; VS.hSl=0.32; VS.hSd=Math.floor(Math.random()*999); floatTx(g.hx, g.gy-70*k, '-'+ev.hit, '#ff6a5a', true); Snd.bad(); Snd.thud(); hurtFlash=1; shk=Math.max(shk,1); hitStop=0.08;
         
         for (var j=0;j<10;j++) parts.push({x:g.hx,y:hy,vx:(Math.random()-0.8)*300,vy:-60-Math.random()*220,t:0.5,c:j%2?'#ff9a8a':'#fff',r:2+Math.random()*2.5,g:700}); } }); }
 }
@@ -1388,14 +1388,19 @@ function gearIcon(c, sl, x, y, s, col){
   else { c.lineWidth=0.14+w; c.strokeStyle=OL; c.beginPath(); c.arc(0,-0.62,0.72,0.35,Math.PI-0.35); c.stroke(); c.lineWidth=0.14; c.strokeStyle='#ffcf3a'; c.stroke(); poly(c,[0,-0.12,0.42,0.3,0,0.92,-0.42,0.3]); fs(c,col,w); c.fillStyle='rgba(255,255,255,0.6)'; poly(c,[0,0.04,0.2,0.3,0,0.4]); c.fill(); }
   c.restore();
 }
-// getting hit: a red jagged slash sweeps diagonally across the body (p 0..1), white-hot core, fades out
-function slashFx(c, x, y, k, p, seed){ var L2=62*k, a0=-0.85, hd=Math.min(1,p*3), tl2=Math.max(0,(p-0.3)/0.7), n=9, pts=[], i;
-  for (i=0;i<=n;i++){ var f=i/n, j=(i%2? 1 : -1)*(i>0&&i<n? (2.5+((seed*7+i*13)%5)*0.6)*k : 0); pts.push([x+Math.cos(a0)*(f-0.5)*2*L2*-1 + Math.sin(a0)*j, y+Math.sin(a0)*(f-0.5)*2*L2*-1 - Math.cos(a0)*j]); }
-  var seg=function(){ c.beginPath(); var s0=tl2*n, s1=hd*n; for (var q=Math.floor(s0); q<=Math.ceil(s1) && q<n; q++){ var A=pts[q], B=pts[q+1], u0=Math.max(0,s0-q), u1=Math.min(1,s1-q); if (u1<=u0) continue; var ax=A[0]+(B[0]-A[0])*u0, ay=A[1]+(B[1]-A[1])*u0, bx=A[0]+(B[0]-A[0])*u1, by=A[1]+(B[1]-A[1])*u1; if (q===Math.floor(s0)) c.moveTo(ax,ay); else c.lineTo(ax,ay); c.lineTo(bx,by); } };
-  var al=p<0.6? 1 : 1-(p-0.6)/0.4; c.save(); c.lineCap='round'; c.lineJoin='round'; c.globalCompositeOperation='lighter';
-  c.globalAlpha=al*0.55; c.strokeStyle='#ff1a1a'; c.lineWidth=11*k; seg(); c.stroke();
-  c.globalAlpha=al; c.strokeStyle='#ff3a2a'; c.lineWidth=5*k; seg(); c.stroke();
-  c.strokeStyle='#ffe0d8'; c.lineWidth=1.8*k; seg(); c.stroke(); c.restore(); }
+// getting hit: a red crack tears open across the body all at once (p 0..1): jagged, thick in the middle and sharp at the ends,
+// with a couple of short forks, a white-hot core that flashes first, then it fades
+function slashFx(c, x, y, k, p, seed){ var L2=60*k, a0=-0.85, cs=Math.cos(a0), sn=Math.sin(a0), n=10, pts=[], i, r=DJ_rnd(seed*31+7);
+  for (i=0;i<=n;i++){ var f=i/n, j= i>0&&i<n? (r()-0.5)*9*k : 0, d=(f-0.5)*2*L2; pts.push([x-cs*d+sn*j, y-sn*d-cs*j, Math.sin(f*Math.PI)]); }
+  var forks=[[3,1],[7,-1]].map(function(q){ var P=pts[q[0]], ang=a0+q[1]*0.9+(r()-0.5)*0.4, ln=(10+r()*8)*k; return [P, [P[0]+Math.cos(ang)*ln*q[1], P[1]+Math.sin(ang)*ln*q[1]]]; });
+  var open=Math.min(1,p/0.07), al=p<0.45? 1 : Math.max(0,1-(p-0.45)/0.55), fl=p<0.18? 1-p/0.18 : 0;
+  var crack=function(w, col){ c.strokeStyle=col; for (var q=0;q<n;q++){ var A=pts[q], B=pts[q+1]; c.lineWidth=Math.max(0.6, w*open*(0.25+0.75*(A[2]+B[2])/2)); c.beginPath(); c.moveTo(A[0],A[1]); c.lineTo(B[0],B[1]); c.stroke(); }
+    c.lineWidth=Math.max(0.5, w*open*0.35); forks.forEach(function(F){ c.beginPath(); c.moveTo(F[0][0],F[0][1]); c.lineTo(F[1][0],F[1][1]); c.stroke(); }); };
+  c.save(); c.lineCap='round'; c.lineJoin='round'; c.globalCompositeOperation='lighter';
+  c.globalAlpha=al*0.5; crack(16*k, '#ff1010');
+  c.globalAlpha=al; crack(7*k, '#e8141a');
+  c.globalAlpha=al; crack((2.6+fl*2.5)*k, fl>0? '#ffffff' : '#ffb0a0');
+  c.restore(); }
 var spr=document.createElement('canvas'), sc=spr.getContext('2d'), sil=document.createElement('canvas'), sl=sil.getContext('2d');
 function sprite(art, x, y, k, big, o){
   var K=k*1.25*DPR, W=Math.ceil(300*K), H=Math.ceil(270*K); if (spr.width!==W || spr.height!==H){ spr.width=W; spr.height=H; }
@@ -1560,8 +1565,8 @@ function drawStage(dt, t){
   heroRun=(ha>=0.18 && ha<0.96) || wk>0 || VS.fadeIn>0;
   if (hdp>=0.7 && !VS.hThud){ VS.hThud=1; shk=Math.max(shk,0.8); Snd.thud(); for (i=0;i<16;i++) parts.push({x:hxx-50*k+Math.random()*70*k, y:g.gy, vx:(Math.random()-0.5)*220, vy:-30-Math.random()*90, t:0.6+Math.random()*0.3, c:'rgba(210,200,220,0.7)', r:3+Math.random()*5, g:120}); }
   sprite(function(s){ heroArt(s,t); }, hxx+hfall*14*k, hyy+hfall*10*k, k, 1, {sx:(wk&&walkGate&&walkGate.dx<0? -1 : 1)*(1+0.06*hfall), sy:1-0.14*hfall, rot:hfall*0.62, tint:'#1a1024', ta: hdp>0? 0.35*hdp : 0});
-  if (VS.hSl>0) slashFx(c, hxx, hyy-55*k, k, 1-VS.hSl/0.32, 7);
-  if (VS.mSl>0 && !VS.mDead) slashFx(c, mxx, myy-md.h*0.5*big*k, k*Math.max(1,big*0.9), 1-VS.mSl/0.32, 3);
+  if (VS.hSl>0) slashFx(c, hxx, hyy-55*k, k, 1-VS.hSl/0.32, VS.hSd||7);
+  if (VS.mSl>0 && !VS.mDead) slashFx(c, mxx, myy-md.h*0.5*big*k, k*Math.max(1,big*0.9), 1-VS.mSl/0.32, VS.mSd||3);
   if (hdp>=1) for (i=0;i<3;i++){ var sa=t*5+i*2.1; icon(c,'stun',hxx+30*k+Math.cos(sa)*18*k, g.gy-78*k+Math.sin(sa)*5*k, 6*k, '#ffe14a', 2); }
   if (VS.shield>0 || VS.shBreak>0){ var sp=VS.shPop>0? Math.sin((1-VS.shPop/0.45)*Math.PI) : 0, sr=(70+sp*10)*k, sa2=VS.shield>0? 1 : VS.shBreak/0.45, scx=hxx, scy=hyy-58*k, rx=sr, ry=sr*1.08, brk=VS.shield<=0;
     c.save(); c.globalAlpha=sa2;
