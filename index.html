@@ -1387,18 +1387,15 @@ function gearIcon(c, sl, x, y, s, col){
   else { c.lineWidth=0.14+w; c.strokeStyle=OL; c.beginPath(); c.arc(0,-0.62,0.72,0.35,Math.PI-0.35); c.stroke(); c.lineWidth=0.14; c.strokeStyle='#ffcf3a'; c.stroke(); poly(c,[0,-0.12,0.42,0.3,0,0.92,-0.42,0.3]); fs(c,col,w); c.fillStyle='rgba(255,255,255,0.6)'; poly(c,[0,0.04,0.2,0.3,0,0.4]); c.fill(); }
   c.restore();
 }
-// getting hit: a red crack tears open across the body all at once (p 0..1): jagged, thick in the middle and sharp at the ends,
-// with a couple of short forks, a white-hot core that flashes first, then it fades
-function slashFx(c, x, y, k, p, seed){ var L2=60*k, a0=-0.85, cs=Math.cos(a0), sn=Math.sin(a0), n=10, pts=[], i, r=DJ_rnd(seed*31+7);
-  for (i=0;i<=n;i++){ var f=i/n, j= i>0&&i<n? (r()-0.5)*9*k : 0, d=(f-0.5)*2*L2; pts.push([x-cs*d+sn*j, y-sn*d-cs*j, Math.sin(f*Math.PI)]); }
-  var forks=[[3,1],[7,-1]].map(function(q){ var P=pts[q[0]], ang=a0+q[1]*0.9+(r()-0.5)*0.4, ln=(10+r()*8)*k; return [P, [P[0]+Math.cos(ang)*ln*q[1], P[1]+Math.sin(ang)*ln*q[1]]]; });
-  var open=Math.min(1,p/0.07), al=p<0.45? 1 : Math.max(0,1-(p-0.45)/0.55), fl=p<0.18? 1-p/0.18 : 0;
-  var crack=function(w, col){ c.strokeStyle=col; for (var q=0;q<n;q++){ var A=pts[q], B=pts[q+1]; c.lineWidth=Math.max(0.6, w*open*(0.25+0.75*(A[2]+B[2])/2)); c.beginPath(); c.moveTo(A[0],A[1]); c.lineTo(B[0],B[1]); c.stroke(); }
-    c.lineWidth=Math.max(0.5, w*open*0.35); forks.forEach(function(F){ c.beginPath(); c.moveTo(F[0][0],F[0][1]); c.lineTo(F[1][0],F[1][1]); c.stroke(); }); };
-  c.save(); c.lineCap='round'; c.lineJoin='round'; c.globalCompositeOperation='lighter';
-  c.globalAlpha=al*0.5; crack(16*k, '#ff1010');
-  c.globalAlpha=al; crack(7*k, '#e8141a');
-  c.globalAlpha=al; crack((2.6+fl*2.5)*k, fl>0? '#ffffff' : '#ffb0a0');
+// getting hit: a straight red rift opens across the body at once (p 0..1): a lens, sharp at both ends and widest in the middle,
+// red glow round it, a white flash in the slit first, then a dark void inside, and it closes and fades
+function slashFx(c, x, y, k, p, seed){ var L2=62*k, a0=-0.85+((seed%7)-3)*0.04, open=Math.min(1,p/0.06)*(p>0.6? Math.max(0,1-(p-0.6)/0.4*0.7) : 1), al=p<0.55? 1 : Math.max(0,1-(p-0.55)/0.45), fl=p<0.16? 1-p/0.16 : 0;
+  var lens=function(w){ c.beginPath(); c.moveTo(-L2,0); c.quadraticCurveTo(0,-w*2,L2,0); c.quadraticCurveTo(0,w*2,-L2,0); c.closePath(); };
+  c.save(); c.translate(x,y); c.rotate(a0); c.globalAlpha=al;
+  c.globalCompositeOperation='lighter'; c.fillStyle='rgba(255,20,20,0.35)'; lens(10*k*open); c.fill(); c.fillStyle='rgba(255,40,30,0.55)'; lens(6.5*k*open); c.fill();
+  c.globalCompositeOperation='source-over'; c.fillStyle='#ff2a22'; lens(4.2*k*open); c.fill();
+  c.fillStyle= fl>0? 'rgba(255,255,255,'+(0.6+fl*0.4)+')' : '#2a0610'; lens(2.2*k*open); c.fill();
+  if (fl<=0){ c.strokeStyle='rgba(255,180,160,0.8)'; c.lineWidth=Math.max(0.6,0.8*k); lens(2.2*k*open); c.stroke(); }
   c.restore(); }
 var spr=document.createElement('canvas'), sc=spr.getContext('2d'), sil=document.createElement('canvas'), sl=sil.getContext('2d');
 function sprite(art, x, y, k, big, o){
