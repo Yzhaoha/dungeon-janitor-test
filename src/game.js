@@ -407,7 +407,12 @@ var MCOL={slime:['#6fd16a','#5ab8f0','#f0914a','#b684f5'], gob:['#86d95a','#55c9
 var MD={slime:{h:58,w:68,s:1}, gob:{h:76,w:50,s:1}, skel:{h:84,w:52,s:1}, bat:{h:80,w:74,s:1}, orc:{h:104,w:60,s:0.96}, ogre:{h:118,w:76,s:1.04}, dragon:{h:108,w:96,s:1.12}};
 var MIMG={slime:'slime',gob:'goblin',skel:'skeleton',bat:'bat',orc:'orc',ogre:'ogre',dragon:'dragon'}, MHI={slime:{h:74,w:76},gob:{h:84,w:74},skel:{h:90,w:84},bat:{h:62,w:104},orc:{h:104,w:98},ogre:{h:124,w:118},dragon:{h:112,w:116}};
 function mdOf(kd){ var nn=newArt(kd); if (nn) return {h:NHI[nn].h+(NHI[nn].fly?14:0), w:nW(nn), s:MD[kd].s}; return artOk(MIMG[kd])? {h:MHI[kd].h, w:MHI[kd].w, s:MD[kd].s} : MD[kd]; }
-function monsterKind(l){ return l.role==='big' ? 'dragon' : (l.role==='boss' ? 'ogre' : ['slime','gob','skel','bat','orc'][((l.level-1)*2+l.stage+(l.lane||0)*2)%5]); }
+// small monsters: each floor deals the chapter's five kinds in its own shuffled order (fixed per floor, so a retry meets the same one),
+// so they come up at random but a floor never shows the same one twice in a row
+function monsterKind(l){ if (l.role==='big') return 'dragon'; if (l.role==='boss') return 'ogre';
+  var r=DJ_rnd(l.level*7919+13), K=['slime','gob','skel','bat','orc']; if (l.level<2) return K[(l.stage+(l.lane||0)*2)%5];
+  for (var i=K.length-1;i>0;i--){ var j=Math.floor(r()*(i+1)), q=K[i]; K[i]=K[j]; K[j]=q; }
+  return K[(l.stage+(l.lane||0)*2)%5]; }
 function specOf(kind){ if (L && L.level<2) return null; if (L && L.king && chOf(L.level)>0) return ['','drain','freeze','burn'][chOf(L.level)]; return kind==='slime'? 'regen' : ((kind==='gob'||kind==='bat'||kind==='skel')? 'lock' : null); }
 function tierOf(n){ return Math.floor((n-1)/6)%4; }
 function stg(){ var k=STG.h/200, w=STG.w, x=STG.x, sp=Math.min(w*0.25, STG.h*1.05); return {x:x, w:w, k:k, hx:x+w/2-sp, mx:x+w/2+sp, gy:STG.top+STG.h-24*k}; }
