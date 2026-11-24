@@ -785,7 +785,19 @@ function loadPaintedKit(){
     var names=['sound','language','gear','coin','sword','hand'];
     [[678,17,285,294],[966,17,280,294],[1247,17,284,294],[678,312,285,293],[966,312,280,293],[1247,312,284,293]].forEach(function(rect,i){css(names[i],cut.apply(null,rect));});
     css('header',cut(680,625,850,178));css('energy',cut(680,810,850,170));
-    PUI.tubeTop=cut(20,119,210,136);PUI.tubeGlass=cut(40,250,160,530);PUI.tubeFoot=cut(20,772,210,100);
+    var glass = cut(40, 250, 160, 530);
+    var glassCtx = glass.getContext('2d');
+    // Fade the cloudy artwork across the viewing area while keeping the painted side highlights.
+    var mask = glassCtx.createLinearGradient(0, 0, glass.width, 0);
+    [[0, 1], [0.09, 0.90], [0.24, 0.06], [0.80, 0.06], [0.94, 0.90], [1, 1]].forEach(function(stop){
+      mask.addColorStop(stop[0], 'rgba(0,0,0,'+stop[1]+')');
+    });
+    glassCtx.globalCompositeOperation = 'destination-in';
+    glassCtx.fillStyle = mask;
+    glassCtx.fillRect(0, 0, glass.width, glass.height);
+    PUI.tubeTop = cut(20, 119, 210, 136);
+    PUI.tubeGlass = glass;
+    PUI.tubeFoot = cut(20, 772, 210, 100);
     document.body.classList.add('painted-kit');
   }catch(e){ /* Retain the old controls if decoding or cropping fails. */ }};
   atlas.src='ui/painted-kit-v2.webp';
@@ -1884,7 +1896,7 @@ function drawBottle(v, i){
   if (PUI.tubeTop){
     // Paint only the empty shell; the live liquid above retains its real colours,
     // hidden layers, partial volume and pour angle.
-    c.save();c.globalAlpha=0.55;c.drawImage(PUI.tubeGlass,-bw*0.54,-bh+bw*0.28,bw*1.08,bh-bw*0.43);c.restore();
+    c.drawImage(PUI.tubeGlass, -bw*0.54, -bh+bw*0.28, bw*1.08, bh-bw*0.43);
     c.drawImage(PUI.tubeTop,-bw*0.67,-bh-bw*0.4,bw*1.34,bw*0.7);
     c.drawImage(PUI.tubeFoot,-bw*0.66,-bw*0.28,bw*1.32,bw*0.57);
     if (selC || aimC){c.save();c.lineWidth=Math.max(1.5,bw*0.035);c.strokeStyle=selC?'#ffe7a0':'#8ff0dc';bottlePath(c,0);c.stroke();c.restore();}
