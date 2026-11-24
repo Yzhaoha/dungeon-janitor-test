@@ -183,7 +183,7 @@ var CAP=DJ.CAP;
 // ---------------- painted art (art/*.png, shrunk to img/*.webp by the build). The code-drawn versions stay as the fallback ----------------
 var ART_META=/*ART_META*/null, ART={};
 // loads every picture; done() fires once all have arrived (or failed), or after `wait` ms on a slow line - whichever is first
-function artLoad(prog, done, wait){ var names=ART_META? Object.keys(ART_META) : [], left=names.length, fired=false;
+function artLoad(prog, done, wait){ var names=ART_META? Object.keys(ART_META).filter(function(n){ return !LAZY[n.replace(/-attack$/,'')]; }) : [], left=names.length, fired=false;
   function fin(){ if (!fired){ fired=true; done(); } }
   function one(){ left--; if (prog) prog(1-left/Math.max(1,names.length)); if (left<=0) fin(); }
   if (!left){ fin(); return; } setTimeout(fin, wait||12000);
@@ -196,6 +196,19 @@ function vivid(im){ try{ var W=im.naturalWidth, H=im.naturalHeight, cv2=document
     a[i]=r<0?0:r>255?255:r; a[i+1]=g<0?0:g>255?255:g; a[i+2]=b<0?0:b>255?255:b; }
   c2.putImageData(d,0,0); cv2.naturalWidth=W; cv2.naturalHeight=H; return cv2; }catch(e){ return im; } }
 function artOk(n){ return !!ART[n]; }
+// chapter monsters with their own art (chapters 2-4): which old kind each one stands in for, its size on stage, and whether it floats.
+// These pictures are only downloaded when the player reaches (or nears) that chapter; until then the recoloured old art is used.
+var CHART={1:{slime:'ghost',gob:'zombie',skel:'archer',bat:'spider'},2:{slime:'iceslime',gob:'wolf',bat:'iceelem',orc:'yeti'},3:{slime:'fireelem',gob:'lizard',bat:'imp',orc:'hellhound'}};
+var NHI={ghost:{h:84,fly:1},zombie:{h:92},archer:{h:90},spider:{h:70},iceslime:{h:70},wolf:{h:74},iceelem:{h:98,fly:1},yeti:{h:112},imp:{h:80},fireelem:{h:96,fly:1},lizard:{h:56},hellhound:{h:78}};
+// attack pictures drawn a little off from the standing one: shift (source pixels of the 1254 canvas) and scale
+var NADJ={'iceslime-attack':{dx:-150}, 'iceelem-attack':{dx:-150, s:1.06}, 'spider-attack':{s:0.9}, 'yeti-attack':{}};
+var LAZY={}; Object.keys(NHI).forEach(function(n){ LAZY[n]=1; }); ['necro','bonedragon','frostgiant','icedragon','demon','demonking','demonking-aura'].forEach(function(n){ LAZY[n]=1; });
+var lazyAsk={};
+function loadChArt(ch){ var m=CHART[ch]; if (!m || !ART_META) return; Object.keys(m).forEach(function(kd){ [m[kd], m[kd]+'-attack'].forEach(function(n){ if (lazyAsk[n] || !ART_META[n]) return; lazyAsk[n]=1;
+  var im=new Image(); im.onload=function(){ ART[n]=vivid(im); stageCache=null; }; im.onerror=function(){ lazyAsk[n]=0; }; im.src='img/'+n+'.webp'; }); }); }
+function newName(kd){ var m=CHART[VCH]; return m&&m[kd] || null; }
+function newArt(kd){ var n=newName(kd); return n&&ART[n]? n : null; }
+function nW(n){ var m=ART_META&&ART_META[n]; return m&&m.bb? NHI[n].h*(m.bb[2]-m.bb[0])/(m.bb[3]-m.bb[1]) : NHI[n].h; }
 // chapters: every 24 floors the monsters come back recoloured (crypt green, ice blue, lava red) with a new name, until new art arrives
 var VCH=0, VMAP=[null,{d:[16,10,28],m:[70,200,140],l:[232,255,240],k:0.62},{d:[12,26,54],m:[90,168,236],l:[242,251,255],k:0.66},{d:[30,6,6],m:[226,70,40],l:[255,220,130],k:0.6}];
 function chOf(n){ return Math.floor((n-1)/24)%4; }
@@ -206,7 +219,7 @@ function recolor(im,ch){ var P=VMAP[ch], W=im.naturalWidth||im.width, H=im.natur
     a[i]=a[i]*q+(A[0]+(B[0]-A[0])*f)*k; a[i+1]=a[i+1]*q+(A[1]+(B[1]-A[1])*f)*k; a[i+2]=a[i+2]*q+(A[2]+(B[2]-A[2])*f)*k; }
   c2.putImageData(d,0,0); cv2.naturalWidth=W; cv2.naturalHeight=H; return cv2; }
 function useChapter(ch){ VCH=ch; if (!ch) return; for (var kd in MIMG){ [MIMG[kd], MIMG[kd]+'-attack'].forEach(function(n){ if (ART[n] && !ART[n+'~'+ch]){ try{ ART[n+'~'+ch]=recolor(ART[n],ch); }catch(e){} } }); } }
-function mName(kd){ var b=tl('m_'+kd); return VCH? tl('mv'+VCH,{m:b}) : b; }
+function mName(kd){ var nn=newName(kd); if (nn) return tl('m_'+nn); var b=tl('m_'+kd); return VCH? tl('mv'+VCH,{m:b}) : b; }
 // bat wings: the painting is cut (soft seam) into left wing / body / right wing once, then each wing swings about its shoulder
 var BATP=null, BATPS={};
 function batParts(){ var bk=vn('bat'); if (BATPS[bk]!==undefined) return BATPS[bk]; BATP=false; BATPS[bk]=false; var im=ART[bk]; if (!im) return false;
@@ -276,7 +289,7 @@ function loadLevel(n, keepExtra, st, hp, lane, type){
   tutMv=null; plan=null; sel=-1; hist=[]; undoLeft=5; anims=[]; won=false; lost=false; moved=0; hintMv=null; parts=[]; stuckShown=false; laters=[]; floats=[]; orbs=[];
   F={}; for (var fk in L.fight) F[fk]=L.fight[fk]; F.atk+=5*SAVE.up.s+gearSum('atk'); F.heroMax+=10*SAVE.up.a+gearSum('hp'); F.heal+=6*SAVE.up.h+gearSum('heal'); F.def=gearSum('def'); F.crit=gearSum('crit')/100; F.cd+=gearSum('spd');
   if (hp==null){ F.hHp=F.heroMax; if (!keepExtra) revived=false; } else F.hHp=Math.max(1,Math.min(F.heroMax,Math.round(hp))); entryHp=F.hHp;
-  useChapter(chOf(L.level));
+  useChapter(chOf(L.level)); loadChArt(chOf(L.level)); loadChArt(chOf(L.level+3));
   VS={hHp:F.hHp, mHp:F.mHp, hBar:F.hHp/F.heroMax, mBar:1, hLag:F.hHp/F.heroMax, mLag:1, fadeIn:curStage>0&&hp!=null?0.45:0, shield:0, poison:0, hAtk:0, hHurt:0, hDrink:0, hDead:0, hGlow:0, dc:0, shPop:0, shBreak:0, mAtk:0, mHurt:0, mDead:0, mIn:0.7, landed:0, poofed:0, dizzy:0, cd:F.cd, cdPop:0, cdSeq:cdSeq, kind:monsterKind(L), tier:L.role==='big'? (Math.floor(n/24)+3)%4 : tierOf(n), scn:VCH||tierOf(n)}; fx=[]; shk=0;
   drawMap($('mini'), false); updHud(); layout(); syncAll();
   Snd.mode(L.king? 'b' : 'n');
@@ -393,12 +406,12 @@ var GLC={slime:'#7dff6a', gob:'#ffe14a', skel:'#6ae8ff', bat:'#d77aff', orc:'#ff
 var MCOL={slime:['#6fd16a','#5ab8f0','#f0914a','#b684f5'], gob:['#86d95a','#55c9a8','#d9b04a','#c77ae0'], skel:['#f1ecdc','#cfe6ee','#ecdcae','#e6cdea'], bat:['#8a55c4','#4a7cc4','#c4556a','#4f9a78'], orc:['#5f9447','#4a8f8a','#a8823c','#8a5aa8'], ogre:['#6a9a4a','#4a86a8','#b8683c','#8a4ab0'], dragon:['#d0483a','#3a9a6a','#4a78d0','#8a4ac8']};
 var MD={slime:{h:58,w:68,s:1}, gob:{h:76,w:50,s:1}, skel:{h:84,w:52,s:1}, bat:{h:80,w:74,s:1}, orc:{h:104,w:60,s:0.96}, ogre:{h:118,w:76,s:1.04}, dragon:{h:108,w:96,s:1.12}};
 var MIMG={slime:'slime',gob:'goblin',skel:'skeleton',bat:'bat',orc:'orc',ogre:'ogre',dragon:'dragon'}, MHI={slime:{h:74,w:76},gob:{h:84,w:74},skel:{h:90,w:84},bat:{h:62,w:104},orc:{h:104,w:98},ogre:{h:124,w:118},dragon:{h:112,w:116}};
-function mdOf(kd){ return artOk(MIMG[kd])? {h:MHI[kd].h, w:MHI[kd].w, s:MD[kd].s} : MD[kd]; }
+function mdOf(kd){ var nn=newArt(kd); if (nn) return {h:NHI[nn].h+(NHI[nn].fly?14:0), w:nW(nn), s:MD[kd].s}; return artOk(MIMG[kd])? {h:MHI[kd].h, w:MHI[kd].w, s:MD[kd].s} : MD[kd]; }
 function monsterKind(l){ return l.role==='big' ? 'dragon' : (l.role==='boss' ? 'ogre' : ['slime','gob','skel','bat','orc'][((l.level-1)*2+l.stage+(l.lane||0)*2)%5]); }
 function specOf(kind){ if (L && L.level<2) return null; if (L && L.king && chOf(L.level)>0) return ['','drain','freeze','burn'][chOf(L.level)]; return kind==='slime'? 'regen' : ((kind==='gob'||kind==='bat'||kind==='skel')? 'lock' : null); }
 function tierOf(n){ return Math.floor((n-1)/6)%4; }
 function stg(){ var k=STG.h/200, w=STG.w, x=STG.x, sp=Math.min(w*0.25, STG.h*1.05); return {x:x, w:w, k:k, hx:x+w/2-sp, mx:x+w/2+sp, gy:STG.top+STG.h-24*k}; }
-function mCY(g){ var d=mdOf(VS.kind); return g.gy-(VS.kind==='bat'? (artOk('bat')? 62 : 52) : d.h*0.5)*d.s*g.k; }
+function mCY(g){ var d=mdOf(VS.kind); return g.gy-(VS.kind==='bat'&&!newArt('bat')? (artOk('bat')? 62 : 52) : d.h*0.5)*d.s*g.k; }
 function fs(c,col,lw){ c.fillStyle=col; c.fill(); if (lw!==0){ c.lineWidth=lw||3; c.strokeStyle=OL; c.stroke(); } }
 function rr(c,x,y,w,h,r){ c.beginPath(); c.roundRect(x,y,w,h,r); }
 function el(c,x,y,rx,ry,rot){ c.beginPath(); c.ellipse(x,y,rx,ry==null?rx:ry,rot||0,0,6.3); }
@@ -698,7 +711,12 @@ mArt.dragon=function(c,t,col,wa,ang,mood,a){
   wing(4,-64,1.05,sk,-0.05-fl*1.3);
 };
 // mark for the floor's boss room on the maps and gates: a white skull with a gold crown (mini boss), horns (boss), crown and wings (great boss)
-Object.keys(MIMG).forEach(function(kd){ var code=mArt[kd]; mArt[kd]=function(c,t,col,wa,ang,mood,a){ var n=MIMG[kd]; if (!artOk(n)) return code(c,t,col,wa,ang,mood,a);
+Object.keys(MIMG).forEach(function(kd){ var code=mArt[kd]; mArt[kd]=function(c,t,col,wa,ang,mood,a){ var n=MIMG[kd], nn=newArt(kd);
+  if (nn){ var at2=a>=0.12 && a<0.85 && artOk(nn+'-attack'), H2=NHI[nn].h, br2=Math.sin(t*3.2+1); c.save();
+    if (NHI[nn].fly) c.translate(0,-14+Math.sin(t*2.6)*4); else if (!at2) c.scale(1+br2*0.012, 1-br2*0.02);
+    if (at2){ var aj=NADJ[nn+'-attack'], m0=ART_META[nn]; if (aj && m0 && m0.bb){ var sc0=H2/(m0.bb[3]-m0.bb[1]); c.translate((aj.dx||0)*sc0, 0); if (aj.s) c.scale(aj.s, aj.s); } else c.rotate(-0.03); }
+    drawChar(c, at2? nn+'-attack' : nn, nn, H2); c.restore(); return; }
+  if (!artOk(n)) return code(c,t,col,wa,ang,mood,a);
   var atk=a>=0.12 && a<0.85 && artOk(n+'-attack'), br=Math.sin(t*3.2+1); c.save();
   if (kd==='bat'){ c.translate(0,-30+(a>=0? Math.sin(Math.min(1,a/0.6)*Math.PI)*20 : 0)); if (atk&&artOk(n+'-attack')) drawChar(c, vn(n+'-attack'), n, MHI[kd].h); else if (!drawBatFlap(c, t, MHI[kd].h)){ c.translate(0,Math.sin(t*3.4)*5); drawChar(c, vn(n), n, MHI[kd].h); } }
   else { if (!atk) c.scale(1+br*0.012, 1-br*0.02); else c.rotate(-0.03); drawChar(c, vn(atk? n+'-attack' : n), n, MHI[kd].h); }
