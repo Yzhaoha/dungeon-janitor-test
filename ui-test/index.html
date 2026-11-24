@@ -255,6 +255,19 @@ body.pf-poki #lvl{top:70px}
 .btn{border:1px solid #a2d4b0;background:linear-gradient(#5eab83,#327456);box-shadow:0 4px 0 #193b30,inset 0 1px 0 #ffffff40}
 .btn.ad{border-color:#baa3d4;background:linear-gradient(#8b72a7,#584173);box-shadow:0 4px 0 #30213f,inset 0 1px 0 #ffffff30}
 @media(max-width:600px){#tut{font-size:13px;padding:6px 9px}#routeProgress{font-size:9px;line-height:10px}}
+
+/* Painted sprite art, enabled only after the atlas is decoded successfully. */
+body.painted-ui #btns button{border:0;border-radius:0;background-color:transparent;background-image:var(--paint-button0);background-size:100% 100%;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 3px 2px #10081888)}
+body.painted-ui #btns #bRestart{background-image:var(--paint-button1)}
+body.painted-ui #btns #bAdd{background-image:var(--paint-button2)}
+body.painted-ui #btns #bHint{background-image:var(--paint-button3)}
+body.painted-ui #btns button>.ic{visibility:hidden}
+body.painted-ui #btns button:active{transform:translateY(3px);box-shadow:none;filter:brightness(1.12)}
+body.painted-ui #btns button:focus-visible{outline:2px solid #fff0a0;outline-offset:3px}
+body.painted-ui #tut{border:solid transparent;border-width:18px 22px 13px;border-image-source:var(--paint-parchment);border-image-slice:100 80 65 80 fill;border-image-repeat:stretch;border-radius:0;background:none;box-shadow:none;filter:drop-shadow(0 3px 2px #160e2080);padding:4px 6px;min-height:58px;color:#3e281c;text-shadow:0 1px #fff1b9;font-weight:900}
+body.painted-ui .card{background-image:var(--paint-leather);background-size:100% 100%;border-color:#b7823c}
+body.painted-ui #wnNext,body.painted-ui #shopX,body.painted-ui #gearX{border:solid transparent;border-width:12px 25px;border-image-source:var(--paint-continue);border-image-slice:32 95 32 95 fill;background:none;box-shadow:none;border-radius:0;padding:1px 12px;color:#fff8d4;text-shadow:0 2px 2px #15301c}
+@media(max-width:600px){body.painted-ui #tut{border-width:14px 16px 10px;padding:4px 2px;min-height:54px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -721,6 +734,26 @@ window.addEventListener('error',function(e){ if(window.PokiSDK||window.CrazyGame
 var $=function(id){return document.getElementById(id);};
 var QS = new URLSearchParams(location.search), DEBUG = QS.has('debug'); var COVER = QS.has('cover'); try{ if(localStorage.getItem('dj_debug')==='1') DEBUG=true; }catch(e){}
 
+// Approved hand-painted atlas. Images are cropped at runtime, keeping the source
+// atlas intact. The old UI remains usable if this optional artwork fails to load.
+var PUI={};
+function loadPaintedUI(){
+  var atlas=new Image();
+  atlas.onload=function(){
+    try{
+      var cut=function(x,y,w,h){ var out=document.createElement('canvas'); out.width=w; out.height=h; out.getContext('2d').drawImage(atlas,x,y,w,h,0,0,w,h); return out; };
+      var css=function(key,canvas){ document.documentElement.style.setProperty('--paint-'+key,'url("'+canvas.toDataURL('image/png')+'")'); };
+      [[105,0,310,305],[445,0,310,305],[784,0,312,305],[1121,0,316,305]].forEach(function(r,i){css('button'+i,cut.apply(null,r));});
+      css('parchment',cut(36,307,899,415));
+      css('continue',cut(1033,866,430,113));
+      css('leather',cut(982,722,518,140));
+      PUI.bar=cut(145,778,305,155);
+      document.body.classList.add('painted-ui');
+    }catch(e){ /* Keep functional fallback styling. */ }
+  };
+  atlas.src='ui/painted-ui-v1.webp';
+}
+
 // ---------------- platform wrapper ----------------
 // Poki: init > gameLoadingFinished > gameplayStart/Stop (deduped) > commercialBreak between rooms.
 // CrazyGames v3: init (body exists here) > loadingStart > loadingStop > gameplayStart/Stop > midgame between rooms.
@@ -1065,7 +1098,7 @@ function layout(){
   else { skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px'; $('btns').style.left=cxp; if (wide) BA.top+=44*u; }
   bn.style.left=cxp; bn.style.top=Math.round(wide? BA.top+40*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
   // the tutorial line sits in its own strip right under the fight panel; on tutorial rooms the bottles move down to make room for it
-  var tutTop=STG.top+STG.h+6*u; if (L && L.coach) BA.top=Math.max(BA.top, tutTop+(small? 58 : 38)*u);
+  var tutTop=STG.top+STG.h+6*u; if (L && L.coach) BA.top=Math.max(BA.top, tutTop+(small? 76 : 66)*u);
   $('tut').style.left=Math.round(small? STG.x+STG.w/2 : VW/2)+'px'; $('tut').style.maxWidth=Math.round((small? STG.w-8 : VW-24)/u)+'px'; $('tut').style.top=Math.round(tutTop)+'px'; $('btns').style.bottom=Math.round(14*u)+'px';
   var top=BA.top+(side?4:0), bot=BA.bot, availH=VH-top-bot, availW=BA.x1-BA.x0, best=0, bestRows=1;
   var pdS=Math.round(Math.max(140, Math.min(204, (availH-4)/u))), pdE=$('dpad'); pdE.style.width=pdE.style.height=pdS+'px'; pdE.style.left=cxp; pdE.style.top=Math.round(Math.max(top, (top+VH-bot)/2-pdS*u/2))+'px';
@@ -1591,6 +1624,7 @@ function drawGate(c,g,t,dx,dy,id,hit){
 }
 function hpBar(c,x,y,w,h,frac,lag,cA,cB,right){
   var cl=function(v){ return Math.max(0,Math.min(1,v)); }, lw=w*cl(lag), fw=w*cl(frac);
+  if (PUI.bar) c.drawImage(PUI.bar,x-6,y-7,w+12,h+14);
   rr(c,x-2.5,y-2.5,w+5,h+5,(h+5)/2); c.fillStyle=OL; c.fill(); rr(c,x,y,w,h,h/2); c.fillStyle='#3a2c44'; c.fill();
   c.save(); rr(c,x,y,w,h,h/2); c.clip();
   c.fillStyle='#fff2c4'; c.fillRect(right? x+w-lw : x, y, lw, h);
@@ -2664,6 +2698,7 @@ function boot2(){
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, cards:showCards, daily:maybeDaily, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, set lost(v){ lost=v; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
+loadPaintedUI();
 PF.init().then(boot, boot);
 })();
 // ===== GAME END =====
