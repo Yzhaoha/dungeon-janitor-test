@@ -288,7 +288,12 @@ body.painted-kit #shopBtn{padding:2px 5px 2px 25px;min-height:40px;min-width:78p
 body.painted-kit #shopBtn>.coin{position:absolute;left:-7px;top:0;width:29px;height:29px;border:0;border-radius:0;background:var(--paint-coin) center/contain no-repeat}
 body.painted-kit #lvl{padding:2px 4px;border-top-width:5px;border-bottom-width:5px}
 body.painted-kit #mini{border-width:6px 12px}
-body.painted-kit #dpad button{border-width:6px 10px}
+body.painted-kit #dpad button{border-width:4px 6px}
+body.painted-kit #dpad button .ic{display:inline-block;width:86%;height:86%;vertical-align:middle;color:#fff1af}
+body.painted-kit #dpad button .ic svg{filter:drop-shadow(0 1px 1px #17090c)}
+body.painted-kit #dpad button .ic polygon{fill:currentColor;stroke:currentColor}
+body.painted-kit #dpad button:disabled{filter:brightness(.64) saturate(.68)}
+body.painted-kit #dpad button:focus-visible{outline:2px solid #fff1af;outline-offset:2px}
 body.painted-kit #ebar{height:24px;border:solid transparent;border-width:5px 16px;border-image-source:var(--paint-energy);border-image-slice:40 100 40 100;border-radius:0;background:#24172f;box-shadow:none;overflow:visible}
 body.painted-kit #ebar b{background:linear-gradient(#b4fff0,#32bdca 60%,#137b94);box-shadow:inset 0 1px #ddfffd70}
 </style>
