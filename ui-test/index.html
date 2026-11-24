@@ -268,6 +268,29 @@ body.painted-ui #tut{border:solid transparent;border-width:18px 22px 13px;border
 body.painted-ui .card{background-image:var(--paint-leather);background-size:100% 100%;border-color:#b7823c}
 body.painted-ui #wnNext,body.painted-ui #shopX,body.painted-ui #gearX{border:solid transparent;border-width:12px 25px;border-image-source:var(--paint-continue);border-image-slice:32 95 32 95 fill;background:none;box-shadow:none;border-radius:0;padding:1px 12px;color:#fff8d4;text-shadow:0 2px 2px #15301c}
 @media(max-width:600px){body.painted-ui #tut{border-width:14px 16px 10px;padding:4px 2px;min-height:54px;font-size:13px}}
+
+/* Companion painted controls. Counters, disabled states and energy remain live. */
+body.painted-kit #sndBtn,body.painted-kit #langBtn,body.painted-kit #gearBtn,body.painted-kit #skills button{border:0;border-radius:0;background-color:transparent;background-size:100% 100%;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 2px 1px #12091e88)}
+body.painted-kit #sndBtn,body.painted-kit #langBtn{width:43px;height:43px;padding:0;position:relative}
+body.painted-kit #sndBtn{background-image:var(--paint-sound)}
+body.painted-kit #langBtn{background-image:var(--paint-language)}
+body.painted-kit #gearBtn{background-image:var(--paint-gear);width:43px;height:43px;padding:0}
+body.painted-kit #sndBtn>.ic,body.painted-kit #langBtn>.ic,body.painted-kit #langNm,body.painted-kit #gearBtn>.ic,body.painted-kit #skills button canvas{visibility:hidden}
+body.painted-kit #langNm{position:absolute;width:0;overflow:hidden}
+body.painted-kit #sndBtn.muted::after{content:'';position:absolute;left:10%;top:48%;width:80%;height:3px;background:#ef605e;transform:rotate(-45deg);box-shadow:0 1px #2a1111}
+body.painted-kit #sk1{background-image:var(--paint-sword)}
+body.painted-kit #sk2{background-image:var(--paint-hand)}
+body.painted-kit #skills button.off{filter:grayscale(.8) brightness(.58)}
+body.painted-kit #skills button.rdy{filter:drop-shadow(0 0 5px #ffe58d)}
+body.painted-kit #skills button.act{filter:drop-shadow(0 0 7px #c593ff)}
+body.painted-kit #shopBtn,body.painted-kit #lvl,body.painted-kit #mini,body.painted-kit #dpad button{border:solid transparent;border-width:6px 19px;border-image-source:var(--paint-header);border-image-slice:35 110 35 110 fill;border-radius:0;background:none;box-shadow:none}
+body.painted-kit #shopBtn{padding:2px 5px 2px 25px;min-height:40px;min-width:78px;color:#fff0ce}
+body.painted-kit #shopBtn>.coin{position:absolute;left:-7px;top:0;width:29px;height:29px;border:0;border-radius:0;background:var(--paint-coin) center/contain no-repeat}
+body.painted-kit #lvl{padding:2px 4px;border-top-width:5px;border-bottom-width:5px}
+body.painted-kit #mini{border-width:6px 12px}
+body.painted-kit #dpad button{border-width:6px 10px}
+body.painted-kit #ebar{height:24px;border:solid transparent;border-width:5px 16px;border-image-source:var(--paint-energy);border-image-slice:40 100 40 100;border-radius:0;background:#24172f;box-shadow:none;overflow:visible}
+body.painted-kit #ebar b{background:linear-gradient(#b4fff0,#32bdca 60%,#137b94);box-shadow:inset 0 1px #ddfffd70}
 </style>
 </head>
 <body>
@@ -752,6 +775,21 @@ function loadPaintedUI(){
     }catch(e){ /* Keep functional fallback styling. */ }
   };
   atlas.src='ui/painted-ui-v1.webp';
+}
+
+// The second approved sheet supplies the tube shell and the remaining controls.
+function loadPaintedKit(){
+  var atlas=new Image(); atlas.onload=function(){ try{
+    var cut=function(x,y,w,h){var out=document.createElement('canvas');out.width=w;out.height=h;out.getContext('2d').drawImage(atlas,x,y,w,h,0,0,w,h);return out;};
+    var css=function(k,im){document.documentElement.style.setProperty('--paint-'+k,'url("'+im.toDataURL('image/png')+'")');};
+    var names=['sound','language','gear','coin','sword','hand'];
+    [[678,17,285,294],[966,17,280,294],[1247,17,284,294],[678,312,285,293],[966,312,280,293],[1247,312,284,293]].forEach(function(rect,i){css(names[i],cut.apply(null,rect));});
+    css('header',cut(680,625,850,178));css('energy',cut(680,810,850,170));
+    PUI.tubeTop=cut(20,119,210,136);PUI.tubeGlass=cut(40,250,160,530);PUI.tubeFoot=cut(20,772,210,100);
+    document.body.classList.add('painted-kit');
+  }catch(e){ /* Retain the old controls if decoding or cropping fails. */ }};
+  atlas.src='ui/painted-kit-v2.webp';
+  var cork=new Image();cork.onload=function(){var out=document.createElement('canvas');out.width=1060;out.height=538;out.getContext('2d').drawImage(cork,555,93,1060,538,0,0,1060,538);PUI.cork=out;};cork.src='ui/painted-cork-v2.webp';
 }
 
 // ---------------- platform wrapper ----------------
@@ -1843,6 +1881,14 @@ function drawBottle(v, i){
     var sg=c.createLinearGradient(-bw/2,0,bw/2,0); sg.addColorStop(0,'rgba(255,255,255,0.22)'); sg.addColorStop(0.25,'rgba(255,255,255,0.05)'); sg.addColorStop(0.65,'rgba(0,0,0,0)'); sg.addColorStop(1,'rgba(0,0,0,0.32)'); c.fillStyle=sg; c.fillRect(-bw, -h-bw*0.2, bw*2, bh+h);
   }
   c.restore();
+  if (PUI.tubeTop){
+    // Paint only the empty shell; the live liquid above retains its real colours,
+    // hidden layers, partial volume and pour angle.
+    c.save();c.globalAlpha=0.55;c.drawImage(PUI.tubeGlass,-bw*0.54,-bh+bw*0.28,bw*1.08,bh-bw*0.43);c.restore();
+    c.drawImage(PUI.tubeTop,-bw*0.67,-bh-bw*0.4,bw*1.34,bw*0.7);
+    c.drawImage(PUI.tubeFoot,-bw*0.66,-bw*0.28,bw*1.32,bw*0.57);
+    if (selC || aimC){c.save();c.lineWidth=Math.max(1.5,bw*0.035);c.strokeStyle=selC?'#ffe7a0':'#8ff0dc';bottlePath(c,0);c.stroke();c.restore();}
+  } else {
   // Small metal heel anchors the glass to the alchemist's shelf.
   var heel=c.createLinearGradient(-bw/2,0,bw/2,0); heel.addColorStop(0,'#6b422b'); heel.addColorStop(0.3,'#d9b873'); heel.addColorStop(0.55,'#f4d99d'); heel.addColorStop(1,'#80603a');
   c.fillStyle=heel; c.beginPath(); c.roundRect(-bw*0.43,-bw*0.12,bw*0.86,bw*0.15,bw*0.06); c.fill();
@@ -1872,6 +1918,11 @@ function drawBottle(v, i){
     c.strokeStyle='rgba(255,140,60,'+(0.6+Math.sin(tm*4+i*1.3)*0.3)+')'; c.lineWidth=Math.max(1,bw*0.025); c.beginPath(); c.moveTo(bw*0.42,-bh*0.7); c.lineTo(bw*0.3,-bh*0.62); c.lineTo(bw*0.36,-bh*0.54); c.lineTo(bw*0.26,-bh*0.46); c.stroke(); }
   if (VCH===1){ // a faint ghost-light around the glass
     c.save(); c.globalCompositeOperation='lighter'; c.globalAlpha=0.18+0.1*Math.sin(tm*2+i); bottlePath(c,0); c.lineWidth=Math.max(3,bw*0.16); c.strokeStyle='#7dffb0'; c.stroke(); c.restore(); }
+  }
+  if (v.cork>0 && PUI.cork){
+    var ck2=backOut(v.cork),off2=(1-ck2)*bw*1.2;c.save();c.globalAlpha=Math.min(1,v.cork*3);
+    c.drawImage(PUI.cork,-bw*0.63,-bh-bw*0.73-off2,bw*1.26,bw*0.64);c.restore();
+  } else {
   // cork with wax seal and twine
   if (v.cork>0){ var ck=backOut(v.cork), off=(1-ck)*bw*1.2, lipY=-bh-bw*0.12, cw=bw*1.04, chh=bw*0.44, cy0=lipY-off, lw2=Math.max(1.4,bw*0.045); c.globalAlpha=Math.min(1,v.cork*3);
     var kg=c.createLinearGradient(-cw/2,0,cw/2,0); kg.addColorStop(0,SK.k[0]); kg.addColorStop(0.45,SK.k[1]); kg.addColorStop(1,SK.k[2]);
@@ -1890,6 +1941,7 @@ function drawBottle(v, i){
     c.strokeStyle=rb; c.lineWidth=Math.max(1.2,bw*0.04); c.beginPath(); c.moveTo(cw*0.32,cy0-chh*0.34); c.quadraticCurveTo(cw*0.46,cy0-chh*0.05,cw*0.38,cy0+chh*0.3); c.stroke();
     if (done && ((tm*0.6+i*0.37)%1)<0.18){ var sp=((tm*0.6+i*0.37)%1)/0.18, sx=cw*0.42, sy=cy0-chh*0.9, ss=bw*0.16*Math.sin(sp*Math.PI); c.fillStyle='#fffbe0'; c.beginPath(); c.moveTo(sx,sy-ss); c.lineTo(sx+ss*0.25,sy); c.lineTo(sx,sy+ss); c.lineTo(sx-ss*0.25,sy); c.closePath(); c.fill(); c.beginPath(); c.moveTo(sx-ss,sy); c.lineTo(sx,sy+ss*0.25); c.lineTo(sx+ss,sy); c.lineTo(sx,sy-ss*0.25); c.closePath(); c.fill(); }
     c.globalAlpha=1; }
+  }
   c.restore();
 }
 function drawChains(c, v, dt, t){
@@ -2157,8 +2209,8 @@ function applyLang(){
 $('langBtn').onclick=function(){ Snd.unlock(); if (PF.adBusy) return; $('langM').classList.add('show'); };
 $('langM').onclick=function(e){ if (e.target===this) this.classList.remove('show'); };
 function setLang(c){ LANG=c; try{localStorage.setItem('dj_lang',LANG);}catch(e){} applyLang(); if (L){ updHud(); if ($('shopM').classList.contains('show')) drawShop(); if ($('mapM').classList.contains('show')) openMap(); if ($('gearM').classList.contains('show')) buildGear(); updateCoach(); } }
-$('sndBtn').onclick=function(){ var on=Snd.toggle(); this.textContent=on?'🔊':'🔇'; };
-$('sndBtn').textContent=Snd.isOn()?'🔊':'🔇';
+$('sndBtn').onclick=function(){ var on=Snd.toggle(); this.textContent=on?'🔊':'🔇'; this.classList.toggle('muted',!on); };
+$('sndBtn').textContent=Snd.isOn()?'🔊':'🔇'; $('sndBtn').classList.toggle('muted',!Snd.isOn());
 $('lsRetry').onclick=function(){ $('loseM').classList.remove('show'); loadLevel(SAVE.level, false, curStage, Math.max(entryHp, Math.round(F.heroMax*0.6)), curLane, curType); };
 $('lsRevive').onclick=function(){ var b=this; b.disabled=true; PF.rewarded(function(ok){ if (!ok){ b.disabled=false; return; } $('loseM').classList.remove('show'); revived=true; F.hHp=Math.round(F.heroMax*0.7); VS.hHp=F.hHp; F.shield++; VS.shield++; VS.shPop=0.45; VS.hGlow=0.5; VS.hDead=0; lost=false; stuckShown=false; Snd.buy(); }); };
 $('bUndo').onclick=undo; $('bRestart').onclick=restart; $('bAdd').onclick=addBottle; $('bHint').onclick=showHint;
@@ -2699,6 +2751,7 @@ function boot2(){
   requestAnimationFrame(function(n){ last=n; frame(n); });
 }
 loadPaintedUI();
+loadPaintedKit();
 PF.init().then(boot, boot);
 })();
 // ===== GAME END =====
