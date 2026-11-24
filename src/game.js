@@ -199,7 +199,7 @@ function artOk(n){ return !!ART[n]; }
 // chapter monsters with their own art (chapters 2-4): which old kind each one stands in for, its size on stage, and whether it floats.
 // These pictures are only downloaded when the player reaches (or nears) that chapter; until then the recoloured old art is used.
 var CHART={1:{slime:'ghost',gob:'zombie',skel:'archer',bat:'spider'},2:{slime:'iceslime',gob:'wolf',bat:'iceelem',orc:'yeti'},3:{slime:'fireelem',gob:'lizard',bat:'imp',orc:'hellhound'}};
-var NHI={ghost:{h:84,fly:1},zombie:{h:92},archer:{h:90},spider:{h:70},iceslime:{h:70},wolf:{h:74},iceelem:{h:98,fly:1},yeti:{h:112},imp:{h:80},fireelem:{h:96,fly:1},lizard:{h:56},hellhound:{h:78}};
+var NHI={ghost:{h:84,fly:1},zombie:{h:92},archer:{h:90},spider:{h:70},iceslime:{h:70},wolf:{h:74},iceelem:{h:98,fly:1},yeti:{h:112},imp:{h:84},fireelem:{h:96,fly:1},lizard:{h:64},hellhound:{h:78}};
 // attack pictures drawn a little off from the standing one: shift (source pixels of the 1254 canvas) and scale
 var NADJ={'iceslime-attack':{dx:-150}, 'iceelem-attack':{dx:-150, s:1.06}, 'spider-attack':{s:0.9}, 'yeti-attack':{}};
 var LAZY={}; Object.keys(NHI).forEach(function(n){ LAZY[n]=1; }); ['necro','bonedragon','frostgiant','icedragon','demon','demonking','demonking-aura'].forEach(function(n){ LAZY[n]=1; });
