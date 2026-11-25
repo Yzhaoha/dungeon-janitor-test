@@ -1149,7 +1149,7 @@ function layout(){
     // fight on top, bottles below (what players of this genre expect), with the chips and the minimap moved beside the
     // fight panel and the skill bar sharing the bottom row with the buttons, so the height goes to the two things that matter
     var topW= poki? 112*u : VH*0.082, availV=VH-topW-92*u-10*u, colW=Math.max(mnW+18, 186*u);
-    STG.top=topW; STG.h=Math.round(Math.max(118, Math.min(VH*0.309,availV*0.39))); STG.w=Math.round(Math.max(260, Math.min(STG.h*3.85, VW-2*colW-12))); STG.x=Math.round((VW-STG.w)/2);
+    STG.top=topW; STG.h=Math.round(Math.max(118, Math.min(VH*0.338,availV*0.438))); STG.w=Math.round(Math.max(260, Math.min(STG.h*3.45, VW-1.60*colW-12))); STG.x=Math.round((VW-STG.w)/2);
     BA={x0:10, x1:VW-10, top:STG.top+STG.h+10*u, bot:92*u};
     lv.style.left=Math.round(VW*0.31)+'px'; lv.style.top='6px'; lv.style.transform='scale('+Math.min(1,u)+')'; lv.style.transformOrigin='0 0';
     cb.style.left='auto'; cb.style.right='10px'; cb.style.top='10px';
@@ -1176,8 +1176,8 @@ function layout(){
   bgCache=null; if (!n) return;
   for (var rows=1; rows<=4; rows++){ var per=Math.ceil(n/rows), w=Math.min(availW/(per*1.64), availH/(rows*(3.0+1.08)));
     if (w>best+0.5){ best=w; bestRows=rows; } }
-  bw=Math.max(18, Math.min(small? 70 : 100*u, best)); bh=bw*3.0; uh=bh*0.91/CAP;
-  var per2=Math.ceil(n/bestRows), cellH=bh+bw*1.08, totalH=bestRows*cellH, y0=top+Math.max(0,(availH-totalH)/2)+bw*0.91;
+  bw=Math.max(18, Math.min(small? 70 : 100*u, wide && bestRows===1 ? best*0.96 : best)); bh=bw*3.0; uh=bh*0.91/CAP;
+  var per2=Math.ceil(n/bestRows), cellH=bh+bw*1.08, totalH=bestRows*cellH, y0=top+Math.max(0,(availH-totalH)/2)+bw*(wide && bestRows===1 ? 0.72 : 0.91);
   for (var i=0;i<n;i++){ var r=Math.floor(i/per2), inRow=(r===bestRows-1)? n-per2*(bestRows-1) : per2, k=i-r*per2;
     V[i].x=BA.cx+(k-(inRow-1)/2)*bw*1.64; V[i].y=y0+r*cellH+bh; V[i].row=r; }
 }
