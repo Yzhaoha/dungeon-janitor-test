@@ -265,8 +265,8 @@ body.painted-ui #btns button>.ic{visibility:hidden}
 body.painted-ui #btns button:active{transform:translateY(3px);box-shadow:none;filter:brightness(1.12)}
 body.painted-ui #btns button:focus-visible{outline:2px solid #fff0a0;outline-offset:3px}
 body.painted-ui #tut{border:solid transparent;border-width:18px 22px 13px;border-image-source:var(--paint-parchment);border-image-slice:100 80 65 80 fill;border-image-repeat:stretch;border-radius:0;background:none;box-shadow:none;filter:drop-shadow(0 3px 2px #160e2080);padding:4px 6px;min-height:58px;color:#3e281c;text-shadow:0 1px #fff1b9;font-weight:900}
-body.painted-ui .card{background-image:var(--paint-leather);background-size:100% 100%;border-color:#b7823c}
-body.painted-ui #wnNext,body.painted-ui #shopX,body.painted-ui #gearX{border:solid transparent;border-width:12px 25px;border-image-source:var(--paint-continue);border-image-slice:32 95 32 95 fill;background:none;box-shadow:none;border-radius:0;padding:1px 12px;color:#fff8d4;text-shadow:0 2px 2px #15301c}
+body.painted-ui .modal:not(#cardM) .card{background-image:linear-gradient(150deg,#210b1455,#210b1490),var(--paint-leather);background-size:auto,120px 76px;border-color:#b7823c}
+body.painted-ui #wnNext,body.painted-ui #shopX,body.painted-ui #gearX,body.painted-ui #mapX{border:solid transparent;border-width:12px 25px;border-image-source:var(--paint-continue);border-image-slice:32 95 32 95 fill;background:none;box-shadow:none;border-radius:0;padding:1px 12px;color:#fff8d4;text-shadow:0 2px 2px #15301c}
 @media(max-width:600px){body.painted-ui #tut{border-width:14px 16px 10px;padding:4px 2px;min-height:54px;font-size:13px}}
 
 /* Companion painted controls. Counters, disabled states and energy remain live. */
@@ -283,12 +283,11 @@ body.painted-kit #sk2{background-image:var(--paint-hand)}
 body.painted-kit #skills button.off{filter:grayscale(.8) brightness(.58)}
 body.painted-kit #skills button.rdy{filter:drop-shadow(0 0 5px #ffe58d)}
 body.painted-kit #skills button.act{filter:drop-shadow(0 0 7px #c593ff)}
-body.painted-kit #shopBtn,body.painted-kit #lvl,body.painted-kit #mini,body.painted-kit #dpad button{border:solid transparent;border-width:6px 19px;border-image-source:var(--paint-header);border-image-slice:35 110 35 110 fill;border-radius:0;background:none;box-shadow:none}
+body.painted-kit #shopBtn,body.painted-kit #lvl{border:solid transparent;border-width:6px 19px;border-image-source:var(--paint-header);border-image-slice:35 110 35 110 fill;border-radius:0;background:none;box-shadow:none}
 body.painted-kit #shopBtn{padding:2px 5px 2px 25px;min-height:40px;min-width:78px;color:#fff0ce}
 body.painted-kit #shopBtn>.coin{position:absolute;left:-7px;top:0;width:29px;height:29px;border:0;border-radius:0;background:var(--paint-coin) center/contain no-repeat}
 body.painted-kit #lvl{padding:2px 4px;border-top-width:5px;border-bottom-width:5px}
-body.painted-kit #mini{border-width:6px 12px}
-body.painted-kit #dpad button{border-width:4px 6px}
+body.painted-kit #mini,body.painted-kit #dpad button{border:2px solid #c4954e;border-radius:9px;background:linear-gradient(#210b1433,#210b1477),var(--paint-leather) center/120px 76px;box-shadow:inset 0 0 0 1px #f0c98444,0 2px 3px #160b18aa}
 body.painted-kit #dpad button .ic{display:inline-block;width:86%;height:86%;vertical-align:middle;color:#fff1af}
 body.painted-kit #dpad button .ic svg{filter:drop-shadow(0 1px 1px #17090c)}
 body.painted-kit #dpad button .ic polygon{fill:currentColor;stroke:currentColor}
@@ -774,7 +773,7 @@ function loadPaintedUI(){
       [[105,0,310,305],[445,0,310,305],[784,0,312,305],[1121,0,316,305]].forEach(function(r,i){css('button'+i,cut.apply(null,r));});
       css('parchment',cut(36,307,899,415));
       css('continue',cut(1033,866,430,113));
-      css('leather',cut(982,722,518,140));
+      css('leather',cut(1180,775,120,76));
       PUI.bar=cut(145,778,305,155);
       document.body.classList.add('painted-ui');
     }catch(e){ /* Keep functional fallback styling. */ }
@@ -794,7 +793,7 @@ function loadPaintedKit(){
     var glassCtx = glass.getContext('2d');
     // Fade the cloudy artwork across the viewing area while keeping the painted side highlights.
     var mask = glassCtx.createLinearGradient(0, 0, glass.width, 0);
-    [[0, 1], [0.09, 0.90], [0.24, 0.06], [0.80, 0.06], [0.94, 0.90], [1, 1]].forEach(function(stop){
+    [[0, 1], [0.09, 0.90], [0.21, 0], [0.82, 0], [0.94, 0.90], [1, 1]].forEach(function(stop){
       mask.addColorStop(stop[0], 'rgba(0,0,0,'+stop[1]+')');
     });
     glassCtx.globalCompositeOperation = 'destination-in';
@@ -1679,7 +1678,12 @@ function drawGate(c,g,t,dx,dy,id,hit){
 }
 function hpBar(c,x,y,w,h,frac,lag,cA,cB,right){
   var cl=function(v){ return Math.max(0,Math.min(1,v)); }, lw=w*cl(lag), fw=w*cl(frac);
-  if (PUI.bar) c.drawImage(PUI.bar,x-6,y-7,w+12,h+14);
+  if (PUI.bar){
+    var barHeight = h+14, edge = Math.min(w/3, barHeight*45/155), barWidth = w+12;
+    c.drawImage(PUI.bar, 0,0,45,155, x-6,y-7,edge,barHeight);
+    c.drawImage(PUI.bar, 45,0,215,155, x-6+edge,y-7,barWidth-2*edge,barHeight);
+    c.drawImage(PUI.bar, 260,0,45,155, x-6+barWidth-edge,y-7,edge,barHeight);
+  }
   rr(c,x-2.5,y-2.5,w+5,h+5,(h+5)/2); c.fillStyle=OL; c.fill(); rr(c,x,y,w,h,h/2); c.fillStyle='#3a2c44'; c.fill();
   c.save(); rr(c,x,y,w,h,h/2); c.clip();
   c.fillStyle='#fff2c4'; c.fillRect(right? x+w-lw : x, y, lw, h);
@@ -1875,8 +1879,8 @@ function drawBottle(v, i){
     if (done){ var gg=c.createRadialGradient(v.x,v.y,2,v.x,v.y,bw*1.1); gg.addColorStop(0,'rgba('+hexRgb(COL[B[i][0]])+',0.45)'); gg.addColorStop(1,'rgba(0,0,0,0)'); c.fillStyle=gg; c.fillRect(v.x-bw*1.2,v.y-bw*0.6,bw*2.4,bw*1.0); } }
   c.save(); c.translate(px, py); c.rotate(v.ang); c.scale(popS, popS);
   if (selC || aimC){ c.save(); c.shadowColor=aimC? '#78ddcf' : '#ffe49c'; c.shadowBlur=bw*0.32; bottlePath(c,0); c.fillStyle=aimC? 'rgba(120,221,207,0.12)' : 'rgba(255,228,156,0.14)'; c.fill(); c.restore(); }
-  // glass back: a faint tint, darker toward the right
-  bottlePath(c, 0); var gb=c.createLinearGradient(-bw/2,0,bw/2,0); gb.addColorStop(0,'rgba('+SK.g+','+(VCH?0.22:0.16)+')'); gb.addColorStop(0.5,'rgba('+SK.g+','+(VCH?0.09:0.06)+')'); gb.addColorStop(1,'rgba(20,10,30,0.25)'); c.fillStyle=gb; c.fill();
+  // Only the older glass needs a full-surface tint behind the liquid.
+  if (!PUI.tubeGlass){ bottlePath(c, 0); var gb=c.createLinearGradient(-bw/2,0,bw/2,0); gb.addColorStop(0,'rgba('+SK.g+','+(VCH?0.22:0.16)+')'); gb.addColorStop(0.5,'rgba('+SK.g+','+(VCH?0.09:0.06)+')'); gb.addColorStop(1,'rgba(20,10,30,0.25)'); c.fillStyle=gb; c.fill(); }
   // liquid
   c.save(); bottlePath(c, bw*0.075); c.clip();
   var tn=Math.tan(v.ang), X=bw, h=0, k, wob=still? Math.sin(tm*2.2+i)*bw*0.012 : 0;
@@ -1889,7 +1893,7 @@ function drawBottle(v, i){
     h=h2; }
   if (h>0 && d.length){ var tu=d[d.length-1]; if (tu.a<=0.001 && d.length>1) tu=d[d.length-2];
     // the surface: a lighter rounded top when standing, a thin bright line when tilted
-    if (still){ c.fillStyle=tu.k? COL_HI[tu.c] : '#55506a'; c.beginPath(); c.ellipse(0,-h+wob,bw*0.5,bw*0.09,0,0,6.3); c.fill(); c.fillStyle='rgba(255,255,255,0.28)'; c.beginPath(); c.ellipse(-bw*0.12,-h+wob-bw*0.015,bw*0.2,bw*0.035,0,0,6.3); c.fill(); }
+    if (still){ c.fillStyle=tu.k? COL_HI[tu.c] : '#55506a'; c.beginPath(); c.ellipse(0,-h+wob,bw*0.5,bw*0.09,0,0,6.3); c.fill(); c.fillStyle=PUI.tubeGlass && tu.k ? 'rgba(255,255,255,0.66)' : 'rgba(255,255,255,0.28)'; c.beginPath(); c.ellipse(-bw*0.12,-h+wob-bw*0.015,bw*0.2,bw*0.035,0,0,6.3); c.fill(); }
     else { c.fillStyle=tu.k? COL_HI[tu.c] : '#55506a'; c.beginPath(); c.moveTo(-X, -h+tn*X); c.lineTo(X, -h-tn*X); c.lineTo(X, -h-tn*X+3); c.lineTo(-X, -h+tn*X+3); c.closePath(); c.fill(); }
     // slow bubbles
     if (still && bw>=20) for (k=0;k<3;k++){ var ph=(tm*0.28+k*0.37+i*0.13)%1, by=-ph*(h-bw*0.12)-bw*0.06, bx=Math.sin(tm*1.7+k*2+i)*bw*0.16+(k-1)*bw*0.12, br=bw*(0.035+0.02*((k+i)%2))*(0.6+ph*0.6);
@@ -1902,6 +1906,15 @@ function drawBottle(v, i){
     // Paint only the empty shell; the live liquid above retains its real colours,
     // hidden layers, partial volume and pour angle.
     c.drawImage(PUI.tubeGlass, -bw*0.54, -bh+bw*0.28, bw*1.08, bh-bw*0.43);
+    // Narrow specular reflections define the glass and leave the potion icons clear.
+    c.save();
+    c.lineCap = 'round';
+    c.lineWidth = Math.max(1, bw*0.034);
+    c.strokeStyle = 'rgba(240,252,255,0.84)';
+    c.beginPath(); c.moveTo(-bw*0.38,-bh+bw*0.49); c.lineTo(-bw*0.38,-bh*0.43); c.stroke();
+    c.strokeStyle = 'rgba(205,234,255,0.55)';
+    c.beginPath(); c.moveTo(bw*0.40,-bh*0.70); c.lineTo(bw*0.40,-bw*0.50); c.stroke();
+    c.restore();
     c.drawImage(PUI.tubeTop,-bw*0.67,-bh-bw*0.4,bw*1.34,bw*0.7);
     c.drawImage(PUI.tubeFoot,-bw*0.66,-bw*0.28,bw*1.32,bw*0.57);
     if (selC || aimC){c.save();c.lineWidth=Math.max(1.5,bw*0.035);c.strokeStyle=selC?'#ffe7a0':'#8ff0dc';bottlePath(c,0);c.stroke();c.restore();}
