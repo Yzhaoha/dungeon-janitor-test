@@ -2060,7 +2060,15 @@ function drawBottle(v, i){
   }
   if (v.cork>0 && PUI.cork){
     var ck2=backOut(v.cork),off2=(1-ck2)*bw*1.2;c.save();c.globalAlpha=Math.min(1,v.cork*3);
-    c.drawImage(PUI.cork,-bw*0.63,-bh-bw*0.73-off2,bw*1.26,bw*0.64);c.restore();
+    // The front edge of the brass lip hides the tapered end as it seats.
+    c.beginPath();
+    c.moveTo(-bw,-bh-3*bw); c.lineTo(bw,-bh-3*bw);
+    c.lineTo(bw,-bh-bw*0.06); c.lineTo(bw*0.53,-bh-bw*0.06);
+    c.ellipse(0,-bh-bw*0.06,bw*0.53,bw*0.062,0,0,Math.PI);
+    c.lineTo(-bw,-bh-bw*0.06); c.closePath(); c.clip();
+    var corkWidth=bw*1.12;
+    c.drawImage(PUI.cork,-corkWidth/2,-bh-bw*0.43-off2,corkWidth,corkWidth*PUI.cork.height/PUI.cork.width);
+    c.restore();
   } else {
   // cork with wax seal and twine
   if (v.cork>0){ var ck=backOut(v.cork), off=(1-ck)*bw*1.2, lipY=-bh-bw*0.12, cw=bw*1.04, chh=bw*0.44, cy0=lipY-off, lw2=Math.max(1.4,bw*0.045); c.globalAlpha=Math.min(1,v.cork*3);
