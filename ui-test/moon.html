@@ -435,8 +435,8 @@ function trapRate(B0, steps, r){
 // Hand-built opening: teach one potion effect at a time. Prefixes are suggestions,
 // never input gates; alternate legal pours still work and hints fall back to solve().
 var OPENING=[
-  {b:[[1,0,0,0],[0,1,1,1],[],[]], guide:[[0,2],[1,3],[1,2]], lesson:'attack', hp:28, cd:6},
-  {b:[[0,0,0,1],[1,1,1,0],[],[]], guide:[[0,2],[1,3],[1,2]], lesson:'shield', hp:25, cd:3},
+  {b:[[1,0,0,0],[0,1,1,1],[],[]], guide:[[1,2],[0,1],[0,2]], lesson:'attack', hp:28, cd:6},
+  {b:[[0,0,0,1],[1,1,1,0],[],[]], guide:[[1,2],[0,1],[0,2]], lesson:'shield', hp:25, cd:3},
   {b:[[0,2,2,2],[2,1,1,1],[1,0,0,0],[],[]], guide:[[0,3],[1,4],[1,3]], lesson:'heal', hp:25, cd:2}
 ];
 function opening(stage){
@@ -519,6 +519,10 @@ return {ROLE:ROLE, power:power, nextHeavy:nextHeavy, drink:drink, monsterTurn:mo
 var CODES=['en','fr','it','de','es','tr','zh','ja','ko','pt','ru'];
 var LANG_NAMES={en:'English',fr:'Français',it:'Italiano',de:'Deutsch',es:'Español',tr:'Türkçe',zh:'中文',ja:'日本語',ko:'한국어',pt:'Português',ru:'Русский'};
 var TL={
+  coach_pick:["Tap bottle {n}", "Touche la fiole {n}", "Tocca la fiala {n}", "Tippe auf Flasche {n}", "Toca el frasco {n}", "{n}. şişeye dokun", "点第 {n} 瓶", "{n} 本目をタップ", "{n}번째 병 선택", "Toque no frasco {n}", "Нажми на колбу {n}"],
+  coach_empty:["Pour into the empty bottle", "Verse dans la fiole vide", "Versa nella fiala vuota", "Gieße in die leere Flasche", "Vierte en el frasco vacío", "Boş şişeye dök", "倒入箭头下的空瓶", "矢印の空き瓶へ", "화살표 아래 빈 병에 붓기", "Despeje no frasco vazio", "Перелей в пустую колбу"],
+  coach_match:["Pour into bottle {n}", "Verse dans la fiole {n}", "Versa nella fiala {n}", "Gieße in Flasche {n}", "Vierte en el frasco {n}", "{n}. şişeye dök", "倒入第 {n} 瓶，合并同色", "{n} 本目に注ごう", "{n}번째 병에 붓기", "Despeje no frasco {n}", "Перелей в колбу {n}"],
+
   coach_attack:["Fill red to strike. Follow the gold arrow.", "Remplis le rouge pour attaquer. Suis la flèche.", "Completa il rosso per colpire. Segui la freccia.", "Fülle Rot zum Angriff. Folge dem Goldpfeil.", "Completa el rojo para atacar. Sigue la flecha.", "Vurmak için kırmızıyı doldur. Oku izle.", "先凑满红药水出招，跟着金色箭头试试。", "赤をそろえて攻撃。金の矢印を追おう。", "빨강을 채워 공격! 금색 화살표를 따라가세요.", "Complete o vermelho para atacar. Siga a seta.", "Собери красное для атаки. Следуй стрелке."],
   coach_shield:["Fill blue before the countdown ends to block!", "Complète le bleu avant la fin du compte à rebours !", "Completa il blu prima dello scadere per parare!", "Fülle Blau vor Ablauf, um zu blocken!", "¡Completa el azul antes del ataque para bloquear!", "Sayaç bitmeden maviyi doldur, darbeyi engelle!", "倒计时归零前凑满蓝药水，挡住这一击！", "数字が0になる前に青をそろえてガード！", "카운트가 끝나기 전에 파랑을 채워 막으세요!", "Complete o azul antes do ataque para bloquear!", "Собери синее до конца отсчёта, чтобы блокировать!"],
   coach_heal:["Fill green to recover health after a hit.", "Complète le vert pour récupérer après un coup.", "Completa il verde per curarti dopo un colpo.", "Fülle Grün, um dich nach einem Treffer zu heilen.", "Completa el verde para curarte tras un golpe.", "Darbe sonrası iyileşmek için yeşili doldur.", "受伤后凑满绿药水，把生命补回来。", "攻撃を受けたら緑をそろえて回復。", "공격을 받은 뒤 초록을 채워 회복하세요.", "Complete o verde para se curar após um golpe.", "После удара собери зелёное, чтобы восстановить здоровье."],
@@ -1003,7 +1007,7 @@ function artLoad(prog, done, wait){ var names=ART_META? Object.keys(ART_META).fi
   function fin(){ if (!fired){ fired=true; done(); } }
   function one(){ left--; if (prog) prog(1-left/Math.max(1,names.length)); if (left<=0) fin(); }
   if (!left){ fin(); return; } setTimeout(fin, wait||12000);
-  names.forEach(function(n){ var im=new Image(); im.onload=function(){ ART[n]=/^(room|gate|throne)/.test(n)? im : vivid(im); bgCache=null; stageCache=null; one(); }; im.onerror=one; im.src='../img/'+n+'.webp'; }); }
+  names.forEach(function(n){ var im=new Image(); if (/^knight-[0-3]$/.test(n)) im.crossOrigin='anonymous'; im.onload=function(){ ART[n]=/^(room|gate|throne)/.test(n)? im : vivid(im); bgCache=null; stageCache=null; one(); }; im.onerror=one; im.src='../img/'+n+'.webp'; }); }
 // The painted sprites come out a bit soft next to the old flat code art: push their saturation and contrast up once at load.
 function vivid(im){ try{ var W=im.naturalWidth, H=im.naturalHeight, cv2=document.createElement('canvas'); cv2.width=W; cv2.height=H; var c2=cv2.getContext('2d'); c2.drawImage(im,0,0);
   var d=c2.getImageData(0,0,W,H), a=d.data, S=1.38, C=1.12;
@@ -2273,7 +2277,7 @@ function draw(dt){
   });
   for (i=0;i<V.length;i++) if (V[i].ang || V[i].ox) drawBottle(V[i], i);
   // hint arrow / tutorial arrow
-  var hm = (hintMv && now<hintUntil) ? hintMv : (L.tut && !won && !lost && !anims.length ? (tutMv||(tutMv=nextHint())) : null);
+  var hm = (hintMv && now<hintUntil) ? hintMv : ((L.tut || (L.level===2 && curStage===0 && moved===0)) && !choosing && !won && !lost && !anims.length ? (tutMv||(tutMv=nextHint())) : null);
   if (anims.length) tutMv=null;
   if (hm && !won){ var ti = sel===hm[0] ? hm[1] : (sel<0 ? hm[0] : -1); if (ti>=0 && V[ti]){ var hv=V[ti], ay=hv.y-bh-bw*0.75-hv.lift*bw*0.55+Math.sin(now/160)*5;
     c.fillStyle='#ffe45c'; c.strokeStyle='#2a1a2e'; c.lineWidth=3; c.beginPath(); c.moveTo(hv.x, ay+bw*0.4); c.lineTo(hv.x-bw*0.34, ay); c.lineTo(hv.x-bw*0.13, ay); c.lineTo(hv.x-bw*0.13, ay-bw*0.42); c.lineTo(hv.x+bw*0.13, ay-bw*0.42); c.lineTo(hv.x+bw*0.13, ay); c.lineTo(hv.x+bw*0.34, ay); c.closePath(); c.stroke(); c.fill(); } }
@@ -2354,6 +2358,14 @@ function banner(main, sub, ms){
 function toast(t){ banner(t,'',1800); }
 function updateCoach(){
   if (!L || !L.coach || won || lost || choosing){ setTut(''); return; }
+  if (L.lesson==='attack' || L.lesson==='shield' || L.level===2){
+    var show=L.level!==2 || (curStage===0 && moved===0);
+    var m=show && !anims.length && (tutMv || (tutMv=nextHint()));
+    if (!m || (sel>=0 && sel!==m[0])){ setTut(''); return; }
+    setTut(sel<0 ? tl('coach_pick',{n:m[0]+1}) :
+      tl(B[m[1]].length?'coach_match':'coach_empty',{n:m[1]+1}));
+    return;
+  }
   var key=L.lesson? 'coach_'+L.lesson : (L.level===2? 'coach_two' : 'coach_three');
   if (VS.lessonDone && L.lesson) key='coach_ready';
   if (L.level===2 && energy>=100) key='coach_skill';
