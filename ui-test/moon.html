@@ -2632,23 +2632,23 @@ $('gearX').onclick=function(){ $('gearM').classList.remove('show'); };
 $('gearBtn').innerHTML='<span class="ic">'+ICO.svg('helm')+'</span>';
 // ----- going down to the next floor: the knight rides down a stairway, then the new floor's name -----
 function floorTransition(n, load){
-  var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, th=THEMES[Math.floor((n-1)/6)%4], W=360, H=230, d=2;
+  var ft=$('floorT'), cvT=$('ftC'), kind=DJ.kindOf(n), t0=performance.now(), loaded=false, stone='#647d91', W=360, H=230, d=2;
   $('ftFrom').textContent=tl('floor',{n:n-1})+' ✓'; var to=$('ftTo'); to.textContent=(kind==='big'? '🐉 ' : (kind==='boss'? '👹 ' : '⚔️ '))+tl('floor',{n:n}); to.className='out';
   $('ftSub').textContent=(kind==='big'? tl('bigF') : (kind==='boss'? tl('bossF') : tl('ftMini')))+'   ·   '+(n<=FINAL? tl('ftLeft',{n:FINAL-n+1}) : tl('endless')); $('ftSub').className='out';
   cvT.width=W*d; cvT.height=H*d; ft.classList.add('show'); Snd.door();
   var NS=10, SX=6, SY=70, SW=32, SR=14, DP=10;   // stairs: NS steps from (SX,SY) down to the right, each SW wide and SR tall
   var step=function(){ var e=(performance.now()-t0)/1000, c=cvT.getContext('2d'); c.setTransform(d,0,0,d,0,0); c.clearRect(0,0,W,H); c.lineJoin='round';
-    var i, j2, wall=shade(th.fl,-0.45), mort=shade(th.fl,-0.62);
+    var i, j2, wall=shade(stone,-0.45), mort=shade(stone,-0.62);
     // dungeon brick wall
     rr(c,0,0,W,H,14); c.save(); c.clip(); c.fillStyle=wall; c.fillRect(0,0,W,H);
-    for (j2=0;j2<12;j2++){ var by2=j2*18; for (i=-1;i<12;i++){ var bx2=i*34+(j2%2? 17 : 0), sh2=((i*7+j2*13)%5)*0.025; c.fillStyle=shade(th.fl,-0.4-sh2); c.fillRect(bx2+1.5,by2+1.5,31,15); c.fillStyle='rgba(255,255,255,0.05)'; c.fillRect(bx2+1.5,by2+1.5,31,2); } }
+    for (j2=0;j2<12;j2++){ var by2=j2*18; for (i=-1;i<12;i++){ var bx2=i*34+(j2%2? 17 : 0), sh2=((i*7+j2*13)%5)*0.025; c.fillStyle=shade(stone,-0.4-sh2); c.fillRect(bx2+1.5,by2+1.5,31,15); c.fillStyle='rgba(255,255,255,0.05)'; c.fillRect(bx2+1.5,by2+1.5,31,2); } }
     c.fillStyle=mort; for (j2=0;j2<12;j2++) c.fillRect(0,j2*18,W,1.5);
     // the arch at the bottom of the stairs, glowing with the next floor
     var ax=W-34, ay=H-6, aw=30, ah=74, pu2=0.75+Math.sin(e*4)*0.12;
-    c.beginPath(); c.moveTo(ax-aw-9,ay); c.lineTo(ax-aw-9,ay-ah+aw); c.arc(ax,ay-ah+aw,aw+9,Math.PI,0); c.lineTo(ax+aw+9,ay); c.closePath(); c.fillStyle=shade(th.fl,-0.1); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke();
+    c.beginPath(); c.moveTo(ax-aw-9,ay); c.lineTo(ax-aw-9,ay-ah+aw); c.arc(ax,ay-ah+aw,aw+9,Math.PI,0); c.lineTo(ax+aw+9,ay); c.closePath(); c.fillStyle=shade(stone,-0.1); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke();
     for (i=0;i<=6;i++){ var an=Math.PI+i/6*Math.PI; c.beginPath(); c.moveTo(ax+Math.cos(an)*aw,ay-ah+aw+Math.sin(an)*aw); c.lineTo(ax+Math.cos(an)*(aw+9),ay-ah+aw+Math.sin(an)*(aw+9)); c.lineWidth=1.4; c.strokeStyle='rgba(0,0,0,0.4)'; c.stroke(); }
-    c.beginPath(); c.moveTo(ax-aw,ay); c.lineTo(ax-aw,ay-ah+aw); c.arc(ax,ay-ah+aw,aw,Math.PI,0); c.lineTo(ax+aw,ay); c.closePath(); var ag=c.createLinearGradient(0,ay-ah,0,ay); ag.addColorStop(0,'#080408'); ag.addColorStop(1,'rgba('+th.gl+','+pu2+')'); c.fillStyle=ag; c.fill(); c.stroke();
-    var gl=c.createRadialGradient(ax,ay,4,ax,ay,130); gl.addColorStop(0,'rgba('+th.gl+','+(0.4*pu2)+')'); gl.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=gl; c.fillRect(0,0,W,H);
+    c.beginPath(); c.moveTo(ax-aw,ay); c.lineTo(ax-aw,ay-ah+aw); c.arc(ax,ay-ah+aw,aw,Math.PI,0); c.lineTo(ax+aw,ay); c.closePath(); var ag=c.createLinearGradient(0,ay-ah,0,ay); ag.addColorStop(0,'#392a30'); ag.addColorStop(0.55,'#946139'); ag.addColorStop(1,'rgba(255,180,83,'+pu2+')'); c.fillStyle=ag; c.fill(); c.stroke();
+    var gl=c.createRadialGradient(ax,ay,4,ax,ay,130); gl.addColorStop(0,'rgba(255,180,83,'+(0.4*pu2)+')'); gl.addColorStop(1,'rgba(255,180,83,0)'); c.fillStyle=gl; c.fillRect(0,0,W,H);
     // two torches on the wall
     [[80,40],[220,32]].forEach(function(tp,ti){ var tx=tp[0], ty=tp[1], fl=0.85+Math.sin(e*13+ti*2)*0.12+Math.sin(e*7.3+ti)*0.06;
       var tg=c.createRadialGradient(tx,ty-6,2,tx,ty-6,58); tg.addColorStop(0,'rgba(255,170,70,0.42)'); tg.addColorStop(1,'rgba(255,170,70,0)'); c.fillStyle=tg; c.fillRect(tx-58,ty-64,116,116);
@@ -2657,12 +2657,19 @@ function floorTransition(n, load){
     // stone stairs going down to the right: dark mass underneath, then each step (tread + riser with block joints)
     // side of the staircase: a stone wall under the steps, darker toward the bottom
     c.save(); c.beginPath(); c.moveTo(SX,SY+SR); for (i=0;i<NS;i++){ c.lineTo(SX+i*SW+SW,SY+i*SR+SR); c.lineTo(SX+i*SW+SW,SY+(i+1)*SR+SR); } c.lineTo(SX+NS*SW,H); c.lineTo(SX,H); c.closePath(); c.clip();
-    var sg2=c.createLinearGradient(0,SY,0,H); sg2.addColorStop(0,shade(th.fl,-0.3)); sg2.addColorStop(1,shade(th.fl,-0.68)); c.fillStyle=sg2; c.fillRect(0,0,W,H);
-    for (j2=0;j2<14;j2++){ for (i=-1;i<14;i++){ var bx3=i*28+(j2%2? 14 : 0), by3=SY+j2*13; c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=1.2; c.strokeRect(bx3,by3,28,13); } } c.restore();
+    var sg2=c.createLinearGradient(0,SY,0,H); sg2.addColorStop(0,shade(stone,-0.3)); sg2.addColorStop(1,shade(stone,-0.68)); c.fillStyle=sg2; c.fillRect(0,0,W,H);
+    for (j2=0;j2<14;j2++){ for (i=-1;i<14;i++){ var bx3=i*28+(j2%2? 14 : 0), by3=SY+j2*13; c.strokeStyle='rgba(8,23,37,0.19)'; c.lineWidth=1.2; c.strokeRect(bx3,by3,28,13); } } c.restore();
     for (i=0;i<NS;i++){ var x0=SX+i*SW, y0=SY+i*SR+SR, lit=Math.max(0,1-Math.abs(x0-80)/120)*0.14+Math.max(0,1-Math.abs(x0-220)/110)*0.14, sh3=-i*0.025;
-      c.beginPath(); c.moveTo(x0,y0); c.lineTo(x0+DP,y0-DP*0.9); c.lineTo(x0+SW+DP,y0-DP*0.9); c.lineTo(x0+SW,y0); c.closePath(); c.fillStyle=shade(th.fl,0.02+lit+sh3); c.fill(); c.lineWidth=1.5; c.strokeStyle=OL; c.stroke();   // tread (top, going back)
-      c.fillStyle='rgba(255,255,255,0.22)'; c.fillRect(x0+1,y0-1.4,SW-1,1.4);
-      c.beginPath(); c.rect(x0,y0,SW,SR); c.fillStyle=shade(th.fl,-0.22+lit*0.7+sh3); c.fill(); c.stroke();                                  // riser (front)
+      c.beginPath(); c.moveTo(x0,y0); c.lineTo(x0+DP,y0-DP*0.9); c.lineTo(x0+SW+DP,y0-DP*0.9); c.lineTo(x0+SW,y0); c.closePath(); c.fillStyle=shade(stone,0.02+lit+sh3); c.fill(); c.lineWidth=0.7; c.strokeStyle='#354558'; c.stroke();   // tread (top, going back)
+      if(i>=NS-3){
+        // The arch illuminates progressively more of each tread near the threshold.
+        var spill=c.createLinearGradient(x0,y0,x0+SW,y0);
+        spill.addColorStop(0,'rgba(255,186,101,'+((i-NS+3)*0.18)+')');
+        spill.addColorStop(1,'rgba(255,206,136,'+((i-NS+4)*0.18)+')');
+        c.fillStyle=spill; c.fill();
+      }
+      c.fillStyle=i>=NS-3?'#d3b58b':'#96aabd'; c.fillRect(x0+1,y0-1.4,SW-1,1.4);
+      c.beginPath(); c.rect(x0,y0,SW,SR); c.fillStyle=shade(stone,-0.22+lit*0.7+sh3); c.fill(); c.stroke();                                  // riser (front)
       c.fillStyle='rgba(0,0,0,0.3)'; c.fillRect(x0+((i*11)%3+1)*SW/4,y0+1,1.2,SR-2); c.fillStyle='rgba(0,0,0,0.25)'; c.fillRect(x0,y0+SR-3,SW,3); }
     c.restore(); rr(c,1,1,W-2,H-2,14); c.lineWidth=3; c.strokeStyle='#c79a52'; c.stroke();
     // the knight rides down the stairs
