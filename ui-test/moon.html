@@ -329,7 +329,7 @@ body #skills button.rdy,body .gslot.on canvas{filter:drop-shadow(0 0 4px #ffdb80
 body #langBtn{justify-content:center}
 body #btns #bHint{border-image-width:10px!important}
 body .modal .btn{border-image-width:9px!important}
-</style><style>#btns i.ad svg rect{fill:#263c54;stroke:#dabb82}#btns i.ad svg polygon{fill:#ffe4ad}</style></head>
+</style><style>#btns i.ad svg rect{fill:#263c54;stroke:#dabb82}#btns i.ad svg polygon{fill:#ffe4ad}</style><style>#floorPicker{position:fixed;z-index:60;left:6px;bottom:6px;background:#192d41;color:#ffe8ac;border:1px solid #b99c69;border-radius:8px;font:600 14px system-ui;padding:6px}#floorPicker summary{cursor:pointer}#floorPicker form{display:grid;gap:8px;padding:8px}#floorPicker input,#floorPicker select{width:7em;font:inherit}#floorPicker button{padding:7px;cursor:pointer}</style></head>
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
@@ -1114,8 +1114,8 @@ function backOut(t){ t=Math.max(0,Math.min(1,t)); var c=1.9; return 1+(c+1)*Math
 // ---------------- state ----------------
 var SAVE={v:5, level:1, coins:0, up:{s:0,a:0,h:0}, gear:{}}, curStage=0, curLane=0, curType='f', RT=null, choosing=false, nextRoom=null, carryHp=null, entryHp=null, walk=0, energy=0, magic=false, revived=false, lastReward=0, UPMAX=10, L=null, B=[], KN=[], V=[], sel=-1, hist=[], undoLeft=5, extra=0, anims=[], won=false, winT=0, moved=0, hintMv=null, hintUntil=0, parts=[], bw=40, bh=124, uh=24, stuckShown=false, lastAdT=performance.now(), F=null, VS=null, lost=false, laters=[], floats=[], orbs=[], STG={top:58,h:150,x:10,w:300,sd:false};
 function later(sec, fn){ laters.push({t:sec, fn:fn}); }
-function loadSave(){ try{ var s=PF.loadData('dj_save_v5'); if (s && !QS.has('reset')){ var o=JSON.parse(s); if (o && o.v===5 && o.level>=1) SAVE=o; } SAVE.coins=SAVE.coins|0; SAVE.up=SAVE.up||{}; ['s','a','h'].forEach(function(k){ SAVE.up[k]=Math.max(0,Math.min(UPMAX,SAVE.up[k]|0)); }); SAVE.gear=SAVE.gear||{}; SLOTS.forEach(function(k){ var r=SAVE.gear[k]; SAVE.gear[k]=(r>=0 && r<=3)? r|0 : -1; }); }catch(e){} if (QS.has('level')) SAVE.level=Math.max(1,+QS.get('level')||1); }
-function saveNow(){ PF.saveData('dj_save_v5', JSON.stringify(SAVE)); }
+function loadSave(){ try{ var s=!QS.has('inspect') && PF.loadData('dj_save_v5'); if (s && !QS.has('reset')){ var o=JSON.parse(s); if (o && o.v===5 && o.level>=1) SAVE=o; } SAVE.coins=SAVE.coins|0; SAVE.up=SAVE.up||{}; ['s','a','h'].forEach(function(k){ SAVE.up[k]=Math.max(0,Math.min(UPMAX,SAVE.up[k]|0)); }); SAVE.gear=SAVE.gear||{}; SLOTS.forEach(function(k){ var r=SAVE.gear[k]; SAVE.gear[k]=(r>=0 && r<=3)? r|0 : -1; }); }catch(e){} if (QS.has('level')) SAVE.level=Math.max(1,+QS.get('level')||1); }
+function saveNow(){ if(QS.has('inspect')) return; PF.saveData('dj_save_v5', JSON.stringify(SAVE)); }
 var SLOTS=['hat','top','glv','pnt','sho','rng','amu'], RAR=['#e9e9f0','#5fd86a','#5a9cff','#b97aff'];
 var GSTAT={hat:{k:'hp',v:[8,16,26,40]}, top:{k:'hp',v:[12,24,40,60]}, glv:{k:'atk',v:[2,4,7,12]}, pnt:{k:'def',v:[1,2,3,5]}, sho:{k:'spd',v:[1,2,3,4]}, rng:{k:'crit',v:[8,14,22,35]}, amu:{k:'heal',v:[4,8,14,22]}};
 function gearSum(k){ var t=0; SLOTS.forEach(function(sl){ var r=SAVE.gear[sl]; if (r>=0 && GSTAT[sl].k===k) t+=GSTAT[sl].v[r]; }); return t; }
@@ -2943,6 +2943,32 @@ function boot(){
   var bar=document.querySelector('#loading .bar i'); if (bar){ bar.style.animation='none'; bar.style.width='4%'; }
   var pct=document.getElementById('ldPct'); artLoad(function(p){ if (bar) bar.style.width=Math.round(4+96*p)+'%'; if (pct) pct.textContent=Math.round(100*p)+'%'; }, function(){ setTimeout(boot2, 120); }, 15000);
 }
+function mountFloorPicker(){
+  var box=document.createElement('details');
+  box.id='floorPicker';
+  box.innerHTML='<summary>跳关检查</summary><form><label>楼层 <input name="floor" type="number" min="1" max="9999" required></label><label>房间 <select name="room"></select></label><button>进入房间</button><button type="button" data-preview>看换层动画</button></form>';
+  document.body.appendChild(box);
+  var form=box.querySelector('form'), floor=form.elements.floor, room=form.elements.room;
+  floor.value=SAVE.level;
+  function rooms(){
+    room.replaceChildren();
+    if(!floor.checkValidity()) return;
+    var total=DJ.stagesOf(+floor.value);
+    for(var j=1;j<=total;j++) room.add(new Option(j===total?'守关 Boss':'主路 '+j,j));
+  }
+  rooms(); room.value=RT.map.rooms[RT.at].main+1;
+  floor.oninput=rooms;
+  function go(preview){
+    if(!form.reportValidity()) return;
+    var url=new URL(location.href);
+    url.searchParams.set('level',floor.value);url.searchParams.set('stage',room.value);
+    if(preview) url.searchParams.set('stairs','1');else url.searchParams.delete('stairs');
+    location.assign(url);
+  }
+  form.onsubmit=function(e){e.preventDefault();go(false);};
+  form.querySelector('[data-preview]').onclick=function(){go(true);};
+  if(QS.has('stairs')) floorTransition(SAVE.level,function(){});
+}
 function boot2(){
   emoWatch(); [].forEach.call($('dpad').children, function(b2){ var q=b2.dataset.d.split(','); b2.innerHTML='<span class="ic" style="transform:rotate('+Math.round(Math.atan2(+q[1],+q[0])*180/Math.PI+90)+'deg)">'+ICO.svg('arr')+'</span>'; });
   LANG=detectLang(PF.locale); applyLang(); loadSave();
@@ -2951,7 +2977,8 @@ function boot2(){
   if (DEBUG && QS.has('ending')) setTimeout(function(){ playEnding(function(){}); }, 600);
   $('loading').style.display='none'; PF.loaded();
   if (DEBUG && QS.has('poster')){ document.getElementById('hud').style.display='none'; $('introM').style.display='none'; [].forEach.call(document.querySelectorAll('#coinBox,#mini'), function(e2){ e2.style.display='none'; }); var tries=0, waitArt=function(){ if ((artOk('knight-2')&&artOk('dragon')&&artOk('room-arch')) || ++tries>60){ SAVE.gear.top=2; drawPoster(); } else setTimeout(waitArt,100); }; waitArt(); return; }
-  if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
+  if(QS.has('inspect')) { $('introM').style.display='none'; mountFloorPicker(); }
+  else if (QS.has('nointro') || QS.has('ending') || (DEBUG && !QS.has('intro'))) { $('introM').style.display='none'; maybeDaily(); }
   else playIntro(maybeDaily);
   if (DEBUG){ window.__DJ=DJ; window.__PF=PF; window.__Snd=Snd; window.__S={ft:floorTransition, cards:showCards, daily:maybeDaily, aura:gearAura, best:gearBest, hit:hitMonster, coinFly:coinFly, win:function(r){ lastReward=r||25; SAVE.coins+=lastReward; showWin(); }, bigTx:bigTx, get VS(){ return VS; }, get B(){ return B; }, get V(){ return V; }, get L(){ return L; }, get won(){ return won; }, get lost(){ return lost; }, set lost(v){ lost=v; }, get F(){ return F; }, get laters(){ return laters; }, get SAVE(){ return SAVE; }, get anims(){ return anims; }, get bw(){ return bw; }, get bh(){ return bh; }, tap:tap, flush:flush, load:loadLevel, get doors(){ return doorHits; }, get RT(){ return RT; }, get choosing(){ return choosing; }, options:options, pick:pickRoom, get stage(){ return curStage; }, get walk(){ return walk; }, set energy(v){ energy=v; updSkills(); }, get energy(){ return energy; }}; }
   requestAnimationFrame(function(n){ last=n; frame(n); });
