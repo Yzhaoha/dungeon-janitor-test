@@ -1005,6 +1005,7 @@ var Snd = (function(){
     bgm:bgm,
     hoof:function(v){ v=v||1; tone(95, 0.09, 'sine', 0.22*v, 0.5, 0, 0.15); noise(0.05, 0.16*v, 1800, 0, 'bandpass', 600, 1.2, 0.12); noise(0.025, 0.07*v, 4200, 0.004, 'highpass', null, null, 0.1); },
     rumble:function(){ drum(48, 1.4, 0.32, 0); noise(1.2, 0.08, 220, 0, 'lowpass', 90, null, 0.4); },
+    silent:silent,
     live:function(){ return !!(ac && ac.state==='running'); },
     isOn:function(){ return !off; }, unlock:function(){ ctx(); if(!ac) return; if(ac.state!=='running') ac.resume().then(bgm); else bgm(); }
   };
@@ -2731,6 +2732,45 @@ function princessArt(c,t,mood,arms){
 }
 var endBuf=document.createElement('canvas');
 function playEnding(done){
+  var modal=$('endM'), button=$('endGo'), film=document.createElement('video');
+  var started=false, disposed=false, forcedMute=false;
+  film.playsInline=true;
+  film.preload='auto';
+  film.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#100b18';
+  film.src='../img/crystal-key-ending.mp4';
+  modal.insertBefore(film,$('endTx'));
+  modal.classList.add('show'); PF.setPlaying(false);
+  $('endT1').style.opacity=0;
+  $('endT2').textContent=tl('endSaved'); $('endT2').className='out';
+  $('endT3').textContent=tl('endSub',{n:FINAL,c:SAVE.coins}); $('endT3').style.opacity=0;
+  button.textContent=tl('endGo'); button.className='btn';
+  function dispose(){
+    disposed=true; clearTimeout(timeout); film.onerror=null; film.ontimeupdate=null;
+    film.pause(); film.removeAttribute('src'); film.load(); film.remove();
+  }
+  function fallback(){ if(disposed) return; dispose(); playSpriteEnding(done); }
+  function finish(){
+    if(disposed) return;
+    $('endT2').className='out pop'; $('endT3').style.opacity=1; button.className='btn on';
+  }
+  button.onclick=function(){ if(button.classList.contains('on')){ dispose(); modal.classList.remove('show'); if(done) done(); } };
+  film.onplaying=function(){started=true;clearTimeout(timeout);};
+  film.ontimeupdate=function(){
+    film.muted=forcedMute||Snd.silent();
+    if(film.currentTime>=14.35) finish();
+  };
+  film.onended=finish; film.onerror=fallback; film.muted=Snd.silent();
+  film.onclick=function(){forcedMute=false; film.muted=Snd.silent();};
+  var timeout=setTimeout(function(){if(!started) fallback();},9000);
+  var play=film.play();
+  if(play) play.catch(function(err){
+    if(disposed) return;
+    if(err.name!=='NotAllowedError'){fallback();return;}
+    forcedMute=true; film.muted=true; film.play().catch(fallback);
+  });
+}
+
+function playSpriteEnding(done){
   var M=$('endM'), cv2=$('endC'), t0=performance.now(), ps=[], cracks=[], shards=[], burst=false, step=0, i, sp=Snd;
   for (i=0;i<9;i++) cracks.push({a:Math.random()*6.28, l:20+Math.random()*40, b:Math.random()*6.28});
   $('endT1').textContent=tl('endCursed'); $('endT1').style.opacity=0; $('endT2').textContent=tl('endSaved'); $('endT2').className='out'; $('endT3').textContent=tl('endSub',{n:FINAL, c:SAVE.coins}); $('endT3').style.opacity=0;
