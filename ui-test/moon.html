@@ -2745,7 +2745,7 @@ function playEnding(done){
   $('endT3').textContent=tl('endSub',{n:FINAL,c:SAVE.coins}); $('endT3').style.opacity=0;
   button.textContent=tl('endGo'); button.className='btn';
   function dispose(){
-    disposed=true; clearTimeout(timeout); film.onerror=null; film.ontimeupdate=null;
+    disposed=true; startButton.remove(); clearTimeout(timeout); film.onerror=null; film.ontimeupdate=null;
     film.pause(); film.removeAttribute('src'); film.load(); film.remove();
   }
   function fallback(){ if(disposed) return; dispose(); playSpriteEnding(done); }
@@ -2761,13 +2761,25 @@ function playEnding(done){
   };
   film.onended=finish; film.onerror=fallback; film.muted=Snd.silent();
   film.onclick=function(){forcedMute=false; film.muted=Snd.silent();};
-  var timeout=setTimeout(function(){if(!started) fallback();},9000);
-  var play=film.play();
-  if(play) play.catch(function(err){
-    if(disposed) return;
-    if(err.name!=='NotAllowedError'){fallback();return;}
-    forcedMute=true; film.muted=true; film.play().catch(fallback);
-  });
+  var timeout, startButton=document.createElement('button');
+  startButton.className='btn';
+  startButton.textContent=LANG==='zh'?'播放结局动画':'Play ending';
+  startButton.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2';
+  function startFilm(){
+    startButton.remove();
+    film.muted=Snd.silent();
+    timeout=setTimeout(function(){if(!started) fallback();},20000);
+    var attempt=film.play();
+    if(attempt) attempt.catch(function(err){
+      if(disposed) return;
+      clearTimeout(timeout);
+      if(err.name==='NotAllowedError') modal.appendChild(startButton);
+      else fallback();
+    });
+  }
+  startButton.onclick=function(){ Snd.unlock(); startFilm(); };
+  if(QS.has('ending')) modal.appendChild(startButton);
+  else startFilm();
 }
 
 function playSpriteEnding(done){
