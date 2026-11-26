@@ -258,8 +258,6 @@ body.pf-poki #lvl{top:70px}
 
 /* Painted sprite art, enabled only after the atlas is decoded successfully. */
 body.painted-ui #btns button{border:0;border-radius:0;background-color:transparent;background-image:var(--paint-button0);background-size:100% 100%;background-repeat:no-repeat;box-shadow:none;filter:drop-shadow(0 3px 2px #10081888)}
-body.painted-ui #btns #bRestart{background-image:var(--paint-button1)}
-body.painted-ui #btns #bAdd{background-image:var(--paint-button2)}
 body.painted-ui #btns #bHint{background-image:var(--paint-button3)}
 body.painted-ui #btns button>.ic{visibility:hidden}
 body.painted-ui #btns button:active{transform:translateY(3px);box-shadow:none;filter:brightness(1.12)}
@@ -331,7 +329,7 @@ body #skills button.rdy,body .gslot.on canvas{filter:drop-shadow(0 0 4px #ffdb80
 body #langBtn{justify-content:center}
 body #btns #bHint{border-image-width:10px!important}
 body .modal .btn{border-image-width:9px!important}
-</style></head>
+</style><style>#btns i.ad svg rect{fill:#263c54;stroke:#dabb82}#btns i.ad svg polygon{fill:#ffe4ad}</style></head>
 <body>
 <canvas id="c"></canvas>
 <div id="hud">
