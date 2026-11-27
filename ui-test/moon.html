@@ -2244,7 +2244,7 @@ function drawBg(sceneWidth,scaleX){
       if(materialArt['left-pillar']) c.drawImage(materialArt['left-pillar'],0,0,pillarW,pillarH);
       if(materialArt['right-pillar']) c.drawImage(materialArt['right-pillar'],sceneWidth-pillarW,0,pillarW,pillarH);
       [pillarW*.55,sceneWidth-pillarW*.55].forEach(function(tx){
-        bgFx.fl.push({x:tx,y:pillarH*.58,s:pillarW/96});
+        bgFx.fl.push({x:tx,y:pillarH*.58,s:pillarW/96,pillar:true});
       });
     } else {
     var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,shade(th.w1,-0.25)); g.addColorStop(0.4,shade(th.w0,-0.35)); g.addColorStop(1,shade(th.w1,-0.3)); c.fillStyle=g; c.fillRect(0,0,sceneWidth,VH);
@@ -2366,11 +2366,46 @@ function drawWallMechanisms(c,t,sceneWidth){
     }
   }
 }
+function drawPillarFire(c,f,t,index){
+  var phase=t*(index%2?1.07:.97)+index*3.7;
+  var gust=Math.sin(phase*3.2)*.65+Math.sin(phase*7.1)*.35;
+  c.save();
+  c.translate(f.x,f.y);
+  c.scale(f.s,f.s);
+  var glow=c.createRadialGradient(0,-10,1,0,-10,34);
+  glow.addColorStop(0,'rgba(255,170,52,'+(.29+.065*gust)+')');
+  glow.addColorStop(1,'rgba(255,130,36,0)');
+  c.fillStyle=glow;
+  c.fillRect(-34,-44,68,68);
+  function tongue(x,width,height,lean,color){
+    c.beginPath();
+    c.moveTo(x-width,0);
+    c.bezierCurveTo(x-width*1.65,-height*.39,x+lean*.8,-height*.61,x+lean,-height);
+    c.bezierCurveTo(x+lean+width,-height*.56,x+width*1.55,-height*.29,x+width,0);
+    c.quadraticCurveTo(x,2,x-width,0);
+    c.fillStyle=color;
+    c.fill();
+  }
+  tongue(-2,4,16+5*Math.sin(phase*5.4),-3+4*gust,'#ff922f');
+  tongue(1,5,22+5*Math.sin(phase*4.1),6*gust,'#ffbd42');
+  tongue(0,3,13+3*Math.sin(phase*6.4),3*gust,'#fff39c');
+  for(var i=0;i<3;i++){
+    var lift=(phase*(.53+i*.09)+i*.37)%1;
+    c.globalAlpha=Math.sin(Math.PI*lift)*.85;
+    c.fillStyle='#ffc669';
+    c.beginPath();
+    c.arc(Math.sin(phase*2+i*2)*lift*7,-12-lift*(21+i*3),1.2-lift*.6,0,Math.PI*2);
+    c.fill();
+  }
+  c.restore();
+}
 function drawBgFx(c, dt, t,sceneWidth){
   if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t,sceneWidth);
   else if(VCH===3 && dressedChapterFloor() && !inFinalHall()) drawWallMechanisms(c,t,sceneWidth);
   var th=THEMES[VS? VS.scn : 0], i;
-  bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
+  bgFx.fl.forEach(function(f,fi){
+    if(f.pillar){drawPillarFire(c,f,t,fi);return;}
+    var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
     c.fillStyle=col; c.beginPath(); c.moveTo(f.x-fw,f.y); c.quadraticCurveTo(f.x-fw*1.2,f.y-fh*0.5,f.x+Math.sin(t*9+fi)*2*f.s,f.y-fh); c.quadraticCurveTo(f.x+fw*1.2,f.y-fh*0.5,f.x+fw,f.y); c.closePath(); c.fill();
     c.fillStyle='#fff6c9'; c.beginPath(); c.moveTo(f.x-fw*0.5,f.y); c.quadraticCurveTo(f.x-fw*0.6,f.y-fh*0.3,f.x,f.y-fh*0.55); c.quadraticCurveTo(f.x+fw*0.6,f.y-fh*0.3,f.x+fw*0.5,f.y); c.closePath(); c.fill(); });
