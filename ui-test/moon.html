@@ -2201,8 +2201,10 @@ function paintChamberMotion(c,t){
   }
   c.restore();
 }
+var finalHallImage;
+function inFinalHall(){ return L && L.level===FINAL && L.final; }
 function drawBg(){
-  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,alternateChamber()].join();
+  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,alternateChamber(),inFinalHall()].join();
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
     bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.lineJoin='round';
@@ -2215,7 +2217,14 @@ function drawBg(){
     if(alternateChamber() && !chamberAtlas){
       chamberAtlas=new Image();chamberAtlas.onload=function(){bgCache=null;};chamberAtlas.src='../img/four-chambers.png';
     }
-    if(alternateChamber() && chamberAtlas.naturalWidth){
+    if(inFinalHall() && !finalHallImage){
+      finalHallImage=new Image();finalHallImage.onload=function(){bgCache=null;};
+      finalHallImage.src='../img/final-seal-hall.png';
+    }
+    if(inFinalHall() && finalHallImage.naturalWidth){
+      c.drawImage(finalHallImage,0,0,VW,VH);
+      [0.045,0.955].forEach(function(x){bgFx.fl.push({x:x*VW,y:VH*.45,s:Math.min(VW/900,VH/600),big:1});});
+    } else if(alternateChamber() && chamberAtlas.naturalWidth){
       var cw=chamberAtlas.naturalWidth/2,ch=chamberAtlas.naturalHeight/2;
       c.drawImage(chamberAtlas,(VCH%2)*cw,Math.floor(VCH/2)*ch,cw,ch,0,0,VW,VH);
     } else if ((VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
@@ -2372,7 +2381,7 @@ function drawWallMechanisms(c,t){
 }
 function drawBgFx(c, dt, t){
   if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t);
-  else if(VCH===3) drawWallMechanisms(c,t);
+  else if(VCH===3 && !inFinalHall()) drawWallMechanisms(c,t);
   var th=THEMES[VS? VS.scn : 0], i;
   bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
