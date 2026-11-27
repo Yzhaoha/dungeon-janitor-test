@@ -2137,7 +2137,11 @@ function hexRgb(h){ var n=parseInt(h.slice(1),16); return (n>>16)+','+((n>>8)&25
 // sides, and (where the window leaves room) shelves of odds and ends, a barrel and a bubbling cauldron. Flames, bubbles and dust move.
 var bgKey='', bgFx={fl:[], pot:null}, motes=[];
 var chapterWallSheet, chamberAtlas;
-function alternateChamber(){ return L && (L.level+curStage)%2===0; }
+// Chapter-local floor numbers. All rooms on a floor share its environment.
+var chamberFloors=[2,3,6,7,10,11,14,15,18,19,21,22];
+function alternateChamber(){
+  return !!L && chamberFloors.indexOf((L.level-1)%24+1)>=0;
+}
 function paintChamberMotion(c,t){
   var w=VW,h=VH;
   c.save();
