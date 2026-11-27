@@ -2257,7 +2257,51 @@ function drawChFx(c, dt, t, W, H){
       else { c.globalAlpha=al; c.fillStyle= m.p>3? '#ffd36a' : '#ff6a22'; c.beginPath(); c.arc(m.x,m.y,m.r,0,6.3); c.fill(); }
       c.globalAlpha=1; } });
 }
+// Wall-mounted chapter mechanisms, drawn on the scenery layer before the HUD and bottles.
+function wallGear(c,x,y,r,phase,metal){
+  c.save(); c.translate(x,y); c.rotate(phase);
+  c.beginPath();
+  for(var tooth=0;tooth<12;tooth++){
+    for(var step=0;step<4;step++){
+      var a=(tooth+step/4)*Math.PI/6, radius=(step===1||step===2)?r:r*.81;
+      var px=Math.cos(a)*radius,py=Math.sin(a)*radius;
+      if(tooth===0 && step===0)c.moveTo(px,py);else c.lineTo(px,py);
+    }
+  }
+  c.closePath(); c.fillStyle=metal;c.fill();c.strokeStyle='#241e25';c.lineWidth=1.5;c.stroke();
+  c.beginPath();c.arc(0,0,r*.63,0,Math.PI*2);c.fillStyle='#302d33';c.fill();
+  c.strokeStyle=metal;c.lineWidth=r*.15;
+  for(var i=0;i<3;i++){c.rotate(Math.PI/3);c.beginPath();c.moveTo(-r*.62,0);c.lineTo(r*.62,0);c.stroke();}
+  c.beginPath();c.arc(0,0,r*.19,0,Math.PI*2);c.fillStyle='#d0b18a';c.fill();c.restore();
+}
+function drawWallMechanisms(c,t){
+  var palettes=[['#afa07b','#ffd580'],['#93784f','#a1df98'],['#889faf','#96e0ff'],['#aa7454','#ffae60']];
+  var metal=palettes[VCH][0],light=palettes[VCH][1],r=Math.min(24,VW*.028,VH*.037);
+  var y=STG.top+STG.h*.74;
+  for(var side=0;side<2;side++){
+    var x=side?VW-r*1.35:r*1.35,phase=t*.38+side*.7;
+    c.save();c.translate(x,y);
+    c.strokeStyle='#302c30';c.lineWidth=r*.44;c.beginPath();c.moveTo(0,-r*2.8);c.lineTo(0,r*2.4);c.stroke();
+    wallGear(c,0,-r*1.55,r*.86,-phase,metal);wallGear(c,0,0,r,phase,metal);
+    c.rotate(Math.sin(t*1.35+side)*.13);
+    c.strokeStyle=metal;c.lineWidth=2;c.beginPath();c.moveTo(0,0);c.lineTo(0,r*2.55);c.stroke();
+    c.beginPath();c.moveTo(0,r*2);c.lineTo(r*.33,r*2.49);c.lineTo(0,r*2.99);c.lineTo(-r*.33,r*2.49);c.closePath();
+    c.fillStyle=light;c.fill();c.strokeStyle='#493e42';c.stroke();c.restore();
+  }
+  // A small chapter seal animates only when the free strip above the rack can accommodate it.
+  if(!L.coach && VW>700 && V.length){
+    var top=STG.top+STG.h+3,lip=V[0].y-bh,room=lip-top;
+    if(room>42){
+      var cy=top+Math.min(room*.38,24);c.save();c.globalAlpha=.64;
+      wallGear(c,VW/2,cy,Math.min(13,room*.18),-t*.23,metal);
+      for(var j=0;j<2;j++){var dir=j?1:-1;c.strokeStyle=metal;c.lineWidth=1;c.beginPath();c.moveTo(VW/2+dir*13,cy);c.lineTo(VW/2+dir*43,cy);c.stroke();
+        c.fillStyle=light;c.beginPath();c.arc(VW/2+dir*(15+25*(.5+.5*Math.sin(t*1.1))),cy,1.8,0,Math.PI*2);c.fill();}
+      c.restore();
+    }
+  }
+}
 function drawBgFx(c, dt, t){
+  drawWallMechanisms(c,t);
   var th=THEMES[VS? VS.scn : 0], i;
   bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
