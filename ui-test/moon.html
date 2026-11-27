@@ -2239,12 +2239,16 @@ function drawBg(){
       var room=materialArt['moon-room'], zoom=Math.max(VW/room.width,VH/room.height);
       c.drawImage(room,(VW-room.width*zoom)/2,(VH-room.height*zoom)/2,room.width*zoom,room.height*zoom);
       var pillarW=Math.min(VW*0.122,VH*0.222);
-      // Place the original pillar feet on the painted floor after the room's cover crop.
-      var floorY=(VH-room.height*zoom)/2+682*zoom;
       function drawRoomPillar(pillar,x){
         if (!pillar) return;
         var scale=pillarW/pillar.width, baseHeight=150*scale;
-        var shaftHeight=floorY-baseHeight;
+        if (VW>=VH){
+          c.drawImage(pillar,x,0,pillarW,pillar.height*scale);
+          return;
+        }
+        // Use the uncropped landscape room as the reference for portrait pillar height.
+        var referenceWidth=Math.min(room.width*zoom*0.122,VH*0.222);
+        var shaftHeight=referenceWidth*pillar.height/pillar.width-baseHeight;
         c.drawImage(pillar,0,0,pillar.width,pillar.height-150,x,0,pillarW,shaftHeight);
         c.drawImage(pillar,0,pillar.height-150,pillar.width,150,x,shaftHeight,pillarW,baseHeight);
       }
