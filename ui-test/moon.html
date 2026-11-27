@@ -2146,8 +2146,8 @@ function dressedChapterFloor(){
 function alternateChamber(){
   return !!L && chamberFloors.indexOf((L.level-1)%24+1)>=0;
 }
-function paintChamberMotion(c,t){
-  var w=VW,h=VH;
+function paintChamberMotion(c,t,w){
+  var h=VH;
   c.save();
   if(VCH===0){
     // Coordinates in the cistern's 768 x 512 painted panel.
@@ -2207,12 +2207,12 @@ function paintChamberMotion(c,t){
 }
 var finalHallImage;
 function inFinalHall(){ return L && L.level===FINAL && L.final; }
-function drawBg(){
+function drawBg(sceneWidth,scaleX){
   var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,dressedChapterFloor(),alternateChamber(),inFinalHall()].join();
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
-    bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.lineJoin='round';
-    var u=STG.u||1, wide=VW>=700, fy=VH-Math.max(64, VH*0.12), pw=Math.round(Math.max(16, Math.min(96, VW*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
+    bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR*scaleX,0,0,DPR,0,0); c.lineJoin='round';
+    var u=STG.u||1, wide=sceneWidth>=700, fy=VH-Math.max(64, VH*0.12), pw=Math.round(Math.max(16, Math.min(96, sceneWidth*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
     if (dressedChapterFloor() && (VCH===1 || VCH===2) && !chapterWallSheet){
       chapterWallSheet=new Image();
       chapterWallSheet.onload=function(){ bgCache=null; };
@@ -2226,61 +2226,49 @@ function drawBg(){
       finalHallImage.src='../img/final-seal-hall.png';
     }
     if(inFinalHall() && finalHallImage.naturalWidth){
-      c.drawImage(finalHallImage,0,0,VW,VH);
-      [0.045,0.955].forEach(function(x){bgFx.fl.push({x:x*VW,y:VH*.45,s:Math.min(VW/900,VH/600),big:1});});
+      c.drawImage(finalHallImage,0,0,sceneWidth,VH);
+      [0.045,0.955].forEach(function(x){bgFx.fl.push({x:x*sceneWidth,y:VH*.45,s:Math.min(sceneWidth/900,VH/600),big:1});});
     } else if(alternateChamber() && chamberAtlas.naturalWidth){
       var cw=chamberAtlas.naturalWidth/2,ch=chamberAtlas.naturalHeight/2;
-      c.drawImage(chamberAtlas,(VCH%2)*cw,Math.floor(VCH/2)*ch,cw,ch,0,0,VW,VH);
+      c.drawImage(chamberAtlas,(VCH%2)*cw,Math.floor(VCH/2)*ch,cw,ch,0,0,sceneWidth,VH);
     } else if (dressedChapterFloor() && (VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
       var sheetW=chapterWallSheet.naturalWidth, halfH=Math.floor(chapterWallSheet.naturalHeight/2);
-      var wallScale=Math.max(VW/sheetW,VH/halfH);
-      c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(VW-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
+      var wallScale=Math.max(sceneWidth/sheetW,VH/halfH);
+      c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(sceneWidth-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
     } else if (VCH===0 && materialArt['moon-room']){
-      var room=materialArt['moon-room'], zoom=Math.max(VW/room.width,VH/room.height);
-      c.drawImage(room,(VW-room.width*zoom)/2,(VH-room.height*zoom)/2,room.width*zoom,room.height*zoom);
-      var pillarW=Math.min(VW*0.122,VH*0.222);
-      function drawRoomPillar(pillar,x){
-        if (!pillar) return;
-        var scale=pillarW/pillar.width, baseHeight=150*scale;
-        if (VW>=VH){
-          c.drawImage(pillar,x,0,pillarW,pillar.height*scale);
-          return;
-        }
-        // Use the uncropped landscape room as the reference for portrait pillar height.
-        var referenceWidth=Math.min(room.width*zoom*0.122,VH*0.222);
-        var shaftHeight=referenceWidth*pillar.height/pillar.width-baseHeight;
-        c.drawImage(pillar,0,0,pillar.width,pillar.height-150,x,0,pillarW,shaftHeight);
-        c.drawImage(pillar,0,pillar.height-150,pillar.width,150,x,shaftHeight,pillarW,baseHeight);
-      }
-      drawRoomPillar(materialArt['left-pillar'],0);
-      drawRoomPillar(materialArt['right-pillar'],VW-pillarW);
+      var room=materialArt['moon-room'], zoom=Math.max(sceneWidth/room.width,VH/room.height);
+      c.drawImage(room,(sceneWidth-room.width*zoom)/2,(VH-room.height*zoom)/2,room.width*zoom,room.height*zoom);
+      var pillarW=Math.min(sceneWidth*0.122,VH*0.222);
+      var pillarH=pillarW*755/203;
+      if(materialArt['left-pillar']) c.drawImage(materialArt['left-pillar'],0,0,pillarW,pillarH);
+      if(materialArt['right-pillar']) c.drawImage(materialArt['right-pillar'],sceneWidth-pillarW,0,pillarW,pillarH);
       var ledge=materialArt['stone-ledge'], usedRows={};
       V.forEach(function(v){
         if (usedRows[v.row]) return;
         usedRows[v.row]=true;
         var sy=v.y+bw*0.13;
-        c.fillStyle='#243446'; c.fillRect(VW*0.025,sy,VW*0.95,bw*0.2);
-        if (ledge) for (var lx=VW*0.025;lx<VW*0.975;lx+=ledge.width*0.8){
-          var sw=Math.min(ledge.width*0.8,VW*0.975-lx);
+        c.fillStyle='#243446'; c.fillRect(sceneWidth*0.025,sy,sceneWidth*0.95,bw*0.2);
+        if (ledge) for (var lx=sceneWidth*0.025;lx<sceneWidth*0.975;lx+=ledge.width*0.8){
+          var sw=Math.min(ledge.width*0.8,sceneWidth*0.975-lx);
           c.drawImage(ledge,0,0,sw/0.8,ledge.height,lx,sy,sw,bw*0.2);
         }
       });
     } else {
-    var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,shade(th.w1,-0.25)); g.addColorStop(0.4,shade(th.w0,-0.35)); g.addColorStop(1,shade(th.w1,-0.3)); c.fillStyle=g; c.fillRect(0,0,VW,VH);
+    var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,shade(th.w1,-0.25)); g.addColorStop(0.4,shade(th.w0,-0.35)); g.addColorStop(1,shade(th.w1,-0.3)); c.fillStyle=g; c.fillRect(0,0,sceneWidth,VH);
     // stone blocks, a few of them lighter or darker
     var bhh=Math.round(44*Math.max(1,u*0.8)), bww=bhh*2.4, row=0;
-    for (y=0; y<fy; y+=bhh, row++) for (x=(row%2? -bww/2 : 0); x<VW; x+=bww){ var q=r(); c.fillStyle= q<0.12? 'rgba(255,255,255,0.045)' : (q<0.26? 'rgba(0,0,0,0.14)' : 'rgba(0,0,0,0)'); c.beginPath(); c.roundRect(x+2,y+2,bww-4,bhh-4,4); c.fill(); c.strokeStyle='rgba(0,0,0,0.2)'; c.lineWidth=2; c.stroke(); }
+    for (y=0; y<fy; y+=bhh, row++) for (x=(row%2? -bww/2 : 0); x<sceneWidth; x+=bww){ var q=r(); c.fillStyle= q<0.12? 'rgba(255,255,255,0.045)' : (q<0.26? 'rgba(0,0,0,0.14)' : 'rgba(0,0,0,0)'); c.beginPath(); c.roundRect(x+2,y+2,bww-4,bhh-4,4); c.fill(); c.strokeStyle='rgba(0,0,0,0.2)'; c.lineWidth=2; c.stroke(); }
     // floor
-    g=c.createLinearGradient(0,fy-18,0,fy); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.45)'); c.fillStyle=g; c.fillRect(0,fy-18,VW,18);
-    g=c.createLinearGradient(0,fy,0,VH); g.addColorStop(0,shade(th.fd,-0.2)); g.addColorStop(1,shade(th.fd,-0.6)); c.fillStyle=g; c.fillRect(0,fy,VW,VH-fy);
-    c.strokeStyle='rgba(0,0,0,0.28)'; c.lineWidth=2; for (i=-12;i<=12;i++){ c.beginPath(); c.moveTo(VW/2+i*VW/14,fy); c.lineTo(VW/2+i*VW/14*1.7,VH); c.stroke(); }
-    c.beginPath(); c.moveTo(0,fy+(VH-fy)*0.4); c.lineTo(VW,fy+(VH-fy)*0.4); c.stroke(); c.fillStyle='rgba(255,255,255,0.12)'; c.fillRect(0,fy,VW,2);
+    g=c.createLinearGradient(0,fy-18,0,fy); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.45)'); c.fillStyle=g; c.fillRect(0,fy-18,sceneWidth,18);
+    g=c.createLinearGradient(0,fy,0,VH); g.addColorStop(0,shade(th.fd,-0.2)); g.addColorStop(1,shade(th.fd,-0.6)); c.fillStyle=g; c.fillRect(0,fy,sceneWidth,VH-fy);
+    c.strokeStyle='rgba(0,0,0,0.28)'; c.lineWidth=2; for (i=-12;i<=12;i++){ c.beginPath(); c.moveTo(sceneWidth/2+i*sceneWidth/14,fy); c.lineTo(sceneWidth/2+i*sceneWidth/14*1.7,VH); c.stroke(); }
+    c.beginPath(); c.moveTo(0,fy+(VH-fy)*0.4); c.lineTo(sceneWidth,fy+(VH-fy)*0.4); c.stroke(); c.fillStyle='rgba(255,255,255,0.12)'; c.fillRect(0,fy,sceneWidth,2);
     // warm light from the two wall torches
     var ty=Math.min(fy-90, VH*0.5);
-    [pw*0.5, VW-pw*0.5].forEach(function(tx){ var rg=c.createRadialGradient(tx,ty,4,tx,ty,Math.max(VW,VH)*0.4); rg.addColorStop(0,'rgba('+th.gl+',0.3)'); rg.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=rg; c.fillRect(0,0,VW,VH); });
+    [pw*0.5, sceneWidth-pw*0.5].forEach(function(tx){ var rg=c.createRadialGradient(tx,ty,4,tx,ty,Math.max(sceneWidth,VH)*0.4); rg.addColorStop(0,'rgba('+th.gl+',0.3)'); rg.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=rg; c.fillRect(0,0,sceneWidth,VH); });
     // shelves under each row
-    var rows={}; V.forEach(function(v){ rows[v.row]=rows[v.row]||{y:v.y, x0:1e9, x1:-1e9}; rows[v.row].x0=Math.min(rows[v.row].x0,v.x); rows[v.row].x1=Math.max(rows[v.row].x1,v.x); });
-    Object.keys(rows).forEach(function(k){ var o=rows[k], x0=Math.max(6,o.x0-bw*1.3), x1=Math.min(VW-6,o.x1+bw*1.3), y=o.y+1, th=Math.max(10,bw*0.3);
+    var rows={}; V.forEach(function(v){ rows[v.row]=rows[v.row]||{y:v.y, x0:1e9, x1:-1e9}; rows[v.row].x0=Math.min(rows[v.row].x0,v.x/scaleX); rows[v.row].x1=Math.max(rows[v.row].x1,v.x/scaleX); });
+    Object.keys(rows).forEach(function(k){ var o=rows[k], x0=Math.max(6,o.x0-bw*1.3/scaleX), x1=Math.min(sceneWidth-6,o.x1+bw*1.3/scaleX), y=o.y+1, th=Math.max(10,bw*0.3);
       c.fillStyle='rgba(0,0,0,0.3)'; c.fillRect(x0+4,y+th,x1-x0,8);
       var wg=c.createLinearGradient(0,y,0,y+th); var SW=[['#c58a52','#a0683a','#6e4224'],['#7a7058','#5a5240','#2e2a20'],['#b0c8dc','#7a94ac','#3e5268'],['#4a3430','#2e1e1a','#140a08']][VCH]; wg.addColorStop(0,SW[0]); wg.addColorStop(0.25,SW[1]); wg.addColorStop(1,SW[2]); c.fillStyle=wg; c.beginPath(); c.roundRect(x0,y,x1-x0,th,4); c.fill();
       if (VCH===1){ c.fillStyle='rgba(110,200,120,0.75)'; for (var mx2=x0+8; mx2<x1-8; mx2+=26+((mx2*7)%17)){ c.beginPath(); c.ellipse(mx2, y+th, 7, 3+((mx2*3)%4), 0, 0, Math.PI); c.fill(); } }
@@ -2289,7 +2277,7 @@ function drawBg(){
       c.fillStyle='rgba(255,230,190,0.25)'; c.fillRect(x0+3,y+1,x1-x0-6,2);
       c.fillStyle='#5a361c'; [x0+14,x1-22].forEach(function(bx){ c.fillRect(bx,y+th,8,th*0.9); }); });
     // side shelves with odds and ends, only where the bottles leave the wall free
-    var bx0=1e9, bx1=-1e9, by0=1e9, by1=-1e9; V.forEach(function(v){ bx0=Math.min(bx0,v.x-bw*1.5); bx1=Math.max(bx1,v.x+bw*1.5); by0=Math.min(by0,v.y-bh); by1=Math.max(by1,v.y); });
+    var bx0=1e9, bx1=-1e9, by0=1e9, by1=-1e9; V.forEach(function(v){ bx0=Math.min(bx0,(v.x-bw*1.5)/scaleX); bx1=Math.max(bx1,(v.x+bw*1.5)/scaleX); by0=Math.min(by0,v.y-bh); by1=Math.max(by1,v.y); });
     var prop=function(kind,px,py,k){ c.lineWidth=2.5; c.strokeStyle=OL;
       if (kind==='flask'){ c.beginPath(); c.arc(px,py-11*k,11*k,0,6.3); c.fillStyle='rgba(255,255,255,0.14)'; c.fill(); c.stroke(); c.save(); c.beginPath(); c.arc(px,py-11*k,9*k,0,6.3); c.clip(); c.fillStyle=COL[Math.floor(r()*8)]; c.fillRect(px-12*k,py-13*k,24*k,14*k); c.restore(); rr(c,px-4*k,py-30*k,8*k,10*k,2); c.fillStyle='rgba(255,255,255,0.2)'; c.fill(); c.stroke(); rr(c,px-5*k,py-34*k,10*k,5*k,2); c.fillStyle='#b9824a'; c.fill(); c.stroke(); }
       else if (kind==='skull'){ el(c,px,py-13*k,12*k,11*k); c.fillStyle='#e8e2d0'; c.fill(); c.stroke(); rr(c,px-7*k,py-7*k,14*k,7*k,2); c.fill(); c.stroke(); c.fillStyle=OL; el(c,px-4.5*k,py-14*k,3.2*k); c.fill(); el(c,px+4.5*k,py-14*k,3.2*k); c.fill(); }
@@ -2298,20 +2286,20 @@ function drawBg(){
     var pk=Math.max(1, Math.min(2, u)), shelf=function(x0,x1,sy,items){ var th2=10*pk; c.fillStyle='rgba(0,0,0,0.3)'; c.fillRect(x0+4,sy+th2,x1-x0,7); var wg=c.createLinearGradient(0,sy,0,sy+th2); wg.addColorStop(0,'#b07a46'); wg.addColorStop(1,'#5e391e'); c.fillStyle=wg; c.beginPath(); c.roundRect(x0,sy,x1-x0,th2,3); c.fill(); c.lineWidth=2; c.strokeStyle=OL; c.stroke();
       c.fillStyle='#4a2c16'; [x0+10,x1-16].forEach(function(q2){ c.fillRect(q2,sy+th2,6,10); }); var n2=Math.max(1,Math.min(items.length, Math.floor((x1-x0)/(38*pk)))); for (var j=0;j<n2;j++) prop(items[j], x0+(x1-x0)*(j+0.5)/n2, sy, pk); };
     if (V.length && bx0-pw>96){ var sx0=pw+16, sx1=Math.min(bx0-18, pw+250*u), sy1=by0+(by1-by0)*0.42; shelf(sx0,sx1,sy1,['flask','skull','candle','flask']); if (by1-by0>190) shelf(sx0+14,sx1-10,sy1+(by1-by0)*0.42,['books','flask','flask']); }
-    if (V.length && VW-pw-bx1>96){ var tx0=Math.max(bx1+18, VW-pw-250*u), tx1=VW-pw-16, sy2=by0+(by1-by0)*0.42; shelf(tx0,tx1,sy2,['candle','books','flask','skull']); if (by1-by0>190) shelf(tx0+10,tx1-14,sy2+(by1-by0)*0.42,['flask','flask','candle']); }
+    if (V.length && sceneWidth-pw-bx1>96){ var tx0=Math.max(bx1+18, sceneWidth-pw-250*u), tx1=sceneWidth-pw-16, sy2=by0+(by1-by0)*0.42; shelf(tx0,tx1,sy2,['candle','books','flask','skull']); if (by1-by0>190) shelf(tx0+10,tx1-14,sy2+(by1-by0)*0.42,['flask','flask','candle']); }
     // pillars with a torch each
-    [0, VW-pw].forEach(function(px,si){ var pg=c.createLinearGradient(px,0,px+pw,0); pg.addColorStop(0,shade(th.fl,-0.3)); pg.addColorStop(0.35,shade(th.fl,-0.05)); pg.addColorStop(1,shade(th.fd,-0.35)); c.fillStyle=pg; c.fillRect(px,0,pw,fy+6);
+    [0, sceneWidth-pw].forEach(function(px,si){ var pg=c.createLinearGradient(px,0,px+pw,0); pg.addColorStop(0,shade(th.fl,-0.3)); pg.addColorStop(0.35,shade(th.fl,-0.05)); pg.addColorStop(1,shade(th.fd,-0.35)); c.fillStyle=pg; c.fillRect(px,0,pw,fy+6);
       c.strokeStyle=OL; c.lineWidth=2.5; c.beginPath(); c.moveTo(si? px : px+pw, 0); c.lineTo(si? px : px+pw, fy+6); c.stroke();
       c.strokeStyle='rgba(0,0,0,0.22)'; c.lineWidth=2; for (var yy=60; yy<fy; yy+=90){ c.beginPath(); c.moveTo(px,yy); c.lineTo(px+pw,yy); c.stroke(); }
       c.fillStyle=shade(th.fl,-0.12); c.beginPath(); c.roundRect(px-(si?6:0), fy-10, pw+6, 20, 4); c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke();
       var tx2=px+pw/2, k2=Math.max(0.8, Math.min(1.8, pw/34)); c.fillStyle='#5a3d24'; poly(c,[tx2-5*k2,ty,tx2+5*k2,ty,tx2+2.5*k2,ty+18*k2,tx2-2.5*k2,ty+18*k2]); c.fill(); c.stroke(); rr(c,tx2-8*k2,ty-4*k2,16*k2,6*k2,2); c.fillStyle='#8a8090'; c.fill(); c.stroke(); bgFx.fl.push({x:tx2, y:ty-5*k2, s:k2, big:1}); });
     // a barrel on the left and a bubbling cauldron on the right, when the bottom row leaves the corners free
-    var free=(VW-(STG.u? 608*u : VW))/2-pw, fk=Math.max(1, Math.min(2, u*0.9)), base=VH-10;
+    var free=(sceneWidth-(STG.u? 608*u : sceneWidth))/2-pw, fk=Math.max(1, Math.min(2, u*0.9)), base=VH-10;
     if (wide && free>84*fk){ var bx=pw+46*fk; rr(c,bx-26*fk,base-58*fk,52*fk,58*fk,10*fk); c.fillStyle='#8a5a2a'; c.fill(); c.lineWidth=2.5; c.strokeStyle=OL; c.stroke(); c.fillStyle='#5a5a66'; [base-46*fk, base-16*fk].forEach(function(q3){ c.fillRect(bx-27*fk,q3,54*fk,6*fk); c.strokeRect(bx-27*fk,q3,54*fk,6*fk); }); c.strokeStyle='rgba(0,0,0,0.25)'; [-10,6].forEach(function(q4){ c.beginPath(); c.moveTo(bx+q4*fk,base-56*fk); c.lineTo(bx+q4*fk,base-2); c.stroke(); });
-      var cxp2=VW-pw-52*fk; c.strokeStyle=OL; c.lineWidth=2.5; c.fillStyle='#2a2630'; c.beginPath(); c.ellipse(cxp2,base-24*fk,34*fk,26*fk,0,0,6.3); c.fill(); c.stroke(); rr(c,cxp2-36*fk,base-48*fk,72*fk,9*fk,4*fk); c.fillStyle='#3a3642'; c.fill(); c.stroke(); el(c,cxp2,base-45*fk,30*fk,6*fk); c.fillStyle='#59d86a'; c.fill(); c.stroke();
+      var cxp2=sceneWidth-pw-52*fk; c.strokeStyle=OL; c.lineWidth=2.5; c.fillStyle='#2a2630'; c.beginPath(); c.ellipse(cxp2,base-24*fk,34*fk,26*fk,0,0,6.3); c.fill(); c.stroke(); rr(c,cxp2-36*fk,base-48*fk,72*fk,9*fk,4*fk); c.fillStyle='#3a3642'; c.fill(); c.stroke(); el(c,cxp2,base-45*fk,30*fk,6*fk); c.fillStyle='#59d86a'; c.fill(); c.stroke();
       c.fillStyle='#2a2630'; [-22,22].forEach(function(q5){ rr(c,cxp2+q5*fk-4*fk,base-6*fk,8*fk,8*fk,2); c.fill(); c.stroke(); }); bgFx.pot={x:cxp2, y:base-46*fk, r:26*fk}; }
-    chDeco(c, VW, VH, fy, Math.max(1,u*0.9), pw, r);
-    var vg=c.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*0.35,VW/2,VH/2,Math.max(VW,VH)*0.78); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); c.fillStyle=vg; c.fillRect(0,0,VW,VH);
+    chDeco(c, sceneWidth, VH, fy, Math.max(1,u*0.9), pw, r);
+    var vg=c.createRadialGradient(sceneWidth/2,VH/2,Math.min(sceneWidth,VH)*0.35,sceneWidth/2,VH/2,Math.max(sceneWidth,VH)*0.78); vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)'); c.fillStyle=vg; c.fillRect(0,0,sceneWidth,VH);
   }
   }
   cx.setTransform(1,0,0,1,0,0); cx.drawImage(bgCache,0,0);
@@ -2369,12 +2357,12 @@ function wallGear(c,x,y,r,phase,metal){
   for(var i=0;i<3;i++){c.rotate(Math.PI/3);c.beginPath();c.moveTo(-r*.62,0);c.lineTo(r*.62,0);c.stroke();}
   c.beginPath();c.arc(0,0,r*.19,0,Math.PI*2);c.fillStyle='#d0b18a';c.fill();c.restore();
 }
-function drawWallMechanisms(c,t){
+function drawWallMechanisms(c,t,sceneWidth){
   var palettes=[['#afa07b','#ffd580'],['#93784f','#a1df98'],['#889faf','#96e0ff'],['#aa7454','#ffae60']];
-  var metal=palettes[VCH][0],light=palettes[VCH][1],r=Math.min(24,VW*.028,VH*.037);
+  var metal=palettes[VCH][0],light=palettes[VCH][1],r=Math.min(24,sceneWidth*.028,VH*.037);
   var y=STG.top+STG.h*.74;
   for(var side=0;side<2;side++){
-    var x=side?VW-r*1.35:r*1.35,phase=t*.38+side*.7;
+    var x=side?sceneWidth-r*1.35:r*1.35,phase=t*.38+side*.7;
     c.save();c.translate(x,y);
     c.strokeStyle='#302c30';c.lineWidth=r*.44;c.beginPath();c.moveTo(0,-r*2.8);c.lineTo(0,r*2.4);c.stroke();
     wallGear(c,0,-r*1.55,r*.86,-phase,metal);wallGear(c,0,0,r,phase,metal);
@@ -2384,29 +2372,29 @@ function drawWallMechanisms(c,t){
     c.fillStyle=light;c.fill();c.strokeStyle='#493e42';c.stroke();c.restore();
   }
   // A small chapter seal animates only when the free strip above the rack can accommodate it.
-  if(!L.coach && VW>700 && V.length){
+  if(!L.coach && sceneWidth>700 && V.length){
     var top=STG.top+STG.h+3,lip=V[0].y-bh,room=lip-top;
     if(room>42){
       var cy=top+Math.min(room*.38,24);c.save();c.globalAlpha=.64;
-      wallGear(c,VW/2,cy,Math.min(13,room*.18),-t*.23,metal);
-      for(var j=0;j<2;j++){var dir=j?1:-1;c.strokeStyle=metal;c.lineWidth=1;c.beginPath();c.moveTo(VW/2+dir*13,cy);c.lineTo(VW/2+dir*43,cy);c.stroke();
-        c.fillStyle=light;c.beginPath();c.arc(VW/2+dir*(15+25*(.5+.5*Math.sin(t*1.1))),cy,1.8,0,Math.PI*2);c.fill();}
+      wallGear(c,sceneWidth/2,cy,Math.min(13,room*.18),-t*.23,metal);
+      for(var j=0;j<2;j++){var dir=j?1:-1;c.strokeStyle=metal;c.lineWidth=1;c.beginPath();c.moveTo(sceneWidth/2+dir*13,cy);c.lineTo(sceneWidth/2+dir*43,cy);c.stroke();
+        c.fillStyle=light;c.beginPath();c.arc(sceneWidth/2+dir*(15+25*(.5+.5*Math.sin(t*1.1))),cy,1.8,0,Math.PI*2);c.fill();}
       c.restore();
     }
   }
 }
-function drawBgFx(c, dt, t){
-  if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t);
-  else if(VCH===3 && dressedChapterFloor() && !inFinalHall()) drawWallMechanisms(c,t);
+function drawBgFx(c, dt, t,sceneWidth){
+  if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t,sceneWidth);
+  else if(VCH===3 && dressedChapterFloor() && !inFinalHall()) drawWallMechanisms(c,t,sceneWidth);
   var th=THEMES[VS? VS.scn : 0], i;
   bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
     c.fillStyle=col; c.beginPath(); c.moveTo(f.x-fw,f.y); c.quadraticCurveTo(f.x-fw*1.2,f.y-fh*0.5,f.x+Math.sin(t*9+fi)*2*f.s,f.y-fh); c.quadraticCurveTo(f.x+fw*1.2,f.y-fh*0.5,f.x+fw,f.y); c.closePath(); c.fill();
     c.fillStyle='#fff6c9'; c.beginPath(); c.moveTo(f.x-fw*0.5,f.y); c.quadraticCurveTo(f.x-fw*0.6,f.y-fh*0.3,f.x,f.y-fh*0.55); c.quadraticCurveTo(f.x+fw*0.6,f.y-fh*0.3,f.x+fw*0.5,f.y); c.closePath(); c.fill(); });
   if (bgFx.pot){ var p=bgFx.pot; for (i=0;i<4;i++){ var ph=(t*0.5+i*0.27)%1, bx=p.x+Math.sin(i*2.4+1)*p.r*0.7, by=p.y-ph*p.r*1.6; c.globalAlpha=(1-ph)*0.8; c.fillStyle='#8df07a'; c.beginPath(); c.arc(bx+Math.sin(t*2+i)*3,by,(2+i%3)*p.r/26*(0.6+ph*0.8),0,6.3); c.fill(); } c.globalAlpha=1; }
-  drawChFx(c, dt, t, VW, VH);
-  if (motes.length<16) motes.push({x:Math.random()*VW, y:Math.random()*VH, v:6+Math.random()*10, r:1+Math.random()*1.6, p:Math.random()*6});
-  c.fillStyle='rgba(255,235,200,0.16)'; motes.forEach(function(m){ m.y-=m.v*dt; m.x+=Math.sin(t*0.7+m.p)*6*dt; if (m.y<-5){ m.y=VH+5; m.x=Math.random()*VW; } c.beginPath(); c.arc(m.x,m.y,m.r,0,6.3); c.fill(); });
+  drawChFx(c, dt, t, sceneWidth, VH);
+  if (motes.length<16) motes.push({x:Math.random()*sceneWidth, y:Math.random()*VH, v:6+Math.random()*10, r:1+Math.random()*1.6, p:Math.random()*6});
+  c.fillStyle='rgba(255,235,200,0.16)'; motes.forEach(function(m){ m.y-=m.v*dt; m.x+=Math.sin(t*0.7+m.p)*6*dt; if (m.y<-5){ m.y=VH+5; m.x=Math.random()*sceneWidth; } c.beginPath(); c.arc(m.x,m.y,m.r,0,6.3); c.fill(); });
 }
 function lipWorld(P, ang, dir){ var lx=dir*bw/2, ly=-bh, cs=Math.cos(ang), sn=Math.sin(ang); return {x:P.x+lx*cs-ly*sn, y:P.y+lx*sn+ly*cs}; }
 function stepAnim(a, dt){
@@ -2428,8 +2416,12 @@ function stepAnim(a, dt){
 }
 function draw(dt){
   if (hitStop>0){ hitStop-=dt; dt*=0.08; }
-  drawBg(); var c=cx; c.setTransform(DPR,0,0,DPR,0,0);
-  drawBgFx(c, dt, performance.now()/1000);
+  // Frame every portrait room from the same landscape view, including its animated layers.
+  var sceneWidth=VW<VH ? VH*16/9 : VW, scaleX=VW/sceneWidth;
+  drawBg(sceneWidth,scaleX); var c=cx; c.setTransform(DPR,0,0,DPR,0,0);
+  c.save(); c.scale(scaleX,1);
+  drawBgFx(c, dt, performance.now()/1000,sceneWidth);
+  c.restore();
   var now=performance.now(), i;
   for (i=laters.length-1;i>=0;i--){ laters[i].t-=dt; if (laters[i].t<=0){ var lf=laters[i].fn; laters.splice(i,1); lf(); } }
   drawStage(dt, now/1000);
