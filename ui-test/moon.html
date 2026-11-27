@@ -95,14 +95,13 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #shopM .card{padding:14px 16px 16px}
 #shopM{align-items:center;padding-bottom:0}
 #skills{position:absolute;left:50%;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;display:flex;align-items:center;gap:8px;pointer-events:auto;height:42px}
-#skills.none{visibility:hidden}
 #skills button{position:relative;width:46px;height:40px;border-radius:13px;border:2px solid #e2b155;background:linear-gradient(#5e4e72,#2f2540);box-shadow:0 3px 0 #1a1022,inset 0 1px 0 #ffffff2a;padding:0;cursor:pointer;flex:none}
 #skills button canvas{width:28px;height:28px;display:block;margin:0 auto}
 #skills button i{position:absolute;right:-6px;bottom:-6px;min-width:20px;height:16px;border-radius:8px;background:#2a1a2e;border:1.5px solid #9fdcff;color:#9fdcff;font-style:normal;font-size:11px;font-weight:900;line-height:13px;padding:0 3px}
 #skills button.off{filter:grayscale(.9) brightness(.62)}
 #skills button.rdy{border-color:#ffe45c;box-shadow:0 3px 0 #2a1a2e,0 0 12px #ffe45c;animation:rdy 1s infinite}
 #skills button.act{background:linear-gradient(#d9b8ff,#8b5cf6);border-color:#fff}
-#skills button.lock{visibility:hidden}
+#skills button.lock{opacity:.55;cursor:default}
 @keyframes rdy{50%{transform:translateY(-3px)}}
 #ebar{flex:1;height:16px;border-radius:9px;background:#2a1a2e;border:2px solid #1a1020;overflow:hidden;position:relative}
 #ebar b{display:block;height:100%;width:0;background:linear-gradient(#bff3ff,#3fa8e8);transition:width .25s}
@@ -2824,7 +2823,7 @@ function drawGear(){
 var SK1=100, SK2=100;
 function updSkills(){
   if (!L) return; var s1=$('sk1'), s2=$('sk2'), u1=SAVE.level>=2||L.level>=2, u2=SAVE.level>=4||L.level>=4;
-  $('skills').className= u1? '' : 'none'; $('ebar').firstChild.style.width=energy+'%';
+  s1.disabled=!u1; s2.disabled=!u2; $('ebar').firstChild.style.width=energy+'%';
   s1.className= !u1? 'lock' : (energy>=SK1? 'rdy' : 'off'); s2.className= !u2? 'lock' : (magic? 'act' : (energy>=SK2? 'rdy' : 'off'));
 }
 function busyNow(){ return won || lost || choosing || walk>0 || PF.adBusy; }
