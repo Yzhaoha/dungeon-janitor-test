@@ -2136,9 +2136,44 @@ function hexRgb(h){ var n=parseInt(h.slice(1),16); return (n>>16)+','+((n>>8)&25
 // The room behind everything: a potion cellar. Stone wall and floor tinted by the current zone, pillars with wall torches at the
 // sides, and (where the window leaves room) shelves of odds and ends, a barrel and a bubbling cauldron. Flames, bubbles and dust move.
 var bgKey='', bgFx={fl:[], pot:null}, motes=[];
-var chapterWallSheet;
+var chapterWallSheet, chamberAtlas;
+function alternateChamber(){ return L && (L.level+curStage)%2===0; }
+function paintChamberMotion(c,t){
+  var w=VW,h=VH,phase=t%1;
+  c.save();
+  if(VCH===0){
+    c.fillStyle='#b1e5eb';c.globalAlpha=.75;
+    c.beginPath();c.ellipse(w*.163,h*(.58+.145*phase*phase),2,4,0,0,Math.PI*2);c.fill();
+    c.strokeStyle='#a7dced';c.globalAlpha=.7*(1-phase);
+    c.beginPath();c.ellipse(w*.163,h*.73,2+phase*w*.038,1+phase*4,0,0,Math.PI*2);c.stroke();
+  } else if(VCH===1){
+    for(var i=0;i<6;i++){
+      var x=w*((i%2?.83:.18)+.038*Math.sin(t*.6+i)), y=h*(.30+.12*Math.cos(t*.44+i*2));
+      var halo=c.createRadialGradient(x,y,0,x,y,12);halo.addColorStop(0,'#dbffbb');halo.addColorStop(.23,'#84da87bb');halo.addColorStop(1,'#69c78600');
+      c.fillStyle=halo;c.fillRect(x-12,y-12,24,24);
+    }
+  } else if(VCH===2){
+    c.fillStyle='#dcfaff';
+    for(var j=0;j<17;j++){
+      var p=(t*.15+j*.173)%1;
+      c.globalAlpha=.64*Math.sin(Math.PI*p);c.save();
+      c.translate(w*((j%2?.89:.09)+.056*Math.sin(j*6+t+p)),h*(.17+p*.58));
+      c.rotate(t*.6+j);c.fillRect(-1,-3,2,6);c.restore();
+    }
+  } else {
+    var cycle=.5+.5*Math.cos(t*2), sw=chamberAtlas.naturalWidth/2,sh=chamberAtlas.naturalHeight/2;
+    // Repaint the leather folds anchored to the bellows' lower plank.
+    var by=.36,base=.69,delta=.041*cycle;
+    c.save();c.beginPath();c.moveTo(0,h*by);c.lineTo(w*.315,h*.60);c.lineTo(w*.315,h*base);c.lineTo(0,h*base);c.clip();
+    c.drawImage(chamberAtlas,sw,sh*(1+by),sw*.32,sh*(base-by),0,h*(by-delta),w*.32,h*(base-by+delta));c.restore();
+    var gx=w*.897,gy=h*.695,rad=Math.max(15,w*.078);
+    var glow=c.createRadialGradient(gx,gy,0,gx,gy,rad);glow.addColorStop(0,'rgba(255,162,39,'+(.13+.25*cycle)+')');glow.addColorStop(1,'rgba(255,105,10,0)');
+    c.fillStyle=glow;c.fillRect(gx-rad,gy-rad,rad*2,rad*2);
+  }
+  c.restore();
+}
 function drawBg(){
-  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH].join();
+  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,alternateChamber()].join();
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
     bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.lineJoin='round';
@@ -2148,7 +2183,13 @@ function drawBg(){
       chapterWallSheet.onload=function(){ bgCache=null; };
       chapterWallSheet.src='../img/chapter-wall-study.png';
     }
-    if ((VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
+    if(alternateChamber() && !chamberAtlas){
+      chamberAtlas=new Image();chamberAtlas.onload=function(){bgCache=null;};chamberAtlas.src='../img/four-chambers.png';
+    }
+    if(alternateChamber() && chamberAtlas.naturalWidth){
+      var cw=chamberAtlas.naturalWidth/2,ch=chamberAtlas.naturalHeight/2;
+      c.drawImage(chamberAtlas,(VCH%2)*cw,Math.floor(VCH/2)*ch,cw,ch,0,0,VW,VH);
+    } else if ((VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
       var sheetW=chapterWallSheet.naturalWidth, halfH=Math.floor(chapterWallSheet.naturalHeight/2);
       var wallScale=Math.max(VW/sheetW,VH/halfH);
       c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(VW-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
@@ -2301,7 +2342,8 @@ function drawWallMechanisms(c,t){
   }
 }
 function drawBgFx(c, dt, t){
-  drawWallMechanisms(c,t);
+  if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t);
+  else if(VCH===3) drawWallMechanisms(c,t);
   var th=THEMES[VS? VS.scn : 0], i;
   bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
