@@ -2136,13 +2136,23 @@ function hexRgb(h){ var n=parseInt(h.slice(1),16); return (n>>16)+','+((n>>8)&25
 // The room behind everything: a potion cellar. Stone wall and floor tinted by the current zone, pillars with wall torches at the
 // sides, and (where the window leaves room) shelves of odds and ends, a barrel and a bubbling cauldron. Flames, bubbles and dust move.
 var bgKey='', bgFx={fl:[], pot:null}, motes=[];
+var chapterWallSheet;
 function drawBg(){
   var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH].join();
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
     bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.lineJoin='round';
     var u=STG.u||1, wide=VW>=700, fy=VH-Math.max(64, VH*0.12), pw=Math.round(Math.max(16, Math.min(96, VW*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
-    if (VCH===0 && materialArt['moon-room']){
+    if ((VCH===1 || VCH===2) && !chapterWallSheet){
+      chapterWallSheet=new Image();
+      chapterWallSheet.onload=function(){ bgCache=null; };
+      chapterWallSheet.src='../img/chapter-wall-study.png';
+    }
+    if ((VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
+      var sheetW=chapterWallSheet.naturalWidth, halfH=Math.floor(chapterWallSheet.naturalHeight/2);
+      var wallScale=Math.max(VW/sheetW,VH/halfH);
+      c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(VW-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
+    } else if (VCH===0 && materialArt['moon-room']){
       var room=materialArt['moon-room'], zoom=Math.max(VW/room.width,VH/room.height);
       c.drawImage(room,(VW-room.width*zoom)/2,(VH-room.height*zoom)/2,room.width*zoom,room.height*zoom);
       var pillarW=Math.min(VW*0.122,VH*0.222);
