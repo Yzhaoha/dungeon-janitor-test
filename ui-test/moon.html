@@ -2139,13 +2139,38 @@ var bgKey='', bgFx={fl:[], pot:null}, motes=[];
 var chapterWallSheet, chamberAtlas;
 function alternateChamber(){ return L && (L.level+curStage)%2===0; }
 function paintChamberMotion(c,t){
-  var w=VW,h=VH,phase=t%1;
+  var w=VW,h=VH;
   c.save();
   if(VCH===0){
-    c.fillStyle='#b1e5eb';c.globalAlpha=.75;
-    c.beginPath();c.ellipse(w*.163,h*(.58+.145*phase*phase),2,4,0,0,Math.PI*2);c.fill();
-    c.strokeStyle='#a7dced';c.globalAlpha=.7*(1-phase);
-    c.beginPath();c.ellipse(w*.163,h*.73,2+phase*w*.038,1+phase*4,0,0,Math.PI*2);c.stroke();
+    // Coordinates in the cistern's 768 x 512 painted panel.
+    c.scale(w/768,h/512);
+    c.save();
+    c.beginPath();c.moveTo(115,297);c.quadraticCurveTo(120,332,117,372);
+    c.lineTo(141,372);c.quadraticCurveTo(137,329,132,296);c.closePath();c.clip();
+    // Carry the original brushwork down the jet in overlapping bands.
+    for(var row=296;row<374;row+=2){
+      var textureY=308+((row-296-t*69)%43+43)%43;
+      var bend=Math.sin(row*.14-t*7)*1.4;
+      c.drawImage(chamberAtlas,116,textureY,24,2,115+bend,row,27,2.4);
+    }
+    for(var strand=0;strand<8;strand++){
+      var travel=(t*(1.04+strand*.035)+strand*.381)%1;
+      var jy=290+travel*88,jx=118+(strand%4)*4+(jy-296)*.055;
+      c.strokeStyle=strand%2?'rgba(206,248,255,.82)':'rgba(47,121,151,.85)';
+      c.lineWidth=1.5+strand%3*.65;c.lineCap='round';c.beginPath();c.moveTo(jx,jy);
+      c.quadraticCurveTo(jx+2,jy+5,jx+1,jy+12);c.stroke();
+    }
+    c.restore();
+    for(var spray=0;spray<8;spray++){
+      var flight=(t*1.55+spray*.37)%1,side=spray%2?1:-1;
+      c.globalAlpha=(1-flight)*.88;c.fillStyle='#d0f6ff';c.beginPath();
+      c.ellipse(130+side*(3+flight*(11+spray)),373-38*flight*(1-flight),1.5,1.1,0,0,Math.PI*2);c.fill();
+    }
+    for(var ring=0;ring<3;ring++){
+      var ripple=(t*.9+ring/3)%1;c.globalAlpha=(1-ripple)*.72;
+      c.strokeStyle='#97dfed';c.lineWidth=1.2;c.beginPath();
+      c.ellipse(130,374,5+32*ripple,1+4*ripple,0,0,Math.PI*2);c.stroke();
+    }
   } else if(VCH===1){
     for(var i=0;i<6;i++){
       var x=w*((i%2?.83:.18)+.038*Math.sin(t*.6+i)), y=h*(.30+.12*Math.cos(t*.44+i*2));
