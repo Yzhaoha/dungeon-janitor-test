@@ -26,6 +26,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #lvlIc .ic{margin:0 4px 0 2px}
 #lvl{position:absolute;left:50%;top:9px;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;background:rgba(40,24,48,.78);border:2px solid #f5c542;border-radius:20px;padding:4px 16px;font-size:20px;font-weight:900;white-space:nowrap}
 #banner{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(.6);opacity:0;transition:opacity .3s,transform .35s cubic-bezier(.3,1.6,.5,1);text-align:center;font-size:24px;font-weight:900;width:max-content;max-width:92vw;background:rgba(30,18,38,.9);border:2px solid #f5c542;border-radius:16px;padding:8px 18px;box-shadow:0 5px 0 #0005}
+#banner.skillTip{top:auto!important;bottom:var(--skill-bottom);transform:translateX(-50%);transition:opacity .2s;pointer-events:none;box-sizing:border-box;font-size:clamp(14px,2vw,20px)!important;line-height:1.18;padding:5px 12px}
 #banner small{display:block;font-size:17px;font-weight:700;margin-top:4px;white-space:normal;max-width:86vw}
 #banner.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #tut{position:absolute;left:50%;top:300px;transform:translateX(-50%) scale(var(--u,1));transform-origin:50% 0;width:max-content;background:#fff;color:#3a2440;border-radius:14px;padding:6px 14px;font-size:16px;line-height:1.3;font-weight:800;max-width:90vw;text-align:center;box-shadow:0 5px 0 #0005;display:none;border:3px solid #ffd84a}
@@ -548,7 +549,7 @@ var TL={
   coach_heal:["Fill green to recover health after a hit.", "Complète le vert pour récupérer après un coup.", "Completa il verde per curarti dopo un colpo.", "Fülle Grün, um dich nach einem Treffer zu heilen.", "Completa el verde para curarte tras un golpe.", "Darbe sonrası iyileşmek için yeşili doldur.", "受伤后凑满绿药水，把生命补回来。", "攻撃を受けたら緑をそろえて回復。", "공격을 받은 뒤 초록을 채워 회복하세요.", "Complete o verde para se curar após um golpe.", "После удара собери зелёное, чтобы восстановить здоровье."],
   coach_ready:["Nice! Now finish the monster with red.", "Bien ! Termine le combat avec le rouge.", "Bene! Ora finisci il mostro con il rosso.", "Gut! Besiege das Monster jetzt mit Rot.", "¡Bien! Ahora acaba con el monstruo usando rojo.", "Güzel! Şimdi kırmızıyla canavarı yen.", "做得好！继续凑红药水，击败怪物。", "成功！赤をそろえてモンスターを倒そう。", "잘했어요! 빨강으로 몬스터를 물리치세요.", "Boa! Agora derrote o monstro com vermelho.", "Отлично! Теперь добей монстра красным."],
   coach_two:["Four colours. Fewer pours, stronger attacks.", "Quatre couleurs. Moins de coups, plus de puissance.", "Quattro colori. Meno travasi, attacchi più forti.", "Vier Farben. Weniger Güsse, stärkere Angriffe.", "Cuatro colores. Menos vertidos, golpes más fuertes.", "Dört renk. Az döküş, güçlü saldırı.", "四种颜色，开始自己搭配。倒得越少，攻击越强。", "4色に挑戦。少ない手数で強く攻撃。", "네 가지 색에 도전! 적게 부을수록 강해져요.", "Quatro cores. Menos despejos, ataques mais fortes.", "Четыре цвета. Меньше переливаний — сильнее атака."],
-  coach_three:["Save blue for attacks, green for missing health.", "Garde le bleu pour parer, le vert pour te soigner.", "Usa il blu per parare e il verde per curarti.", "Blau zum Blocken, Grün bei fehlender Gesundheit.", "Azul para bloquear; verde cuando necesites curarte.", "Saldırıya karşı mavi, eksik can için yeşil.", "看准时机：蓝药挡攻击，受伤再用绿药。", "青でガード、体力が減ったら緑で回復。", "파랑으로 막고, 체력이 줄면 초록으로 회복하세요.", "Azul para bloquear, verde para recuperar vida.", "Синее — для блока, зелёное — для лечения."],
+  coach_three:["Fill blue to block an attack. Fill green to heal.", "Garde le bleu pour parer, le vert pour te soigner.", "Usa il blu per parare e il verde per curarti.", "Blau zum Blocken, Grün bei fehlender Gesundheit.", "Azul para bloquear; verde cuando necesites curarte.", "Saldırıya karşı mavi, eksik can için yeşil.", "装满蓝药抵挡攻击，装满绿药恢复生命。", "青でガード、体力が減ったら緑で回復。", "파랑으로 막고, 체력이 줄면 초록으로 회복하세요.", "Azul para bloquear, verde para recuperar vida.", "Наполни флакон синим зельем для блока, зелёным — для лечения."],
   coach_skill:["Energy full! Tap the sword skill for a free strike.", "Énergie pleine ! Touche la compétence épée.", "Energia piena! Tocca la spada per colpire gratis.", "Energie voll! Tippe auf die Schwert-Fähigkeit.", "¡Energía llena! Toca la habilidad de espada.", "Enerji dolu! Ücretsiz vuruş için kılıca dokun.", "能量满了！点剑技能，免费追加一次攻击。", "エネルギー満タン！剣スキルで追加攻撃。", "에너지 충전 완료! 검 스킬로 추가 공격하세요.", "Energia cheia! Toque na habilidade de espada.", "Энергия полная! Нажми навык меча для удара."],
 
   t0:['A hero wants beer! Walk to the keg to pour one 🍺','Un héros veut une bière ! Va au tonneau pour en servir une 🍺','Un eroe vuole una birra! Vai alla botte e spillala 🍺','Ein Held will Bier! Geh zum Fass und zapf eins 🍺','¡Un héroe quiere cerveza! Ve al barril a servir una 🍺','Bir kahraman bira istiyor! Fıçıya git ve doldur 🍺','勇者想喝啤酒！走到酒桶前接一杯 🍺','勇者がビールを注文！樽の前でついでね 🍺','용사가 맥주를 원해요! 술통 앞에 가서 따르세요 🍺','Um herói quer cerveja! Vá ao barril e sirva uma 🍺','Герой хочет пива! Подойди к бочке и налей 🍺'],
@@ -1140,8 +1141,8 @@ function loadLevel(n, keepExtra, st, hp, lane, type){
   else if (curStage===0 && L.kind!=='n') banner(tl(L.kind==='big'?'bigF':'bossF'), '', 2400);
   else if (L.king) banner((L.role==='big'?'🐉 ':'👹 ')+mName(VS.kind), specOf(VS.kind)? tl('sp_'+specOf(VS.kind)) : '', specOf(VS.kind)? 4200 : 2400);
   else if (n===1 && curStage===2 && seen('pT')) banner(tl('pwTip'), '', 6000);
-  else if (n>=2 && seen('k1')) banner(tl('sk1'), '', 5200);
-  else if (n>=4 && seen('k2')) banner(tl('sk2'), '', 5200);
+  else if (n>=2 && seen('k1')) banner(tl('sk1'), '', 5200, true);
+  else if (n>=4 && seen('k2')) banner(tl('sk2'), '', 5200, true);
   else if (L.tut) {}
   else if (L.role!=='min' && seen('pH')) banner(tl('sp_heavy'), '', 6000);
   else if (specOf(VS.kind)==='lock' && seen('pL')) banner(tl('sp_lock'), '', 5000);
@@ -1188,6 +1189,7 @@ function layout(){
   BA.cx=(BA.x0+BA.x1)/2; var cxp=Math.round(BA.cx)+'px', rowW=608*u;
   if (skRow){ skE.style.left=Math.round(VW/2-rowW/2+150*u)+'px'; skE.style.top=Math.round(VH-(14+31+21)*u)+'px'; skE.style.width='300px'; $('btns').style.left=Math.round(VW/2+rowW/2-142*u)+'px'; }
   else { skE.style.left=Math.round(STG.x+STG.w/2)+'px'; skE.style.top=Math.round(STG.top+STG.h+5*u)+'px'; skE.style.width=Math.round(Math.min((STG.w-8)/u, 420))+'px'; $('btns').style.left=cxp; if (wide) BA.top+=44*u; }
+  bn.style.setProperty('--skill-bottom', Math.ceil(VH-STG.top-STG.h+4*u)+'px');
   bn.style.left=cxp; bn.style.top=Math.round(wide? BA.top+40*u : STG.top+STG.h+76*u)+'px'; bn.style.maxWidth=Math.round(BA.x1-BA.x0-8)+'px'; bn.style.fontSize= u>1? Math.round(22*u)+'px' : '';
   // the tutorial line sits in its own strip right under the fight panel; on tutorial rooms the bottles move down to make room for it
   var tutTop=STG.top+STG.h+4*u; if (L && L.coach) BA.top=Math.max(BA.top, tutTop+(small? 64 : 40)*u);
@@ -2380,8 +2382,8 @@ function emoNode(t){ var s=t.nodeValue, p=t.parentNode; if (!p || !EMO_T.test(s)
 function emoScan(root){ if (/^(SCRIPT|STYLE)$/.test(root.nodeName)) return; var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), list=[], n; while ((n=w.nextNode())) list.push(n); list.forEach(emoNode); }
 function emoWatch(){ emoScan(document.body); new MutationObserver(function(ms){ ms.forEach(function(m){ if (m.type==='characterData') emoNode(m.target); else [].forEach.call(m.addedNodes, function(n){ if (n.nodeType===3) emoNode(n); else if (n.nodeType===1) emoScan(n); }); }); }).observe(document.body, {childList:true, subtree:true, characterData:true}); }
 // ---------------- HUD ----------------
-function banner(main, sub, ms){
-  var b=$('banner'); b.innerHTML=''; b.textContent=main; if(sub){ var s=document.createElement('small'); s.textContent=sub; b.appendChild(s); }
+function banner(main, sub, ms, skillTip){
+  var b=$('banner'); b.classList.toggle('skillTip', !!skillTip); b.innerHTML=''; b.textContent=main; if(sub){ var s=document.createElement('small'); s.textContent=sub; b.appendChild(s); }
   b.classList.add('show'); clearTimeout(banner.t); banner.t=setTimeout(function(){ b.classList.remove('show'); }, ms||2400);
 }
 function toast(t){ banner(t,'',1800); }
