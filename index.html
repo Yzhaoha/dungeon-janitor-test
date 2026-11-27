@@ -17,7 +17,7 @@
 <main id="stage"></main>
 <script>
 const gameUrl = 'ui-test/moon.html' + location.search + location.hash;
-if (matchMedia('(pointer: coarse)').matches) {
+{
   const stage = document.getElementById('stage');
   const game = document.createElement('iframe');
   game.title = '药水骑士 · Potion Knight';
@@ -29,8 +29,6 @@ if (matchMedia('(pointer: coarse)').matches) {
   new ResizeObserver(fitGame).observe(stage);
   game.src = gameUrl;
   stage.appendChild(game);
-} else {
-  location.replace(gameUrl);
 }
 </script>
 </body>

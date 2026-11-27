@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<script>if (window.top === window.self) location.replace('../index.html' + location.search + location.hash);</script>
 <title>Potion Knight | Glass &amp; Health Playtest</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
@@ -203,7 +204,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #endGo{position:absolute;left:50%;bottom:9%;transform:translateX(-50%) scale(var(--u,1));opacity:0;transition:opacity .6s;pointer-events:none}
 #endGo.on{opacity:1;pointer-events:auto}
 #introM{position:fixed;inset:0;z-index:28;background:#07040a;cursor:pointer;transition:opacity .45s}
-#introM.out{opacity:0;pointer-events:none}
+#introM.out{visibility:hidden;opacity:0;pointer-events:none}
 #introC{position:absolute;inset:0;width:100%;height:100%}
 #introTx{position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none}
 #inLogo{font-size:52px;font-weight:900;letter-spacing:3px;transform:scale(0);transition:transform .5s cubic-bezier(.3,1.7,.5,1);line-height:1.05;filter:drop-shadow(0 4px 0 #2a0e08) drop-shadow(0 0 14px rgba(255,90,40,.55))}
@@ -2212,7 +2213,7 @@ function drawBg(sceneWidth,scaleX){
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
     bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR*scaleX,0,0,DPR,0,0); c.lineJoin='round';
-    var u=STG.u||1, wide=sceneWidth>=700, fy=VH-Math.max(64, VH*0.12), pw=Math.round(Math.max(16, Math.min(96, sceneWidth*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
+    var u=STG.u||1, wide=sceneWidth>=700, fy=Math.min(VH-Math.max(64,VH*.12), ...V.map(function(v){return v.y-bw*.22;})), pw=Math.round(Math.max(16, Math.min(96, sceneWidth*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
     if (dressedChapterFloor() && (VCH===1 || VCH===2) && !chapterWallSheet){
       chapterWallSheet=new Image();
       chapterWallSheet.onload=function(){ bgCache=null; };
@@ -2236,22 +2237,15 @@ function drawBg(sceneWidth,scaleX){
       var wallScale=Math.max(sceneWidth/sheetW,VH/halfH);
       c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(sceneWidth-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
     } else if (VCH===0 && materialArt['moon-room']){
-      var room=materialArt['moon-room'], zoom=Math.max(sceneWidth/room.width,VH/room.height);
-      c.drawImage(room,(sceneWidth-room.width*zoom)/2,(VH-room.height*zoom)/2,room.width*zoom,room.height*zoom);
+      var room=materialArt['moon-room'], seam=Math.round(room.height*.85);
+      c.drawImage(room,0,0,room.width,seam,0,0,sceneWidth,fy);
+      c.drawImage(room,0,seam,room.width,room.height-seam,0,fy,sceneWidth,VH-fy);
       var pillarW=Math.min(sceneWidth*0.122,VH*0.222);
       var pillarH=pillarW*755/203;
       if(materialArt['left-pillar']) c.drawImage(materialArt['left-pillar'],0,0,pillarW,pillarH);
       if(materialArt['right-pillar']) c.drawImage(materialArt['right-pillar'],sceneWidth-pillarW,0,pillarW,pillarH);
-      var ledge=materialArt['stone-ledge'], usedRows={};
-      V.forEach(function(v){
-        if (usedRows[v.row]) return;
-        usedRows[v.row]=true;
-        var sy=v.y+bw*0.13;
-        c.fillStyle='#243446'; c.fillRect(sceneWidth*0.025,sy,sceneWidth*0.95,bw*0.2);
-        if (ledge) for (var lx=sceneWidth*0.025;lx<sceneWidth*0.975;lx+=ledge.width*0.8){
-          var sw=Math.min(ledge.width*0.8,sceneWidth*0.975-lx);
-          c.drawImage(ledge,0,0,sw/0.8,ledge.height,lx,sy,sw,bw*0.2);
-        }
+      [pillarW*.55,sceneWidth-pillarW*.55].forEach(function(tx){
+        bgFx.fl.push({x:tx,y:pillarH*.58,s:pillarW/96});
       });
     } else {
     var g=c.createLinearGradient(0,0,0,fy); g.addColorStop(0,shade(th.w1,-0.25)); g.addColorStop(0.4,shade(th.w0,-0.35)); g.addColorStop(1,shade(th.w1,-0.3)); c.fillStyle=g; c.fillRect(0,0,sceneWidth,VH);
@@ -2266,16 +2260,6 @@ function drawBg(sceneWidth,scaleX){
     // warm light from the two wall torches
     var ty=Math.min(fy-90, VH*0.5);
     [pw*0.5, sceneWidth-pw*0.5].forEach(function(tx){ var rg=c.createRadialGradient(tx,ty,4,tx,ty,Math.max(sceneWidth,VH)*0.4); rg.addColorStop(0,'rgba('+th.gl+',0.3)'); rg.addColorStop(1,'rgba('+th.gl+',0)'); c.fillStyle=rg; c.fillRect(0,0,sceneWidth,VH); });
-    // shelves under each row
-    var rows={}; V.forEach(function(v){ rows[v.row]=rows[v.row]||{y:v.y, x0:1e9, x1:-1e9}; rows[v.row].x0=Math.min(rows[v.row].x0,v.x/scaleX); rows[v.row].x1=Math.max(rows[v.row].x1,v.x/scaleX); });
-    Object.keys(rows).forEach(function(k){ var o=rows[k], x0=Math.max(6,o.x0-bw*1.3/scaleX), x1=Math.min(sceneWidth-6,o.x1+bw*1.3/scaleX), y=o.y+1, th=Math.max(10,bw*0.3);
-      c.fillStyle='rgba(0,0,0,0.3)'; c.fillRect(x0+4,y+th,x1-x0,8);
-      var wg=c.createLinearGradient(0,y,0,y+th); var SW=[['#c58a52','#a0683a','#6e4224'],['#7a7058','#5a5240','#2e2a20'],['#b0c8dc','#7a94ac','#3e5268'],['#4a3430','#2e1e1a','#140a08']][VCH]; wg.addColorStop(0,SW[0]); wg.addColorStop(0.25,SW[1]); wg.addColorStop(1,SW[2]); c.fillStyle=wg; c.beginPath(); c.roundRect(x0,y,x1-x0,th,4); c.fill();
-      if (VCH===1){ c.fillStyle='rgba(110,200,120,0.75)'; for (var mx2=x0+8; mx2<x1-8; mx2+=26+((mx2*7)%17)){ c.beginPath(); c.ellipse(mx2, y+th, 7, 3+((mx2*3)%4), 0, 0, Math.PI); c.fill(); } }
-      if (VCH===2){ c.fillStyle='#f4fbff'; c.beginPath(); c.moveTo(x0,y+2); for (var sx2=x0; sx2<x1; sx2+=22) c.quadraticCurveTo(sx2+11, y-5-((sx2*7)%4), Math.min(x1,sx2+22), y+2); c.lineTo(x1,y+4); c.lineTo(x0,y+4); c.closePath(); c.fill(); for (var ic=x0+12; ic<x1-8; ic+=34){ c.beginPath(); c.moveTo(ic-4,y+th); c.lineTo(ic+4,y+th); c.lineTo(ic,y+th+9+((ic*5)%7)); c.closePath(); c.fill(); } }
-      if (VCH===3){ c.fillStyle='rgba(255,110,40,0.8)'; c.fillRect(x0+3,y+th-3,x1-x0-6,2); }
-      c.fillStyle='rgba(255,230,190,0.25)'; c.fillRect(x0+3,y+1,x1-x0-6,2);
-      c.fillStyle='#5a361c'; [x0+14,x1-22].forEach(function(bx){ c.fillRect(bx,y+th,8,th*0.9); }); });
     // side shelves with odds and ends, only where the bottles leave the wall free
     var bx0=1e9, bx1=-1e9, by0=1e9, by1=-1e9; V.forEach(function(v){ bx0=Math.min(bx0,(v.x-bw*1.5)/scaleX); bx1=Math.max(bx1,(v.x+bw*1.5)/scaleX); by0=Math.min(by0,v.y-bh); by1=Math.max(by1,v.y); });
     var prop=function(kind,px,py,k){ c.lineWidth=2.5; c.strokeStyle=OL;
