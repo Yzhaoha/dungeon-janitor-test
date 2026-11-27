@@ -2139,6 +2139,10 @@ var bgKey='', bgFx={fl:[], pot:null}, motes=[];
 var chapterWallSheet, chamberAtlas;
 // Chapter-local floor numbers. All rooms on a floor share its environment.
 var chamberFloors=[2,3,6,7,10,11,14,15,18,19,21,22];
+// Only these main-route floors use the extra wall or pillar art.
+function dressedChapterFloor(){
+  return !!L && [4,5,12,13,17].indexOf((L.level-1)%24+1)>=0;
+}
 function alternateChamber(){
   return !!L && chamberFloors.indexOf((L.level-1)%24+1)>=0;
 }
@@ -2204,12 +2208,12 @@ function paintChamberMotion(c,t){
 var finalHallImage;
 function inFinalHall(){ return L && L.level===FINAL && L.final; }
 function drawBg(){
-  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,alternateChamber(),inFinalHall()].join();
+  var scn=VS? VS.scn : 0, th=THEMES[scn], key=[cv.width,cv.height,scn,V.length,VCH,dressedChapterFloor(),alternateChamber(),inFinalHall()].join();
   if (!bgCache || bgKey!==key){
     bgKey=key; bgFx={fl:[], pot:null};
     bgCache=document.createElement('canvas'); bgCache.width=cv.width; bgCache.height=cv.height; var c=bgCache.getContext('2d'); c.setTransform(DPR,0,0,DPR,0,0); c.lineJoin='round';
     var u=STG.u||1, wide=VW>=700, fy=VH-Math.max(64, VH*0.12), pw=Math.round(Math.max(16, Math.min(96, VW*0.05))), r=DJ_rnd(scn*13+5), i, x, y;
-    if ((VCH===1 || VCH===2) && !chapterWallSheet){
+    if (dressedChapterFloor() && (VCH===1 || VCH===2) && !chapterWallSheet){
       chapterWallSheet=new Image();
       chapterWallSheet.onload=function(){ bgCache=null; };
       chapterWallSheet.src='../img/chapter-wall-study.png';
@@ -2227,7 +2231,7 @@ function drawBg(){
     } else if(alternateChamber() && chamberAtlas.naturalWidth){
       var cw=chamberAtlas.naturalWidth/2,ch=chamberAtlas.naturalHeight/2;
       c.drawImage(chamberAtlas,(VCH%2)*cw,Math.floor(VCH/2)*ch,cw,ch,0,0,VW,VH);
-    } else if ((VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
+    } else if (dressedChapterFloor() && (VCH===1 || VCH===2) && chapterWallSheet.naturalWidth){
       var sheetW=chapterWallSheet.naturalWidth, halfH=Math.floor(chapterWallSheet.naturalHeight/2);
       var wallScale=Math.max(VW/sheetW,VH/halfH);
       c.drawImage(chapterWallSheet,0,(VCH-1)*halfH,sheetW,halfH,(VW-sheetW*wallScale)/2,(VH-halfH*wallScale)/2,sheetW*wallScale,halfH*wallScale);
@@ -2381,7 +2385,7 @@ function drawWallMechanisms(c,t){
 }
 function drawBgFx(c, dt, t){
   if(alternateChamber() && chamberAtlas && chamberAtlas.naturalWidth) paintChamberMotion(c,t);
-  else if(VCH===3 && !inFinalHall()) drawWallMechanisms(c,t);
+  else if(VCH===3 && dressedChapterFloor() && !inFinalHall()) drawWallMechanisms(c,t);
   var th=THEMES[VS? VS.scn : 0], i;
   bgFx.fl.forEach(function(f,fi){ var fl=0.85+Math.sin(t*11+fi*2)*0.1+Math.sin(t*23+fi)*0.06, fh=(f.big?22:14)*f.s*fl, fw=(f.big?8:5)*f.s, col= f.big? 'rgb('+th.gl+')' : '#ffb04a';
     var rg=c.createRadialGradient(f.x,f.y-fh*0.4,1,f.x,f.y-fh*0.4,(f.big?70:34)*f.s); rg.addColorStop(0,'rgba('+(f.big?th.gl:'255,176,74')+','+(0.32*fl)+')'); rg.addColorStop(1,'rgba(255,176,74,0)'); c.fillStyle=rg; c.fillRect(f.x-80*f.s,f.y-90*f.s,160*f.s,150*f.s);
